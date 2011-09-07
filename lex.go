@@ -56,9 +56,9 @@ type token struct {
 
 func (t token) String() string {
 	if len(t.txt) > 10 {
-		return fmt.Sprintf("line=%d: %v [%10q...]", t.lno, t.typ, t.txt)
+		return fmt.Sprintf("%v [%10q...]", t.typ, t.txt)
 	}
-	return fmt.Sprintf("line=%d: %v [%q]", t.lno, t.typ, t.txt)
+	return fmt.Sprintf("%v [%q]", t.typ, t.txt)
 }
 
 type stateFn func(*lexer) stateFn
@@ -169,7 +169,7 @@ func lexAny(l *lexer) stateFn {
 	case r == '?':
 		return lexQid
 	case r == ':':
-		return lexQid
+		return lexCid
 	case r == ';':
 		return lexComment
 	case isNum(r):
@@ -179,7 +179,7 @@ func lexAny(l *lexer) stateFn {
 }
 
 func (l *lexer) ident(t ttype) {
-	for isAlphaNum(l.next()) {
+	for isIdRune(l.next()) {
 	}
 	l.backup()
 	l.emit(t)
@@ -227,6 +227,6 @@ func isNum(r int) bool {
 	return unicode.IsDigit(r)
 }
 
-func isAlphaNum(r int) bool {
-	return isAlpha(r) || isNum(r)
+func isIdRune(r int) bool {
+	return !unicode.IsSpace(r) && r != ')'
 }

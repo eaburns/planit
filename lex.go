@@ -13,7 +13,7 @@ const eof = -1
 const whiteSpace = " \t\n\r"
 
 const (
-	tokEof         = eof
+	tokEof ttype = eof
 	tokOpen  ttype = '('
 	tokClose ttype = ')'
 	tokMinus ttype = '-'

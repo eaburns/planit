@@ -57,8 +57,8 @@ func (p *parser) junk(n int) {
 		p.next()
 	}
 }
-func (p *parser) errorf(name string, line int, format string, args ...interface{}) {
-	pre := fmt.Sprintf("%s:%d", name, line)
+func (p *parser) errorf(format string, args ...interface{}) {
+	pre := fmt.Sprintf("%s:%d", p.lex.name, p.lex.lineno)
 	suf := fmt.Sprintf(format, args...)
 	panic(fmt.Errorf("%s: %s", pre, suf))
 }
@@ -66,7 +66,7 @@ func (p *parser) errorf(name string, line int, format string, args ...interface{
 func (p *parser) expect(typ ttype) token {
 	t := p.peek()
 	if t.typ != typ {
-		p.errorf(p.lex.name, t.lno, "expected %v, got %v", typ, t)
+		p.errorf("expected %v, got %v", typ, t)
 	}
 	return p.next()
 }
@@ -80,7 +80,7 @@ func (p *parser) expectId(s string) token {
 		typ = tokQid
 	}
 	if t.typ != typ || t.txt != s{
-		p.errorf(p.lex.name, t.lno, "expected identifier [\"%s\"], got %v", s, t)
+		p.errorf("expected identifier [\"%s\"], got %v", s, t)
 	}
 	return p.next()
 }

@@ -13,7 +13,7 @@ const eof = -1
 const whiteSpace = " \t\n\r"
 
 const (
-	tokEof ttype = eof
+	tokEof   ttype = eof
 	tokOpen  ttype = '('
 	tokClose ttype = ')'
 	tokMinus ttype = '-'
@@ -50,7 +50,6 @@ func (t ttype) String() string {
 type token struct {
 	typ ttype
 	txt string
-	lno int
 }
 
 func (t token) String() string {
@@ -69,7 +68,7 @@ type lexer struct {
 	txt   string
 	start int
 	pos   int
-	lno   int
+	lineno   int
 	width int
 }
 
@@ -77,7 +76,7 @@ func lex(name, txt string) *lexer {
 	return &lexer{
 		name: name,
 		txt:  txt,
-		lno:  1,
+		lineno:  1,
 	}
 }
 
@@ -89,14 +88,14 @@ func (l *lexer) next() (rune int) {
 	rune, l.width = utf8.DecodeRuneInString(l.txt[l.pos:])
 	l.pos += l.width
 	if rune == '\n' {
-		l.lno++
+		l.lineno++
 	}
 	return rune
 }
 
 func (l *lexer) backup() {
 	if strings.HasPrefix(l.txt[l.pos-l.width:l.pos], "\n") {
-		l.lno--
+		l.lineno--
 	}
 	l.pos -= l.width
 }
@@ -127,7 +126,7 @@ func (l *lexer) acceptRun(s string) (any bool) {
 }
 
 func (l *lexer) makeToken(t ttype) token {
-	tok := token{txt: l.txt[l.start:l.pos], typ: t, lno: l.lno}
+	tok := token{txt: l.txt[l.start:l.pos], typ: t}
 	l.start = l.pos
 	return tok
 }

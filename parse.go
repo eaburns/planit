@@ -28,7 +28,6 @@ func parse(lex *lexer) *parser {
 	}
 }
 
-
 // peek at the nth token
 func (p *parser) peekn(n int) token {
 	if n > len(p.peeks) {
@@ -278,7 +277,6 @@ func (p *parser) parseAndGd(nested func(*parser) *gd) *gd {
 		conj = append(conj, nested(p))
 	}
 	res := seqAnd(conj)
-
 	p.expect(tokClose)
 	return res
 }

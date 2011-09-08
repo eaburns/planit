@@ -61,8 +61,6 @@ func (t token) String() string {
 	return fmt.Sprintf("%v [%q]", t.typ, t.txt)
 }
 
-type stateFn func(*lexer) stateFn
-
 type lexer struct {
 	name  string
 	txt   string
@@ -70,30 +68,14 @@ type lexer struct {
 	pos   int
 	lno   int
 	width int
-	state stateFn
-	toks  chan token
 }
 
 func lex(name, txt string) *lexer {
 	return &lexer{
 		name:  name,
 		txt:   txt,
-		state: lexAny,
 		lno:   1,
-		toks:  make(chan token, 2),
 	}
-}
-
-func (l *lexer) token() token {
-	for {
-		select {
-		case t := <-l.toks:
-			return t
-		default:
-			l.state = l.state(l)
-		}
-	}
-	panic("Unreachable")
 }
 
 func (l *lexer) next() (rune int) {
@@ -141,66 +123,54 @@ func (l *lexer) acceptRun(s string) (any bool) {
 	return
 }
 
-func (l *lexer) emit(t ttype) {
-	l.toks <- token{txt: l.txt[l.start:l.pos], typ: t, lno: l.lno}
+func (l *lexer) makeToken(t ttype) token {
+	tok := token{txt: l.txt[l.start:l.pos], typ: t, lno: l.lno}
 	l.start = l.pos
+	return tok
 }
 
-func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.toks <- token{typ: tokErr, txt: fmt.Sprintf(format, args...)}
-	return nil
+func (l *lexer) errorf(format string, args ...interface{}) token {
+	return token{typ: tokErr, txt: fmt.Sprintf(format, args...)}
 }
 
-func lexAny(l *lexer) stateFn {
-	r := l.next()
-	if ttype, ok := runeToks[r]; ok {
-		l.emit(ttype)
-		return lexAny
+func (l *lexer) token() token {
+	for {
+		r := l.next()
+		if typ, ok := runeToks[r]; ok {
+			return l.makeToken(typ)
+		}
+		switch {
+		case r == eof:
+			return l.makeToken(eof)
+		case unicode.IsSpace(r):
+			l.junk()
+			continue
+		case r == ';':
+			l.lexComment()
+			continue
+		case isAlpha(r):
+			return l.lexIdent(tokId)
+		case r == '?':
+			return l.lexIdent(tokQid)
+		case r == ':':
+			return l.lexIdent(tokCid)
+		case isNum(r):
+			return l.lexNum()
+		default:
+			return l.errorf("unexpected token in input: %c", r)
+		}
 	}
-	switch {
-	case r == eof:
-		l.emit(tokEof)
-		return nil
-	case unicode.IsSpace(r):
-		l.junk()
-		return lexAny
-	case isAlpha(r):
-		return lexId
-	case r == '?':
-		return lexQid
-	case r == ':':
-		return lexCid
-	case r == ';':
-		return lexComment
-	case isNum(r):
-		return lexNum
-	}
-	return l.errorf("unexpected token in input: %c", r)
+	panic("Unreachable")
 }
 
-func (l *lexer) ident(t ttype) {
+func (l *lexer) lexIdent(t ttype) token {
 	for isIdRune(l.next()) {
 	}
 	l.backup()
-	l.emit(t)
+	return l.makeToken(t)
 }
 
-func lexId(l *lexer) stateFn {
-	l.ident(tokId)
-	return lexAny
-}
-
-func lexQid(l *lexer) stateFn {
-	l.ident(tokQid)
-	return lexAny
-}
-
-func lexCid(l *lexer) stateFn {
-	l.ident(tokCid)
-	return lexAny
-}
-
-func lexNum(l *lexer) stateFn {
+func (l *lexer) lexNum() token {
 	digits := "0123456789"
 	l.acceptRun(digits)
 	l.accept(".")
@@ -208,15 +178,13 @@ func lexNum(l *lexer) stateFn {
 	l.accept("eE")
 	l.accept("-")
 	l.acceptRun(digits)
-	l.emit(tokNum)
-	return lexAny
+	return l.makeToken(tokNum)
 }
 
-func lexComment(l *lexer) stateFn {
+func (l *lexer) lexComment() {
 	for t := l.next(); t != '\n'; t = l.next() {
 	}
 	l.junk()
-	return lexAny
 }
 
 func isAlpha(r int) bool {

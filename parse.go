@@ -44,6 +44,12 @@ func (p *parser) peek() token {
 	return p.peekn(1)
 }
 
+func (p *parser) junk(n int) {
+	for i := 0; i < n; i++ {
+		p.next()
+	}
+}
+
 func (p *parser) accept(typ ttype) (t token, ok bool) {
 	if p.peek().typ == typ {
 		t = p.next()
@@ -52,11 +58,14 @@ func (p *parser) accept(typ ttype) (t token, ok bool) {
 	return
 }
 
-func (p *parser) junk(n int) {
-	for i := 0; i < n; i++ {
-		p.next()
+func (p *parser) acceptNamedList(name string) bool {
+	if p.peek().typ != tokOpen || p.peekn(2).txt != name {
+		return false
 	}
+	p.junk(2)
+	return true
 }
+
 func (p *parser) errorf(format string, args ...interface{}) {
 	pre := fmt.Sprintf("%s:%d", p.lex.name, p.lex.lineno)
 	suf := fmt.Sprintf(format, args...)
@@ -110,11 +119,9 @@ func (p *parser) parseDomainName() string {
 
 func (p *parser) parseReqsDef() (reqs []string) {
 	reqs = make([]string, 0)
-
-	if p.peek().typ != tokOpen || p.peekn(2).txt != ":requirements" {
+	if !p.acceptNamedList(":requirements") {
 		return
 	}
-	p.junk(2)
 	for t, ok := p.accept(tokCid); ok; t, ok = p.accept(tokCid) {
 		reqs = append(reqs, t.txt)
 	}
@@ -124,11 +131,9 @@ func (p *parser) parseReqsDef() (reqs []string) {
 
 func (p *parser) parseTypesDef() (types []tname) {
 	types = make([]tname, 0)
-
-	if p.peek().typ != tokOpen || p.peekn(2).txt != ":types" {
+	if !p.acceptNamedList(":types") {
 		return
 	}
-	p.junk(2)
 	types = p.parseTypedListString(tokId)
 	p.expect(tokClose)
 	return
@@ -136,11 +141,9 @@ func (p *parser) parseTypesDef() (types []tname) {
 
 func (p *parser) parseConstsDef() (consts []tname) {
 	consts = make([]tname, 0)
-
-	if p.peek().typ != tokOpen || p.peekn(2).txt != ":constants" {
+	if !p.acceptNamedList(":constants") {
 		return
 	}
-	p.junk(2)
 	consts = p.parseTypedListString(tokId)
 	p.expect(tokClose)
 	return
@@ -148,11 +151,9 @@ func (p *parser) parseConstsDef() (consts []tname) {
 
 func (p *parser) parsePredsDef() (preds []pred) {
 	preds = make([]pred, 0)
-
-	if p.peek().typ != tokOpen || p.peekn(2).txt != ":predicates" {
+	if !p.acceptNamedList(":predicates") {
 		return
 	}
-	p.junk(2)
 	preds = append(preds, p.parseAtomicFormSkele())
 	for p.peek().typ == tokOpen {
 		preds = append(preds, p.parseAtomicFormSkele())

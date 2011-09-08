@@ -14,27 +14,26 @@ const whiteSpace = " \t\n\r"
 
 const (
 	tokEof       = eof
-	tokErr ttype = iota
-	tokOpen
-	tokClose
-	tokMinus
+	tokOpen ttype = '('
+	tokClose ttype = ')'
+	tokMinus ttype = '-'
+	tokErr ttype = iota + 255
 	tokId
 	tokQid
 	tokCid
 	tokNum
-	tokStr
 )
 
 var (
 	ttypeNames = map[ttype]string{
-		tokOpen:  "Open",
-		tokClose: "Close",
-		tokMinus: "Minus",
-		tokId:    "Id",
-		tokQid:   "Qid",
-		tokCid:   "Cid",
-		tokNum:   "Num",
-		tokStr:   "Str",
+		tokErr: "error",
+		tokOpen: "'('",
+		tokClose: "')'",
+		tokMinus: "'-'",
+		tokId:    "identifier",
+		tokQid:   "?identifier",
+		tokCid:   ":identifier",
+		tokNum:   "number",
 	}
 
 	runeToks = map[int]ttype{
@@ -45,7 +44,7 @@ var (
 )
 
 func (t ttype) String() string {
-	return "tok" + ttypeNames[t]
+	return ttypeNames[t]
 }
 
 type token struct {
@@ -55,6 +54,10 @@ type token struct {
 }
 
 func (t token) String() string {
+	
+	if _, ok := runeToks[int(t.typ)]; ok  {
+		return fmt.Sprintf("%v", t.typ)
+	}
 	if len(t.txt) > 10 {
 		return fmt.Sprintf("%v [%10q...]", t.typ, t.txt)
 	}

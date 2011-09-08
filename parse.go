@@ -119,7 +119,7 @@ func (p *parser) parseDomain() *domain {
 		d.acts = append(d.acts, p.parseActionDef())
 	}
 
-	//p.expect(tokClose)
+	p.expect(tokClose)
 	return d
 }
 

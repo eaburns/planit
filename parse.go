@@ -5,8 +5,8 @@ import (
 )
 
 type parser struct {
-	lex *lexer
-	peeks [2]token
+	lex    *lexer
+	peeks  [2]token
 	npeeks int
 }
 
@@ -88,7 +88,7 @@ func (p *parser) expectId(s string) token {
 	} else if s[0] == '?' {
 		typ = tokQid
 	}
-	if t.typ != typ || t.txt != s{
+	if t.typ != typ || t.txt != s {
 		p.errorf("expected identifier [\"%s\"], got %v", s, t)
 	}
 	return p.next()
@@ -98,12 +98,27 @@ func (p *parser) parseDomain() *domain {
 	p.expect(tokOpen)
 	p.expectId("define")
 	d := &domain{
-		name: p.parseDomainName(),
+		name:   p.parseDomainName(),
+		reqs:   p.parseReqsDef(),
+		types:  p.parseTypesDef(),
+		consts: p.parseConstsDef(),
+		preds:  p.parsePredsDef(),
+		acts:   make([]action, 0),
 	}
-	d.reqs = p.parseReqsDef()
-	d.types = p.parseTypesDef()
-	d.consts = p.parseConstsDef()
-	d.preds = p.parsePredsDef()
+	// Ignore :functions for now
+	if p.acceptNamedList(":functions") {
+		for nesting := 1; nesting > 0; {
+			switch p.next().typ {
+			case tokClose:
+				nesting--
+			case tokOpen:
+				nesting++
+			}
+		}
+	}
+	for p.peek().typ == tokOpen {
+		d.acts = append(d.acts, p.parseActionDef())
+	}
 
 	//p.expect(tokClose)
 	return d
@@ -165,25 +180,194 @@ func (p *parser) parsePredsDef() (preds []pred) {
 func (p *parser) parseAtomicFormSkele() pred {
 	p.expect(tokOpen)
 	pred := pred{
-		name: p.expect(tokId).txt,
+		name:  p.expect(tokId).txt,
 		parms: p.parseTypedListString(tokQid),
 	}
 	p.expect(tokClose)
 	return pred
 }
 
-func (p *parser) parseType() []string {
-	if _, ok := p.accept(tokMinus); !ok {
-		return []string{"object"}
+func (p *parser) parseActionDef() action {
+	p.expect(tokOpen)
+	p.expectId(":action")
+
+	act := action{name: p.expect(tokId).txt, parms: p.parseActParms()}
+
+	if p.peek().txt == ":precondition" {
+		p.junk(1)
+		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
+			p.junk(2)
+		} else {
+			act.prec = p.parsePreGd()
+		}
 	}
-	if _, ok := p.accept(tokOpen); ok {
-		p.expectId("either")
-		lst := p.parseStringPlus(tokId)
+	if p.peek().txt == ":effect" {
+		p.junk(1)
+		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
+			p.junk(2)
+		} else {
+			act.effect = p.parseEffect()
+		}
+	}
+
+	p.expect(tokClose)
+	return act
+}
+
+func (p *parser) parseActParms() []tname {
+	p.expectId(":parameters")
+	p.expect(tokOpen)
+	res := p.parseTypedListString(tokQid)
+	p.expect(tokClose)
+	return res
+}
+
+func (p *parser) parsePreGd() (res *gd) {
+	parseNested := func(p *parser) *gd { return p.parsePreGd() }
+	switch {
+	case p.acceptNamedList("and"):
+		res = p.parseAndGd(parseNested)
+	case p.acceptNamedList("forall"):
+		res = p.parseQuantGd(gdForall, parseNested)
+	default:
+		res = p.parsePrefGd()
+	}
+	return
+}
+
+func (p *parser) parsePrefGd() *gd {
+	return p.parseGd()
+}
+
+func (p *parser) parseGd() (res *gd) {
+	parseNested := func(p *parser) *gd { return p.parseGd() }
+	switch {
+	case p.acceptNamedList("and"):
+		res = p.parseAndGd(parseNested)
+	case p.acceptNamedList("or"):
+		res = p.parseOrGd(parseNested)
+	case p.acceptNamedList("not"):
+		res = &gd{typ: gdNot, left: p.parseGd()}
 		p.expect(tokClose)
-		return lst
+	case p.acceptNamedList("imply"):
+		res = &gd{
+			typ:   gdOr,
+			left:  &gd{typ: gdNot, left: p.parseGd()},
+			right: p.parseGd(),
+		}
+		p.expect(tokClose)
+	case p.acceptNamedList("exists"):
+		res = p.parseQuantGd(gdExists, parseNested)
+	case p.acceptNamedList("forall"):
+		res = p.parseQuantGd(gdForall, parseNested)
+	default:
+		p.expect(tokOpen)
+		res = &gd{
+			typ:   gdPred,
+			name:  p.expect(tokId).txt,
+			parms: p.parseTerms(),
+		}
+		p.expect(tokClose)
 	}
-	t := p.expect(tokId)
-	return []string{t.txt}
+	return
+}
+
+func (p *parser) parseAndGd(nested func(*parser) *gd) *gd {
+	conj := make([]*gd, 0)
+	for p.peek().typ == tokOpen {
+		conj = append(conj, nested(p))
+	}
+	res := seqAnd(conj)
+
+	p.expect(tokClose)
+	return res
+}
+
+func seqAnd(conj []*gd) (res *gd) {
+	switch len(conj) {
+	case 0:
+		res = &gd{typ: gdTrue}
+	case 1:
+		res = conj[0]
+	default:
+		res = &gd{typ: gdAnd, left: conj[0], right: seqAnd(conj[1:])}
+	}
+	return
+}
+
+func (p *parser) parseOrGd(nested func(*parser) *gd) *gd {
+	disj := make([]*gd, 0)
+	for p.peek().typ == tokOpen  {
+		disj = append(disj, nested(p))
+	}
+	res := seqOr(disj)
+
+	p.expect(tokClose)
+	return res
+}
+
+func seqOr(disj []*gd) (res *gd) {
+	switch len(disj) {
+	case 0:
+		res = &gd{typ: gdFalse}
+	case 1:
+		res = disj[0]
+	default:
+		res = &gd{typ: gdOr, left: disj[0], right: seqOr(disj[1:])}
+	}
+	return
+}
+
+func (p *parser) parseQuantGd(q gdtype, nested func(*parser) *gd) *gd {
+	res := &gd{typ: gdForall}
+
+	p.expect(tokOpen)
+	vrs := p.parseTypedListString(tokQid)
+	p.expect(tokClose)
+
+	bottom := res
+	for i, vr := range vrs {
+		bottom.vr = vr
+		if i < len(vrs)-1 {
+			bottom.left = &gd{typ: q}
+			bottom = bottom.left
+		}
+	}
+
+	bottom.left = nested(p)
+	p.expect(tokClose)
+	return res
+}
+
+func (p *parser) parseTerms() []string {
+	lst := make([]string, 0)
+	for {
+		if t, ok := p.accept(tokId); ok {
+			lst = append(lst, t.txt)
+			continue
+		}
+		if t, ok := p.accept(tokQid); ok {
+			lst = append(lst, t.txt)
+			continue
+		}
+		break
+	}
+	return lst
+
+}
+
+func (p *parser) parseEffect() *effect {
+	// ignore
+	p.expect(tokOpen)
+	for nesting := 1; nesting > 0; {
+		switch p.next().typ {
+		case tokClose:
+			nesting--
+		case tokOpen:
+			nesting++
+		}
+	}
+	return nil
 }
 
 func (p *parser) parseTypedListString(typ ttype) []tname {
@@ -200,6 +384,20 @@ func (p *parser) parseTypedListString(typ ttype) []tname {
 		}
 	}
 	return lst
+}
+
+func (p *parser) parseType() []string {
+	if _, ok := p.accept(tokMinus); !ok {
+		return []string{"object"}
+	}
+	if _, ok := p.accept(tokOpen); ok {
+		p.expectId("either")
+		lst := p.parseStringPlus(tokId)
+		p.expect(tokClose)
+		return lst
+	}
+	t := p.expect(tokId)
+	return []string{t.txt}
 }
 
 func (p *parser) parseStringPlus(typ ttype) []string {

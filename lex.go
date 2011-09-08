@@ -13,11 +13,11 @@ const eof = -1
 const whiteSpace = " \t\n\r"
 
 const (
-	tokEof       = eof
-	tokOpen ttype = '('
+	tokEof         = eof
+	tokOpen  ttype = '('
 	tokClose ttype = ')'
 	tokMinus ttype = '-'
-	tokErr ttype = iota + 255
+	tokErr   ttype = iota + 255
 	tokId
 	tokQid
 	tokCid
@@ -26,8 +26,8 @@ const (
 
 var (
 	ttypeNames = map[ttype]string{
-		tokErr: "error",
-		tokOpen: "'('",
+		tokErr:   "error",
+		tokOpen:  "'('",
 		tokClose: "')'",
 		tokMinus: "'-'",
 		tokId:    "identifier",
@@ -54,8 +54,8 @@ type token struct {
 }
 
 func (t token) String() string {
-	
-	if _, ok := runeToks[int(t.typ)]; ok  {
+
+	if _, ok := runeToks[int(t.typ)]; ok {
 		return fmt.Sprintf("%v", t.typ)
 	}
 	if len(t.txt) > 10 {
@@ -75,9 +75,9 @@ type lexer struct {
 
 func lex(name, txt string) *lexer {
 	return &lexer{
-		name:  name,
-		txt:   txt,
-		lno:   1,
+		name: name,
+		txt:  txt,
+		lno:  1,
 	}
 }
 

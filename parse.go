@@ -272,19 +272,19 @@ func (p *parser) parseAndGd(nested func(*parser) gd) gd {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	res := seqAnd(conj)
+	res := seqAndGd(conj)
 	p.expect(tokClose)
 	return res
 }
 
-func seqAnd(conj []gd) (res gd) {
+func seqAndGd(conj []gd) (res gd) {
 	switch len(conj) {
 	case 0:
 		res = gdTrue(1)
 	case 1:
 		res = conj[0]
 	default:
-		res = gdAnd{left: conj[0], right: seqAnd(conj[1:])}
+		res = gdAnd{left: conj[0], right: seqAndGd(conj[1:])}
 	}
 	return
 }
@@ -294,20 +294,20 @@ func (p *parser) parseOrGd(nested func(*parser) gd) gd {
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
 	}
-	res := seqOr(disj)
+	res := seqOrGd(disj)
 
 	p.expect(tokClose)
 	return res
 }
 
-func seqOr(disj []gd) (res gd) {
+func seqOrGd(disj []gd) (res gd) {
 	switch len(disj) {
 	case 0:
 		res = gdFalse(0)
 	case 1:
 		res = disj[0]
 	default:
-		res = gdOr{left: disj[0], right: seqOr(disj[1:])}
+		res = gdOr{left: disj[0], right: seqOrGd(disj[1:])}
 	}
 	return
 }
@@ -369,18 +369,147 @@ func (p *parser) parseTerms() []string {
 
 }
 
-func (p *parser) parseEffect() *effect {
-	// ignore
+func (p *parser) parseEffect() effect {
+	if p.acceptNamedList("and") {
+		parseNested := func(p *parser) effect {
+			return p.parseCeffect()
+		}
+		return p.parseAndEffect(parseNested)
+	}
+	return p.parseCeffect()
+}
+
+func (p *parser) parseAndEffect(nested func(*parser) effect) effect {
+	conj := make([]effect, 0)
+	for p.peek().typ == tokOpen {
+		conj = append(conj, nested(p))
+	}
+	res := seqAndEffect(conj)
+	p.expect(tokClose)
+	return res
+}
+
+func seqAndEffect(conj []effect) (res effect) {
+	switch len(conj) {
+	case 0:
+		res = effNone(0)
+	case 1:
+		res = conj[0]
+	default:
+		res = effAnd{left: conj[0], right: seqAndEffect(conj[1:])}
+	}
+	return
+}
+
+func (p *parser) parseCeffect() (res effect) {
+	switch {
+	case p.acceptNamedList("forall"):
+		parseNested := func(p *parser) effect {
+			return p.parseEffect()
+		}
+		res = p.parseForallEffect(parseNested)
+	case p.acceptNamedList("when"):
+		parseNested := func(p *parser) effect {
+			return p.parseCondEffect()
+		}
+		res = p.parseWhen(parseNested)
+	default:
+		res = p.parsePeffect()
+	}
+	return
+}
+
+func (p *parser) parseForallEffect(nested func(*parser) effect) effect {
 	p.expect(tokOpen)
-	for nesting := 1; nesting > 0; {
-		switch p.next().typ {
-		case tokClose:
-			nesting--
-		case tokOpen:
-			nesting++
+	vrs := p.parseTypedListString(tokQid)
+	p.expect(tokClose)
+
+	res := effForall{}
+	bottom := res
+	for i, vr := range vrs {
+		bottom.vr = vr
+		if i < len(vrs)-1 {
+			bottom.eff = effForall{}
+			bottom = bottom.eff.(effForall)
 		}
 	}
-	return nil
+
+	bottom.eff = nested(p)
+	p.expect(tokClose)
+	return res
+}
+
+func (p *parser) parseWhen(nested func(*parser) effect) effect {
+	res := effWhen{
+		gd: p.parseGd(),
+	}
+	res.eff = nested(p)
+	p.expect(tokClose)
+	return res
+}
+
+var assignOps = map[string]assignOp {
+//	"assign": opAssign,
+//	"scale-up": opScaleUp,
+//	"scale-down": opScaleDown,
+//	"decrease": opDecrease,
+	// Just support increase for now for :action-costs
+	"increase": opIncrease,
+}
+
+func (p *parser) parsePeffect() effect {
+	if _, ok := assignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
+		return p.parseAssign()
+	}
+	pos := true
+	if p.acceptNamedList("not") {
+		pos = false
+	}
+	p.expect(tokOpen)
+	res := effLiteral{
+		pos:   pos,
+		name:  p.expect(tokId).txt,
+		parms: p.parseTerms(),
+	}
+	if !pos {
+		p.expect(tokClose)
+	}
+	p.expect(tokClose)
+	return res
+}
+
+func (p *parser) parseAssign() effect {
+	p.expect(tokOpen)
+	res := effAssign{
+		op: assignOps[p.expect(tokId).txt],
+		lval: p.parseFhead(),
+		rval: p.parseFexp(),
+	}
+	p.expect(tokClose)
+	return res
+}
+
+func (p *parser) parseCondEffect() effect {
+	if p.acceptNamedList("and") {
+		parseNested := func(p *parser) effect {
+			return p.parsePeffect()
+		}
+		return p.parseAndEffect(parseNested)
+	}
+	return p.parsePeffect()
+}
+
+func (p *parser) parseFhead() fhead {
+	if _, ok := p.accept(tokOpen); !ok {
+		return fhead(p.expect(tokId).txt)
+	}
+	name := p.expect(tokId).txt
+	p.expect(tokClose)
+	return fhead(name)
+}
+
+func (p *parser) parseFexp() fexp {
+	return fexp(p.expect(tokNum).txt)
 }
 
 func (p *parser) parseTypedListString(typ tokenType) []typedName {

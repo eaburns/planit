@@ -23,7 +23,7 @@ type action struct {
 	name   string
 	parms  []typedName
 	prec   gd
-	effect *effect
+	effect effect
 }
 
 type gd interface{}
@@ -54,4 +54,47 @@ type gdLiteral struct {
 	parms []string
 }
 
-type effect int
+type effect interface{}
+
+type effBinary struct {
+	left, right effect
+}
+
+type effUnary struct {
+	eff effect
+}
+
+type effNone int
+type effAnd effBinary
+type effForall struct {
+	vr typedName
+	effUnary
+}
+type effWhen struct {
+	gd gd
+	effUnary
+}
+type effLiteral struct {
+	pos bool
+	name string
+	parms []string
+}
+
+type assignOp int
+
+const (
+	opAssign assignOp = iota
+	opScaleUp
+	opScaleDown
+	opIncrease
+	opDecrease
+)
+
+type fhead string	// Just total-cost for now
+type fexp string	// Just a number for now
+
+type effAssign struct {
+	op assignOp
+	lval fhead
+	rval fexp
+}

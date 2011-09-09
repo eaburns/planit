@@ -448,11 +448,11 @@ func (p *parser) parseWhen(nested func(*parser) effect) effect {
 	return res
 }
 
-var assignOps = map[string]assignOp {
-//	"assign": opAssign,
-//	"scale-up": opScaleUp,
-//	"scale-down": opScaleDown,
-//	"decrease": opDecrease,
+var assignOps = map[string]assignOp{
+	//	"assign": opAssign,
+	//	"scale-up": opScaleUp,
+	//	"scale-down": opScaleDown,
+	//	"decrease": opDecrease,
 	// Just support increase for now for :action-costs
 	"increase": opIncrease,
 }
@@ -481,7 +481,7 @@ func (p *parser) parsePeffect() effect {
 func (p *parser) parseAssign() effect {
 	p.expect(tokOpen)
 	res := effAssign{
-		op: assignOps[p.expect(tokId).txt],
+		op:   assignOps[p.expect(tokId).txt],
 		lval: p.parseFhead(),
 		rval: p.parseFexp(),
 	}

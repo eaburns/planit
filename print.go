@@ -77,11 +77,11 @@ func (eff effLiteral) String() string {
 }
 
 var assignOpNames = map[assignOp]string{
-	opAssign: "opAssign",
-	opScaleUp: "opScaleUp",
+	opAssign:    "opAssign",
+	opScaleUp:   "opScaleUp",
 	opScaleDown: "opScaleDown",
-	opIncrease: "opIncrease",
-	opDecrease: "opDecrease",
+	opIncrease:  "opIncrease",
+	opDecrease:  "opDecrease",
 }
 
 func (o assignOp) String() string {

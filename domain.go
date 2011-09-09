@@ -75,8 +75,8 @@ type effWhen struct {
 	effUnary
 }
 type effLiteral struct {
-	pos bool
-	name string
+	pos   bool
+	name  string
 	parms []string
 }
 
@@ -90,11 +90,11 @@ const (
 	opDecrease
 )
 
-type fhead string	// Just total-cost for now
-type fexp string	// Just a number for now
+type fhead string // Just total-cost for now
+type fexp string  // Just a number for now
 
 type effAssign struct {
-	op assignOp
+	op   assignOp
 	lval fhead
 	rval fexp
 }

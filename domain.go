@@ -49,7 +49,8 @@ type gdOr gdBinary
 type gdNot gdUnary
 type gdForall gdQuant
 type gdExists gdQuant
-type gdPred struct {
+type gdLiteral struct {
+	pos bool
 	name string
 	parms []string
 }

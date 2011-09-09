@@ -257,7 +257,8 @@ func (p *parser) parseGd() (res gd) {
 		res = p.parseForallGd(parseNested)
 	default:
 		p.expect(tokOpen)
-		res = gdPred{
+		res = gdLiteral{
+			pos: true,
 			name:  p.expect(tokId).txt,
 			parms: p.parseTerms(),
 		}

@@ -42,7 +42,7 @@ func (gd gdExists) String() string {
 	return fmt.Sprintf("gdExists[{%v}", gdQuant(gd))
 }
 
-func (gd gdPred) String() string {
-	return fmt.Sprintf("gdPred{name: %v, parms: %v}",
-		gd.name, gd.parms)
+func (gd gdLiteral) String() string {
+	return fmt.Sprintf("gdPred{pos: %t, name: %s, parms: %v}",
+		gd.pos, gd.name, gd.parms)
 }

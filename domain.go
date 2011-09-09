@@ -95,6 +95,15 @@ const (
 	opDecrease
 )
 
+var assignOps = map[string]assignOp{
+	//	"assign": opAssign,
+	//	"scale-up": opScaleUp,
+	//	"scale-down": opScaleDown,
+	//	"decrease": opDecrease,
+	// Just support increase for now for :action-costs
+	"increase": opIncrease,
+}
+
 // Just total-cost for now
 type fhead struct {
 	name string

@@ -450,15 +450,6 @@ func (p *parser) parseWhen(nested func(*parser) effect) effect {
 	return res
 }
 
-var assignOps = map[string]assignOp{
-	//	"assign": opAssign,
-	//	"scale-up": opScaleUp,
-	//	"scale-down": opScaleDown,
-	//	"decrease": opDecrease,
-	// Just support increase for now for :action-costs
-	"increase": opIncrease,
-}
-
 func (p *parser) parsePeffect() effect {
 	if _, ok := assignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
 		return p.parseAssign()

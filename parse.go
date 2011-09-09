@@ -283,7 +283,6 @@ func (p *parser) parseTerms() (lst []term) {
 		break
 	}
 	return
-
 }
 
 func (p *parser) parseAndGd(nested func(*parser) gd) gd {

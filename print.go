@@ -43,6 +43,6 @@ func (gd gdExists) String() string {
 }
 
 func (gd gdLiteral) String() string {
-	return fmt.Sprintf("gdPred{pos: %t, name: %s, parms: %v}",
+	return fmt.Sprintf("gdLiteral{pos: %t, name: %s, parms: %v}",
 		gd.pos, gd.name, gd.parms)
 }

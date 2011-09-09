@@ -504,12 +504,12 @@ func (p *parser) parseProblem() *problem {
 	p.expect(tokOpen)
 	p.expectId("define")
 	prob := &problem{
-		name: p.parseProbName(),
+		name:   p.parseProbName(),
 		domain: p.parseProbDomain(),
-		reqs: p.parseReqsDef(),
-		objs: p.parseObjsDecl(),
-		init: p.parseInit(),
-		goal: p.parseGoal(),
+		reqs:   p.parseReqsDef(),
+		objs:   p.parseObjsDecl(),
+		init:   p.parseInit(),
+		goal:   p.parseGoal(),
 		metric: p.parseMetric(),
 	}
 	p.expect(tokClose)
@@ -534,7 +534,7 @@ func (p *parser) parseProbDomain() string {
 
 func (p *parser) parseObjsDecl() (objs []typedName) {
 	if p.acceptNamedList(":objects") {
-		objs = p.parseTypedListString(tokId) 
+		objs = p.parseTypedListString(tokId)
 		p.expect(tokClose)
 	}
 	return

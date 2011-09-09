@@ -77,7 +77,7 @@ func (eff effForall) String() string {
 			eff.varName, eff.effUnary)
 	}
 	return fmt.Sprintf("effForall{varName:%v, varNum: %v}",
-			eff.varName, eff.varNum, eff.effUnary)
+		eff.varName, eff.varNum, eff.effUnary)
 }
 
 func (eff effWhen) String() string {

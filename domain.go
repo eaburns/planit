@@ -29,7 +29,12 @@ type action struct {
 type literal struct {
 	pos   bool
 	name  string
-	parms []string
+	parms []term
+}
+
+type term struct {
+	name string
+	num int
 }
 
 type gd interface{}
@@ -43,7 +48,8 @@ type gdUnary struct {
 }
 
 type gdQuant struct {
-	vr typedName
+	varName typedName
+	varNum int
 	gdUnary
 }
 
@@ -69,7 +75,8 @@ type effUnary struct {
 type effNone int
 type effAnd effBinary
 type effForall struct {
-	vr typedName
+	varName typedName
+	varNum int
 	effUnary
 }
 type effWhen struct {

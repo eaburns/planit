@@ -102,7 +102,6 @@ func (p *parser) parseDomain() *domain {
 		types:  p.parseTypesDef(),
 		consts: p.parseConstsDef(),
 		preds:  p.parsePredsDef(),
-		acts:   make([]action, 0),
 	}
 	// Ignore :functions for now
 	if p.acceptNamedList(":functions") {
@@ -132,7 +131,6 @@ func (p *parser) parseDomainName() string {
 }
 
 func (p *parser) parseReqsDef() (reqs []string) {
-	reqs = make([]string, 0)
 	if !p.acceptNamedList(":requirements") {
 		return
 	}
@@ -144,7 +142,6 @@ func (p *parser) parseReqsDef() (reqs []string) {
 }
 
 func (p *parser) parseTypesDef() (types []typedName) {
-	types = make([]typedName, 0)
 	if !p.acceptNamedList(":types") {
 		return
 	}
@@ -154,7 +151,6 @@ func (p *parser) parseTypesDef() (types []typedName) {
 }
 
 func (p *parser) parseConstsDef() (consts []typedName) {
-	consts = make([]typedName, 0)
 	if !p.acceptNamedList(":constants") {
 		return
 	}
@@ -164,7 +160,6 @@ func (p *parser) parseConstsDef() (consts []typedName) {
 }
 
 func (p *parser) parsePredsDef() (preds []pred) {
-	preds = make([]pred, 0)
 	if !p.acceptNamedList(":predicates") {
 		return
 	}
@@ -352,8 +347,7 @@ func (p *parser) parseExistsGd(nested func(*parser) gd) gd {
 	return res
 }
 
-func (p *parser) parseTerms() []string {
-	lst := make([]string, 0)
+func (p *parser) parseTerms() (lst []string) {
 	for {
 		if t, ok := p.accept(tokId); ok {
 			lst = append(lst, t.txt)
@@ -365,7 +359,7 @@ func (p *parser) parseTerms() []string {
 		}
 		break
 	}
-	return lst
+	return
 
 }
 
@@ -512,9 +506,34 @@ func (p *parser) parseFexp() fexp {
 	return fexp(p.expect(tokNum).txt)
 }
 
-func (p *parser) parseTypedListString(typ tokenType) []typedName {
-	lst := make([]typedName, 0)
+func (p *parser) parseProblem() *problem {
+	p.expect(tokOpen)
+	p.expectId("define")
+	prob := &problem{
+		domain: p.parseProblemDomain(),
+		reqs: p.parseReqsDef(),
+		objs: p.parseObjsDecl(),
+	}
+	p.expect(tokClose)
+	return prob
+}
 
+func (p *parser) parseProblemDomain() string {
+	p.expect(tokOpen)
+	p.expectId(":domain")
+	name := p.expect(tokId).txt
+	p.expect(tokClose)
+	return name
+}
+
+func (p *parser) parseObjsDecl() (objs []typedName) {
+	if !p.acceptNamedList(":objects") {
+		return
+	}
+	return
+}
+
+func (p *parser) parseTypedListString(typ tokenType) (lst []typedName) {
 	for {
 		names := p.parseStrings(typ)
 		if len(names) == 0 {
@@ -548,8 +567,7 @@ func (p *parser) parseStringPlus(typ tokenType) []string {
 	return lst
 }
 
-func (p *parser) parseStrings(typ tokenType) []string {
-	lst := make([]string, 0)
+func (p *parser) parseStrings(typ tokenType) (lst []string) {
 	for t, ok := p.accept(typ); ok; t, ok = p.accept(typ) {
 		lst = append(lst, t.txt)
 	}

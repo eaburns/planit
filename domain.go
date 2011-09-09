@@ -98,3 +98,9 @@ type effAssign struct {
 	lval fhead
 	rval fexp
 }
+
+type problem struct {
+	domain string
+	reqs []string
+	objs []typedName
+}

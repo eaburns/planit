@@ -64,19 +64,19 @@ func (t token) String() string {
 }
 
 type lexer struct {
-	name  string
-	txt   string
-	start int
-	pos   int
-	lineno   int
-	width int
+	name   string
+	txt    string
+	start  int
+	pos    int
+	lineno int
+	width  int
 }
 
 func lex(name, txt string) *lexer {
 	return &lexer{
-		name: name,
-		txt:  txt,
-		lineno:  1,
+		name:   name,
+		txt:    txt,
+		lineno: 1,
 	}
 }
 

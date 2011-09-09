@@ -1,33 +1,32 @@
 package main
 
 type domain struct {
-	name string
-	reqs []string
-	types []typedName
+	name   string
+	reqs   []string
+	types  []typedName
 	consts []typedName
-	preds []pred
-	acts []action
+	preds  []pred
+	acts   []action
 }
 
 type typedName struct {
 	name string
-	typ []string
+	typ  []string
 }
 
 type pred struct {
-	name string
+	name  string
 	parms []typedName
 }
 
 type action struct {
-	name string
-	parms []typedName
-	prec gd
+	name   string
+	parms  []typedName
+	prec   gd
 	effect *effect
 }
 
-type gd interface {
-}
+type gd interface{}
 
 type gdBinary struct {
 	left, right gd
@@ -50,8 +49,8 @@ type gdNot gdUnary
 type gdForall gdQuant
 type gdExists gdQuant
 type gdLiteral struct {
-	pos bool
-	name string
+	pos   bool
+	name  string
 	parms []string
 }
 

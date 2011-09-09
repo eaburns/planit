@@ -246,10 +246,10 @@ func (p *parser) parseGd() (res gd) {
 	case p.acceptNamedList("or"):
 		res = p.parseOrGd(parseNested)
 	case p.acceptNamedList("not"):
-		res = gdNot{ expr: p.parseGd() }
+		res = gdNot{expr: p.parseGd()}
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
-		res = gdOr{left:  gdNot{expr: p.parseGd()},right: p.parseGd(),}
+		res = gdOr{left: gdNot{expr: p.parseGd()}, right: p.parseGd()}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
 		res = p.parseExistsGd(parseNested)
@@ -258,7 +258,7 @@ func (p *parser) parseGd() (res gd) {
 	default:
 		p.expect(tokOpen)
 		res = gdLiteral{
-			pos: true,
+			pos:   true,
 			name:  p.expect(tokId).txt,
 			parms: p.parseTerms(),
 		}
@@ -291,7 +291,7 @@ func seqAnd(conj []gd) (res gd) {
 
 func (p *parser) parseOrGd(nested func(*parser) gd) gd {
 	disj := make([]gd, 0)
-	for p.peek().typ == tokOpen  {
+	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
 	}
 	res := seqOr(disj)

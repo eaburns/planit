@@ -489,11 +489,11 @@ func (p *parser) parseCondEffect() effect {
 
 func (p *parser) parseFhead() fhead {
 	if _, ok := p.accept(tokOpen); !ok {
-		return fhead(p.expect(tokId).txt)
+		return fhead{name: p.expect(tokId).txt}
 	}
 	name := p.expect(tokId).txt
 	p.expect(tokClose)
-	return fhead(name)
+	return fhead{name: name}
 }
 
 func (p *parser) parseFexp() fexp {

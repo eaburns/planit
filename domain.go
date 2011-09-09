@@ -95,7 +95,11 @@ const (
 	opDecrease
 )
 
-type fhead string // Just total-cost for now
+// Just total-cost for now
+type fhead struct {
+	name string
+	num int
+}
 type fexp string  // Just a number for now
 
 type effAssign struct {

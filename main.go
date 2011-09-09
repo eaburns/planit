@@ -14,6 +14,7 @@ func main() {
 
 	l := lex("stdin", string(s))
 	p := parse(l)
-	d := p.parseDomain()
+//	d := p.parseDomain()
+	d := p.parseProblem()
 	fmt.Printf("%+v\n", d)
 }

@@ -26,6 +26,12 @@ type action struct {
 	effect effect
 }
 
+type literal struct {
+	pos   bool
+	name  string
+	parms []string
+}
+
 type gd interface{}
 
 type gdBinary struct {
@@ -48,11 +54,7 @@ type gdOr gdBinary
 type gdNot gdUnary
 type gdForall gdQuant
 type gdExists gdQuant
-type gdLiteral struct {
-	pos   bool
-	name  string
-	parms []string
-}
+type gdLiteral literal
 
 type effect interface{}
 
@@ -74,11 +76,7 @@ type effWhen struct {
 	gd gd
 	effUnary
 }
-type effLiteral struct {
-	pos   bool
-	name  string
-	parms []string
-}
+type effLiteral literal
 
 type assignOp int
 
@@ -100,7 +98,27 @@ type effAssign struct {
 }
 
 type problem struct {
+	name string
 	domain string
 	reqs []string
 	objs []typedName
+	init []initEl
+	goal gd
+	metric metric
+}
+
+type metric int
+
+const (
+	metricMakespan metric = iota
+	metricMinCost
+)
+
+type initEl interface {}
+
+type initLiteral literal
+
+type initEq struct {
+	lval fhead
+	rval string
 }

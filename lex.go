@@ -17,6 +17,7 @@ const (
 	tokOpen  tokenType = '('
 	tokClose tokenType = ')'
 	tokMinus tokenType = '-'
+	tokEq tokenType = '='
 	tokErr   tokenType = iota + 255
 	tokId
 	tokQid
@@ -30,6 +31,7 @@ var (
 		tokOpen:  "'('",
 		tokClose: "')'",
 		tokMinus: "'-'",
+		tokEq: "'='",
 		tokId:    "identifier",
 		tokQid:   "?identifier",
 		tokCid:   ":identifier",
@@ -40,6 +42,7 @@ var (
 		'(': tokOpen,
 		')': tokClose,
 		'-': tokMinus,
+		'=': tokEq,
 	}
 )
 

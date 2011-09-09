@@ -2,6 +2,11 @@ package main
 
 import "fmt"
 
+func (lit literal) String() string {
+	return fmt.Sprintf("literal{pos:%t, name:%s, parms:%v}",
+		lit.pos, lit.name, lit.parms)
+}
+
 func (gd gdBinary) String() string {
 	return fmt.Sprintf("left:%v, right:%v", gd.left, gd.right)
 }
@@ -43,8 +48,7 @@ func (gd gdExists) String() string {
 }
 
 func (gd gdLiteral) String() string {
-	return fmt.Sprintf("gdLiteral{pos:%t, name:%s, parms:%v}",
-		gd.pos, gd.name, gd.parms)
+	return fmt.Sprintf("%v", literal(gd))
 }
 
 func (eff effBinary) String() string {
@@ -69,11 +73,6 @@ func (eff effForall) String() string {
 
 func (eff effWhen) String() string {
 	return fmt.Sprintf("effWhen{gd:%v, }", eff.gd, eff.effUnary)
-}
-
-func (eff effLiteral) String() string {
-	return fmt.Sprintf("effLiteral{pos:%t, name:%s, parms:%v}",
-		eff.pos, eff.name, eff.parms)
 }
 
 var assignOpNames = map[assignOp]string{

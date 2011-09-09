@@ -131,43 +131,39 @@ func (p *parser) parseDomainName() string {
 }
 
 func (p *parser) parseReqsDef() (reqs []string) {
-	if !p.acceptNamedList(":requirements") {
-		return
+	if p.acceptNamedList(":requirements") {
+		for t, ok := p.accept(tokCid); ok; t, ok = p.accept(tokCid) {
+			reqs = append(reqs, t.txt)
+		}
+		p.expect(tokClose)
 	}
-	for t, ok := p.accept(tokCid); ok; t, ok = p.accept(tokCid) {
-		reqs = append(reqs, t.txt)
-	}
-	p.expect(tokClose)
 	return
 }
 
 func (p *parser) parseTypesDef() (types []typedName) {
-	if !p.acceptNamedList(":types") {
-		return
+	if p.acceptNamedList(":types") {
+		types = p.parseTypedListString(tokId)
+		p.expect(tokClose)
 	}
-	types = p.parseTypedListString(tokId)
-	p.expect(tokClose)
 	return
 }
 
 func (p *parser) parseConstsDef() (consts []typedName) {
-	if !p.acceptNamedList(":constants") {
-		return
+	if p.acceptNamedList(":constants") {
+		consts = p.parseTypedListString(tokId)
+		p.expect(tokClose)
 	}
-	consts = p.parseTypedListString(tokId)
-	p.expect(tokClose)
 	return
 }
 
 func (p *parser) parsePredsDef() (preds []pred) {
-	if !p.acceptNamedList(":predicates") {
-		return
-	}
-	preds = append(preds, p.parseAtomicFormSkele())
-	for p.peek().typ == tokOpen {
+	if p.acceptNamedList(":predicates") {
 		preds = append(preds, p.parseAtomicFormSkele())
+		for p.peek().typ == tokOpen {
+			preds = append(preds, p.parseAtomicFormSkele())
+		}
+		p.expect(tokClose)
 	}
-	p.expect(tokClose)
 	return
 }
 
@@ -251,15 +247,27 @@ func (p *parser) parseGd() (res gd) {
 	case p.acceptNamedList("forall"):
 		res = p.parseForallGd(parseNested)
 	default:
-		p.expect(tokOpen)
-		res = gdLiteral{
-			pos:   true,
-			name:  p.expect(tokId).txt,
-			parms: p.parseTerms(),
-		}
-		p.expect(tokClose)
+		res = gdLiteral(p.parseLiteral())
 	}
 	return
+}
+
+func (p *parser) parseLiteral() literal {
+	pos := true
+	if p.acceptNamedList("not") {
+		pos = false
+	}
+	p.expect(tokOpen)
+	res := literal{
+		pos:   pos,
+		name:  p.expect(tokId).txt,
+		parms: p.parseTerms(),
+	}
+	if !pos {
+		p.expect(tokClose)
+	}
+	p.expect(tokClose)
+	return res
 }
 
 func (p *parser) parseAndGd(nested func(*parser) gd) gd {
@@ -455,21 +463,7 @@ func (p *parser) parsePeffect() effect {
 	if _, ok := assignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
 		return p.parseAssign()
 	}
-	pos := true
-	if p.acceptNamedList("not") {
-		pos = false
-	}
-	p.expect(tokOpen)
-	res := effLiteral{
-		pos:   pos,
-		name:  p.expect(tokId).txt,
-		parms: p.parseTerms(),
-	}
-	if !pos {
-		p.expect(tokClose)
-	}
-	p.expect(tokClose)
-	return res
+	return effLiteral(p.parseLiteral())
 }
 
 func (p *parser) parseAssign() effect {
@@ -510,15 +504,27 @@ func (p *parser) parseProblem() *problem {
 	p.expect(tokOpen)
 	p.expectId("define")
 	prob := &problem{
-		domain: p.parseProblemDomain(),
+		name: p.parseProbName(),
+		domain: p.parseProbDomain(),
 		reqs: p.parseReqsDef(),
 		objs: p.parseObjsDecl(),
+		init: p.parseInit(),
+		goal: p.parseGoal(),
+		metric: p.parseMetric(),
 	}
 	p.expect(tokClose)
 	return prob
 }
 
-func (p *parser) parseProblemDomain() string {
+func (p *parser) parseProbName() string {
+	p.expect(tokOpen)
+	p.expectId("problem")
+	name := p.expect(tokId).txt
+	p.expect(tokClose)
+	return name
+}
+
+func (p *parser) parseProbDomain() string {
 	p.expect(tokOpen)
 	p.expectId(":domain")
 	name := p.expect(tokId).txt
@@ -527,8 +533,51 @@ func (p *parser) parseProblemDomain() string {
 }
 
 func (p *parser) parseObjsDecl() (objs []typedName) {
-	if !p.acceptNamedList(":objects") {
-		return
+	if p.acceptNamedList(":objects") {
+		objs = p.parseTypedListString(tokId) 
+		p.expect(tokClose)
+	}
+	return
+}
+
+func (p *parser) parseInit() (els []initEl) {
+	p.expect(tokOpen)
+	p.expectId(":init")
+	for p.peek().typ == tokOpen {
+		els = append(els, p.parseInitEl())
+	}
+	p.expect(tokClose)
+	return
+}
+
+func (p *parser) parseInitEl() initEl {
+	if p.acceptNamedList("=") {
+		eq := initEq{
+			lval: p.parseFhead(),
+			rval: p.expect(tokNum).txt,
+		}
+		p.expect(tokClose)
+		return eq
+	}
+	return initLiteral(p.parseLiteral())
+}
+
+func (p *parser) parseGoal() gd {
+	p.expect(tokOpen)
+	p.expectId(":goal")
+	g := p.parsePreGd()
+	p.expect(tokClose)
+	return g
+}
+
+func (p *parser) parseMetric() (m metric) {
+	if p.acceptNamedList(":metric") {
+		m = metricMinCost
+		p.expectId("minimize")
+		p.expect(tokOpen)
+		p.expectId("total-cost")
+		p.expect(tokClose)
+		p.expect(tokClose)
 	}
 	return
 }

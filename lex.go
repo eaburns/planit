@@ -7,17 +7,17 @@ import (
 	"unicode"
 )
 
-type ttype int
+type tokenType int
 
 const eof = -1
 const whiteSpace = " \t\n\r"
 
 const (
-	tokEof   ttype = eof
-	tokOpen  ttype = '('
-	tokClose ttype = ')'
-	tokMinus ttype = '-'
-	tokErr   ttype = iota + 255
+	tokEof   tokenType = eof
+	tokOpen  tokenType = '('
+	tokClose tokenType = ')'
+	tokMinus tokenType = '-'
+	tokErr   tokenType = iota + 255
 	tokId
 	tokQid
 	tokCid
@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	ttypeNames = map[ttype]string{
+	tokenTypeNames = map[tokenType]string{
 		tokErr:   "error",
 		tokOpen:  "'('",
 		tokClose: "')'",
@@ -36,19 +36,19 @@ var (
 		tokNum:   "number",
 	}
 
-	runeToks = map[int]ttype{
+	runeToks = map[int]tokenType{
 		'(': tokOpen,
 		')': tokClose,
 		'-': tokMinus,
 	}
 )
 
-func (t ttype) String() string {
-	return ttypeNames[t]
+func (t tokenType) String() string {
+	return tokenTypeNames[t]
 }
 
 type token struct {
-	typ ttype
+	typ tokenType
 	txt string
 }
 
@@ -125,7 +125,7 @@ func (l *lexer) acceptRun(s string) (any bool) {
 	return
 }
 
-func (l *lexer) makeToken(t ttype) token {
+func (l *lexer) makeToken(t tokenType) token {
 	tok := token{txt: l.txt[l.start:l.pos], typ: t}
 	l.start = l.pos
 	return tok
@@ -165,7 +165,7 @@ func (l *lexer) token() token {
 	panic("Unreachable")
 }
 
-func (l *lexer) lexIdent(t ttype) token {
+func (l *lexer) lexIdent(t tokenType) token {
 	for isIdRune(l.next()) {
 	}
 	l.backup()

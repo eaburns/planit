@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 )
 
+const dump = false
+
 func main() {
 	s, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -14,7 +16,9 @@ func main() {
 
 	l := lex("stdin", string(s))
 	p := parse(l)
-//	d := p.parseDomain()
-	d := p.parseProblem()
-	fmt.Printf("%+v\n", d)
+	d := p.parseDomain()
+//	d := p.parseProblem()
+	if (dump) {
+		fmt.Printf("%+v\n", d)
+	}
 }

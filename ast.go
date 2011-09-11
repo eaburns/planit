@@ -1,35 +1,35 @@
 package pddl
 
 type Domain struct {
-	Name   string
-	Reqs   []string
-	Types  []TypedName
-	Consts []TypedName
-	Preds  []Predicate
-	Acts   []Action
+	Name         string
+	Requirements []string
+	Types        []TypedName
+	Constants    []TypedName
+	Predicates   []Predicate
+	Actions      []Action
 }
 
 type TypedName struct {
 	Name string
-	Typ  []string
+	Type []string
 }
 
 type Predicate struct {
-	Name  string
-	Parms []TypedName
+	Name       string
+	Parameters []TypedName
 }
 
 type Action struct {
-	Name   string
-	Parms  []TypedName
-	Prec   Gd
-	Effect Effect
+	Name         string
+	Parameters   []TypedName
+	Precondition Gd
+	Effect       Effect
 }
 
 type Literal struct {
 	Positive   bool
-	Name  string
-	Parms []string
+	Name       string
+	Parameters []string
 }
 
 type Gd interface{}
@@ -101,7 +101,7 @@ var assignOps = map[string]AssignOp{
 type Fhead struct {
 	Name string
 }
-type Fexp string  // Just a number for now
+type Fexp string // Just a number for now
 
 type EffAssign struct {
 	Op   AssignOp
@@ -110,13 +110,13 @@ type EffAssign struct {
 }
 
 type problem struct {
-	Name string
-	Domain string
-	Reqs []string
-	Objs []TypedName
-	Init []InitEl
-	Goal Gd
-	Metric Metric
+	Name         string
+	Domain       string
+	Requirements []string
+	Objects      []TypedName
+	Init         []InitEl
+	Goal         Gd
+	Metric       Metric
 }
 
 type Metric int
@@ -126,7 +126,7 @@ const (
 	MetricMinCost
 )
 
-type InitEl interface {}
+type InitEl interface{}
 
 type InitLiteral Literal
 

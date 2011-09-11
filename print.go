@@ -3,8 +3,8 @@ package pddl
 import "fmt"
 
 func (lit Literal) String() string {
-	return fmt.Sprintf("Literal{Positive:%t, Name:%s, Parms:%v}",
-		lit.Positive, lit.Name, lit.Parms)
+	return fmt.Sprintf("Literal{Positive:%t, Name:%s, Parameters:%v}",
+		lit.Positive, lit.Name, lit.Parameters)
 }
 
 func (gd gdBinary) String() string {

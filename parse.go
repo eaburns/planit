@@ -97,11 +97,11 @@ func (p *Parser) ParseDomain() *Domain {
 	p.expect(tokOpen)
 	p.expectId("define")
 	d := &Domain{
-		Name:   p.parseDomainName(),
-		Reqs:   p.parseReqsDef(),
-		Types:  p.parseTypesDef(),
-		Consts: p.parseConstsDef(),
-		Preds:  p.parsePredsDef(),
+		Name:         p.parseDomainName(),
+		Requirements: p.parseReqsDef(),
+		Types:        p.parseTypesDef(),
+		Constants:    p.parseConstsDef(),
+		Predicates:   p.parsePredsDef(),
 	}
 	// Ignore :functions for now
 	if p.acceptNamedList(":functions") {
@@ -115,7 +115,7 @@ func (p *Parser) ParseDomain() *Domain {
 		}
 	}
 	for p.peek().typ == tokOpen {
-		d.Acts = append(d.Acts, p.parseActionDef())
+		d.Actions = append(d.Actions, p.parseActionDef())
 	}
 
 	p.expect(tokClose)
@@ -172,8 +172,8 @@ func (p *Parser) parsePredsDef() (Predicates []Predicate) {
 func (p *Parser) parseAtomicFormSkele() Predicate {
 	p.expect(tokOpen)
 	pred := Predicate{
-		Name:  p.expect(tokId).txt,
-		Parms: p.parseTypedListString(tokQid),
+		Name:       p.expect(tokId).txt,
+		Parameters: p.parseTypedListString(tokQid),
 	}
 	p.expect(tokClose)
 	return pred
@@ -183,14 +183,14 @@ func (p *Parser) parseActionDef() Action {
 	p.expect(tokOpen)
 	p.expectId(":action")
 
-	act := Action{Name: p.expect(tokId).txt, Parms: p.parseActParms()}
+	act := Action{Name: p.expect(tokId).txt, Parameters: p.parseActParms()}
 
 	if p.peek().txt == ":precondition" {
 		p.junk(1)
 		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
 			p.junk(2)
 		} else {
-			act.Prec = p.parsePreGd()
+			act.Precondition = p.parsePreGd()
 		}
 	}
 	if p.peek().txt == ":effect" {
@@ -262,8 +262,8 @@ func (p *Parser) parseLiteral() Literal {
 	p.expect(tokOpen)
 	res := Literal{
 		Positive:   pos,
-		Name:  p.expect(tokId).txt,
-		Parms: p.parseTerms(),
+		Name:       p.expect(tokId).txt,
+		Parameters: p.parseTerms(),
 	}
 	if !pos {
 		p.expect(tokClose)
@@ -496,13 +496,13 @@ func (p *Parser) ParseProblem() *problem {
 	p.expect(tokOpen)
 	p.expectId("define")
 	prob := &problem{
-		Name:   p.parseProbName(),
-		Domain: p.parseProbDomain(),
-		Reqs:   p.parseReqsDef(),
-		Objs:   p.parseObjsDecl(),
-		Init:   p.parseInit(),
-		Goal:   p.parseGoal(),
-		Metric: p.parseMetric(),
+		Name:         p.parseProbName(),
+		Domain:       p.parseProbDomain(),
+		Requirements: p.parseReqsDef(),
+		Objects:      p.parseObjsDecl(),
+		Init:         p.parseInit(),
+		Goal:         p.parseGoal(),
+		Metric:       p.parseMetric(),
 	}
 	p.expect(tokClose)
 	return prob
@@ -582,7 +582,7 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 		}
 		typ := p.parseType()
 		for _, n := range names {
-			lst = append(lst, TypedName{Name: n, Typ: typ})
+			lst = append(lst, TypedName{Name: n, Type: typ})
 		}
 	}
 	return lst

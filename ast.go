@@ -1,136 +1,136 @@
-package main
+package pddl
 
-type domain struct {
-	name   string
-	reqs   []string
-	types  []typedName
-	consts []typedName
-	preds  []pred
-	acts   []action
+type Domain struct {
+	Name   string
+	Reqs   []string
+	Types  []TypedName
+	Consts []TypedName
+	Preds  []Predicate
+	Acts   []Action
 }
 
-type typedName struct {
-	name string
-	typ  []string
+type TypedName struct {
+	Name string
+	Typ  []string
 }
 
-type pred struct {
-	name  string
-	parms []typedName
+type Predicate struct {
+	Name  string
+	Parms []TypedName
 }
 
-type action struct {
-	name   string
-	parms  []typedName
-	prec   gd
-	effect effect
+type Action struct {
+	Name   string
+	Parms  []TypedName
+	Prec   Gd
+	Effect Effect
 }
 
-type literal struct {
-	pos   bool
-	name  string
-	parms []string
+type Literal struct {
+	Positive   bool
+	Name  string
+	Parms []string
 }
 
-type gd interface{}
+type Gd interface{}
 
 type gdBinary struct {
-	left, right gd
+	Left, Right Gd
 }
 
 type gdUnary struct {
-	expr gd
+	Expr Gd
 }
 
 type gdQuant struct {
-	vr typedName
+	Variable TypedName
 	gdUnary
 }
 
-type gdTrue int
-type gdFalse int
-type gdAnd gdBinary
-type gdOr gdBinary
-type gdNot gdUnary
-type gdForall gdQuant
-type gdExists gdQuant
-type gdLiteral literal
+type GdTrue int
+type GdFalse int
+type GdAnd gdBinary
+type GdOr gdBinary
+type GdNot gdUnary
+type GdForall gdQuant
+type GdExists gdQuant
+type GdLiteral Literal
 
-type effect interface{}
+type Effect interface{}
 
 type effBinary struct {
-	left, right effect
+	Left, Right Effect
 }
 
 type effUnary struct {
-	eff effect
+	Effect Effect
 }
 
-type effNone int
-type effAnd effBinary
-type effForall struct {
-	vr typedName
+type EffNone int
+type EffAnd effBinary
+type EffForall struct {
+	Variable TypedName
 	effUnary
 }
-type effWhen struct {
-	gd gd
+type EffWhen struct {
+	Condition Gd
 	effUnary
 }
-type effLiteral literal
+type EffLiteral Literal
 
-type assignOp int
+type AssignOp int
 
 const (
-	opAssign assignOp = iota
-	opScaleUp
-	opScaleDown
-	opIncrease
-	opDecrease
+	OpAssign AssignOp = iota
+	OpScaleUp
+	OpScaleDown
+	OpIncrease
+	OpDecrease
 )
 
-var assignOps = map[string]assignOp{
-	//	"assign": opAssign,
-	//	"scale-up": opScaleUp,
-	//	"scale-down": opScaleDown,
-	//	"decrease": opDecrease,
-	// Just support increase for now for :action-costs
-	"increase": opIncrease,
+var assignOps = map[string]AssignOp{
+	//	"assign": OpAssign,
+	//	"scale-up": OpScaleUp,
+	//	"scale-down": OpScaleDown,
+	//	"decrease": OpDecrease,
+	// Just support increase for now for :Action-costs
+	"increase": OpIncrease,
 }
 
 // Just total-cost for now
-type fhead struct {
-	name string
+type Fhead struct {
+	Name string
 }
-type fexp string  // Just a number for now
+type Fexp string  // Just a number for now
 
-type effAssign struct {
-	op   assignOp
-	lval fhead
-	rval fexp
+type EffAssign struct {
+	Op   AssignOp
+	Lval Fhead
+	Rval Fexp
 }
 
 type problem struct {
-	name string
-	domain string
-	reqs []string
-	objs []typedName
-	init []initEl
-	goal gd
-	metric metric
+	Name string
+	Domain string
+	Reqs []string
+	Objs []TypedName
+	Init []InitEl
+	Goal Gd
+	Metric Metric
 }
 
-type metric int
+type Metric int
 
 const (
-	metricMakespan metric = iota
-	metricMinCost
+	MetricMakespan Metric = iota
+	MetricMinCost
 )
 
-type initEl interface {}
+type InitEl interface {}
 
-type initLiteral literal
+type InitLiteral Literal
 
-type initEq struct {
-	lval fhead
-	rval string
+type InitEq struct {
+	Lval Fhead
+	Rval string
 }

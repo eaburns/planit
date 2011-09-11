@@ -16,11 +16,7 @@ func (gd gdUnary) String() string {
 }
 
 func (gd gdQuant) String() string {
-	if gd.varNum == 0 {
-		return fmt.Sprintf("varName:%v, %v", gd.varName, gd.gdUnary)
-	}
-	return fmt.Sprintf("varName:%v, varNum: %v, %v",
-		gd.varName, gd.varNum, gd.gdUnary)
+	return fmt.Sprintf("varName:%v, %v", gd.vr, gd.gdUnary)
 }
 
 func (gdTrue) String() string {
@@ -72,12 +68,7 @@ func (eff effAnd) String() string {
 }
 
 func (eff effForall) String() string {
-	if eff.varNum == 0 {
-		return fmt.Sprintf("effForall{varName:%v, }",
-			eff.varName, eff.effUnary)
-	}
-	return fmt.Sprintf("effForall{varName:%v, varNum: %v}",
-		eff.varName, eff.varNum, eff.effUnary)
+	return fmt.Sprintf("effForall{varName:%v, }", eff.vr, eff.effUnary)
 }
 
 func (eff effWhen) String() string {

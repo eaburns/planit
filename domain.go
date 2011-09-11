@@ -29,12 +29,7 @@ type action struct {
 type literal struct {
 	pos   bool
 	name  string
-	parms []term
-}
-
-type term struct {
-	name string
-	num int
+	parms []string
 }
 
 type gd interface{}
@@ -48,8 +43,7 @@ type gdUnary struct {
 }
 
 type gdQuant struct {
-	varName typedName
-	varNum int
+	vr typedName
 	gdUnary
 }
 
@@ -75,8 +69,7 @@ type effUnary struct {
 type effNone int
 type effAnd effBinary
 type effForall struct {
-	varName typedName
-	varNum int
+	vr typedName
 	effUnary
 }
 type effWhen struct {
@@ -107,7 +100,6 @@ var assignOps = map[string]assignOp{
 // Just total-cost for now
 type fhead struct {
 	name string
-	num int
 }
 type fexp string  // Just a number for now
 

@@ -270,14 +270,14 @@ func (p *parser) parseLiteral() literal {
 	return res
 }
 
-func (p *parser) parseTerms() (lst []term) {
+func (p *parser) parseTerms() (lst []string) {
 	for {
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, term{name: t.txt})
+			lst = append(lst, t.txt)
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, term{name: t.txt})
+			lst = append(lst, t.txt)
 			continue
 		}
 		break
@@ -338,7 +338,7 @@ func (p *parser) parseForallGd(nested func(*parser) gd) gd {
 	res := gdForall{}
 	bottom := res
 	for i, vr := range vrs {
-		bottom.varName = vr
+		bottom.vr = vr
 		if i < len(vrs)-1 {
 			bottom.expr = gdForall{}
 			bottom = bottom.expr.(gdForall)
@@ -358,7 +358,7 @@ func (p *parser) parseExistsGd(nested func(*parser) gd) gd {
 	res := gdExists{}
 	bottom := res
 	for i, vr := range vrs {
-		bottom.varName = vr
+		bottom.vr = vr
 		if i < len(vrs)-1 {
 			bottom.expr = gdExists{}
 			bottom = bottom.expr.(gdExists)
@@ -428,7 +428,7 @@ func (p *parser) parseForallEffect(nested func(*parser) effect) effect {
 	res := effForall{}
 	bottom := res
 	for i, vr := range vrs {
-		bottom.varName = vr
+		bottom.vr = vr
 		if i < len(vrs)-1 {
 			bottom.eff = effForall{}
 			bottom = bottom.eff.(effForall)

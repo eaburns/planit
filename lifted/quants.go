@@ -17,13 +17,13 @@ func (d *Domain) ExpandQuants(objs []TypedName) {
 func expandParams(f *expandFrame, a *Action, ps []TypedName) (acts []Action) {
 	if len(ps) == 0 {
 		act := Action{
-			Name: a.Name,
-			Parameters: make([]TypedName, len(a.Parameters)),
+			Name:         a.Name,
+			Parameters:   make([]TypedName, len(a.Parameters)),
 			Precondition: a.Precondition.ExpandQuants(f),
-			Effect: a.Effect.ExpandQuants(f),
+			Effect:       a.Effect.ExpandQuants(f),
 		}
 		copy(act.Parameters, a.Parameters)
-		return []Action{ act }
+		return []Action{act}
 	}
 
 	pnum := len(a.Parameters) - len(ps)
@@ -35,7 +35,7 @@ func expandParams(f *expandFrame, a *Action, ps []TypedName) (acts []Action) {
 		g := f.push(saved.Name, obj)
 		acts = append(acts, expandParams(g, a, ps[1:])...)
 	}
- 	a.Parameters[pnum] = saved
+	a.Parameters[pnum] = saved
 
 	return
 }
@@ -59,7 +59,7 @@ func (l *Literal) ExpandQuants(f *expandFrame) *Literal {
 		res.Parameters[i] = Term{
 			Kind: TermConstant,
 			Name: o,
-			Loc: t.Loc,
+			Loc:  t.Loc,
 		}
 	}
 	return res
@@ -127,9 +127,9 @@ func (e *EffectForall) ExpandQuants(f *expandFrame) Effect {
 }
 
 func (e *EffectWhen) ExpandQuants(f *expandFrame) Effect {
-	return &EffectWhen {
-		Condition: e.Condition.ExpandQuants(f),
-		EffectUnary: EffectUnary{ e.Effect.ExpandQuants(f) },
+	return &EffectWhen{
+		Condition:   e.Condition.ExpandQuants(f),
+		EffectUnary: EffectUnary{e.Effect.ExpandQuants(f)},
 	}
 }
 
@@ -138,8 +138,8 @@ func (e *EffectLiteral) ExpandQuants(f *expandFrame) Effect {
 }
 
 func (e *EffectAssign) ExpandQuants(f *expandFrame) Effect {
-	return &EffectAssign {
-		Op: e.Op,
+	return &EffectAssign{
+		Op:   e.Op,
 		Lval: e.Lval,
 		Rval: e.Rval,
 	}
@@ -162,7 +162,7 @@ func newExpandFrame(objs []TypedName) *expandFrame {
 		}
 	}
 
-	return &expandFrame{ objsByType: objsByType }
+	return &expandFrame{objsByType: objsByType}
 }
 
 func (f *expandFrame) push(vr string, obj string) *expandFrame {

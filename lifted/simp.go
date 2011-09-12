@@ -31,6 +31,15 @@ func ExprDisj(l Expr, r Expr) Expr {
 	}
 	return &ExprOr{Left: l, Right: r}
 }
+
+func ExprNeg(e Expr) Expr {
+	switch e.(type) {
+	case *ExprNot:
+		return e.(*ExprNot).Expr
+	}
+	return &ExprNot{Expr: e}
+}
+
 func EffectConj(l Expr, r Expr) Expr {
 	switch l.(type) {
 	case EffectNone:

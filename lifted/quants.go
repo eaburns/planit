@@ -74,11 +74,19 @@ func (e ExprFalse) ExpandQuants(*expandFrame) Expr {
 }
 
 func (e *ExprAnd) ExpandQuants(f *expandFrame) Expr {
-	return ExprConj(e.Left.ExpandQuants(f), e.Right.ExpandQuants(f))
+	l := e.Left.ExpandQuants(f)
+	if _, ok := l.(ExprFalse); ok {
+		return ExprFalse(0)
+	}
+	return ExprConj(l, e.Right.ExpandQuants(f))
 }
 
 func (e *ExprOr) ExpandQuants(f *expandFrame) Expr {
-	return ExprDisj(e.Left.ExpandQuants(f), e.Right.ExpandQuants(f))
+	l := e.Left.ExpandQuants(f)
+	if _, ok := l.(ExprTrue); ok {
+		return ExprTrue(1)
+	}
+	return ExprDisj(l, e.Right.ExpandQuants(f))
 }
 
 func (e *ExprNot) ExpandQuants(f *expandFrame) Expr {

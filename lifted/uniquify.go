@@ -14,8 +14,8 @@ func (d *Domain) UniquifyVars() os.Error {
 	return nil
 }
 
-func (a* Action) UniquifyVars() os.Error {
- 	var f *frame
+func (a *Action) UniquifyVars() os.Error {
+	var f *frame
 	for i, p := range a.Parameters {
 		var uniq string
 		f, uniq = f.push(p.Name)
@@ -34,8 +34,8 @@ func (d *Problem) UniquifyVars() os.Error {
 type frame struct {
 	name string
 	uniq string
-	num int
-	up *frame
+	num  int
+	up   *frame
 }
 
 func (f *frame) push(name string) (*frame, string) {
@@ -147,4 +147,3 @@ func (e *EffectLiteral) UniquifyVars(f *frame) os.Error {
 }
 
 func (e *EffectAssign) UniquifyVars(f *frame) os.Error { return nil }
- 

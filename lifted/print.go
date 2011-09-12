@@ -9,6 +9,7 @@ func (k TermKind) String() string {
 	case TermConstant:
 		return "TermConstant"
 	}
+
 	return fmt.Sprintf("%d", int(k))
 }
 

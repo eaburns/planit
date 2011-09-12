@@ -44,7 +44,7 @@ func ExprNeg(e Expr) Expr {
 	return &ExprNot{Expr: e}
 }
 
-func EffectConj(l Expr, r Expr) Expr {
+func EffectConj(l Effect, r Effect) Effect {
 	switch l.(type) {
 	case EffectNone:
 		return r
@@ -53,5 +53,5 @@ func EffectConj(l Expr, r Expr) Expr {
 	case EffectNone:
 		return l
 	}
-	return &ExprAnd{Left: l, Right: r}
+	return &EffectAnd{Left: l, Right: r}
 }

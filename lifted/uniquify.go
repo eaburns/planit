@@ -31,36 +31,6 @@ func (d *Problem) UniquifyVars() os.Error {
 	return nil
 }
 
-type frame struct {
-	name string
-	uniq string
-	num  int
-	up   *frame
-}
-
-func (f *frame) push(name string) (*frame, string) {
-	var num int
-	var uniq string
-	if f == nil {
-		num = 0
-		uniq = "?x0"
-	} else {
-		num = f.num + 1
-		uniq = fmt.Sprintf("?x%d", num)
-	}
-	return &frame{name: name, uniq: uniq, num: num, up: f}, uniq
-}
-
-func (f *frame) lookup(name string) (string, bool) {
-	if f == nil {
-		return "", false
-	}
-	if f.name == name {
-		return f.uniq, true
-	}
-	return f.up.lookup(name)
-}
-
 func (l *Literal) UniquifyVars(f *frame) os.Error {
 	for i, t := range l.Parameters {
 		if t.Kind != TermVariable {
@@ -147,3 +117,33 @@ func (e *EffectLiteral) UniquifyVars(f *frame) os.Error {
 }
 
 func (e *EffectAssign) UniquifyVars(f *frame) os.Error { return nil }
+
+type frame struct {
+	name string
+	uniq string
+	num  int
+	up   *frame
+}
+
+func (f *frame) push(name string) (*frame, string) {
+	var num int
+	var uniq string
+	if f == nil {
+		num = 0
+		uniq = "?x0"
+	} else {
+		num = f.num + 1
+		uniq = fmt.Sprintf("?x%d", num)
+	}
+	return &frame{name: name, uniq: uniq, num: num, up: f}, uniq
+}
+
+func (f *frame) lookup(name string) (string, bool) {
+	if f == nil {
+		return "", false
+	}
+	if f.name == name {
+		return f.uniq, true
+	}
+	return f.up.lookup(name)
+}

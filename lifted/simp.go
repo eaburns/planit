@@ -36,6 +36,10 @@ func ExprNeg(e Expr) Expr {
 	switch e.(type) {
 	case *ExprNot:
 		return e.(*ExprNot).Expr
+	case *ExprLiteral:
+		l := e.(*ExprLiteral)
+		l.Positive = !l.Positive
+		return l
 	}
 	return &ExprNot{Expr: e}
 }

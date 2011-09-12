@@ -3,12 +3,16 @@ package prob
 import "bytes"
 
 type Symtab struct {
-	predNames  []string
-	predParms  [][]string
+	preds  []*Pred
 	predNums   map[string]int
 	constNames []string
 	constNums  map[string]int
 	varNames   []string
+}
+
+type Pred struct {
+	Name string
+	Parms []string
 }
 
 func (s *Symtab) ConstNum(name string) int {
@@ -57,10 +61,9 @@ func (s *Symtab) PredNum(name string, parms []string) int {
 	if n, ok := s.predNums[str]; ok {
 		return n
 	}
-	n := len(s.predNames) + 1
+	n := len(s.preds) + 1
 	s.predNums[str] = n
-	s.predNames = append(s.predNames, name)
-	s.predParms = append(s.predParms, parms)
+	s.preds = append(s.preds, &Pred{Name: name, Parms: parms})
 	return n
 }
 

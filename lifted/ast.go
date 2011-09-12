@@ -1,4 +1,4 @@
-package pddl
+package lifted
 
 type Domain struct {
 	Name         string
@@ -22,7 +22,7 @@ type Predicate struct {
 type Action struct {
 	Name         string
 	Parameters   []TypedName
-	Precondition Gd
+	Precondition Expr
 	Effect       Effect
 }
 
@@ -32,49 +32,49 @@ type Literal struct {
 	Parameters []string
 }
 
-type Gd interface{}
+type Expr interface{}
 
-type gdBinary struct {
-	Left, Right Gd
+type ExprBinary struct {
+	Left, Right Expr
 }
 
-type gdUnary struct {
-	Expr Gd
+type ExprUnary struct {
+	Expr Expr
 }
 
-type gdQuant struct {
+type ExprQuant struct {
 	Variable TypedName
-	gdUnary
+	ExprUnary
 }
 
-type GdTrue int
-type GdFalse int
-type GdAnd gdBinary
-type GdOr gdBinary
-type GdNot gdUnary
-type GdForall gdQuant
-type GdExists gdQuant
-type GdLiteral Literal
+type ExprTrue int
+type ExprFalse int
+type ExprAnd ExprBinary
+type ExprOr ExprBinary
+type ExprNot ExprUnary
+type ExprForall ExprQuant
+type ExprExists ExprQuant
+type ExprLiteral Literal
 
 type Effect interface{}
 
-type effBinary struct {
+type EffBinary struct {
 	Left, Right Effect
 }
 
-type effUnary struct {
+type EffUnary struct {
 	Effect Effect
 }
 
 type EffNone int
-type EffAnd effBinary
+type EffAnd EffBinary
 type EffForall struct {
 	Variable TypedName
-	effUnary
+	EffUnary
 }
 type EffWhen struct {
-	Condition Gd
-	effUnary
+	Condition Expr
+	EffUnary
 }
 type EffLiteral Literal
 
@@ -88,7 +88,7 @@ const (
 	OpDecrease
 )
 
-var assignOps = map[string]AssignOp{
+var AssignOps = map[string]AssignOp{
 	//	"assign": OpAssign,
 	//	"scale-up": OpScaleUp,
 	//	"scale-down": OpScaleDown,
@@ -109,13 +109,13 @@ type EffAssign struct {
 	Rval Fexp
 }
 
-type problem struct {
+type Problem struct {
 	Name         string
 	Domain       string
 	Requirements []string
 	Objects      []TypedName
 	Init         []InitEl
-	Goal         Gd
+	Goal         Expr
 	Metric       Metric
 }
 

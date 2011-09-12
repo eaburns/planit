@@ -25,7 +25,7 @@ func (e *ExprNot) ExpandQuants(f *expandFrame) Expr {
 }
 
 func (e *ExprQuant) ExpandQuants(f *expandFrame, base Expr,
-	comb func(Expr, Expr) Expr) Expr {
+comb func(Expr, Expr) Expr) Expr {
 	objs := objsOfType(f, e.Variable.Type)
 	seq := base
 	for _, obj := range objs {
@@ -45,8 +45,8 @@ func (e *ExprExists) ExpandQuants(f *expandFrame) Expr {
 
 func (e *ExprLiteral) ExpandQuants(f *expandFrame) Expr {
 	res := &ExprLiteral{
-		Positive: e.Positive,
-		Name: e.Name,
+		Positive:   e.Positive,
+		Name:       e.Name,
 		Parameters: make([]Term, len(e.Parameters)),
 	}
 	for i, t := range res.Parameters {
@@ -67,17 +67,17 @@ func (e *ExprLiteral) ExpandQuants(f *expandFrame) Expr {
 
 type expandFrame struct {
 	objsByType map[string][]string
-	variable	string
-	object	string
-	up *expandFrame
+	variable   string
+	object     string
+	up         *expandFrame
 }
 
 func (f *expandFrame) push(vr string, obj string) *expandFrame {
 	return &expandFrame{
 		objsByType: f.objsByType,
-		variable: vr,
-		object: obj,
-		up: f,
+		variable:   vr,
+		object:     obj,
+		up:         f,
 	}
 }
 
@@ -85,7 +85,7 @@ func (f *expandFrame) lookup(vr string) (string, bool) {
 	if f == nil {
 		return "", false
 	}
-	if f .variable == vr {
+	if f.variable == vr {
 		return f.object, true
 	}
 	return f.up.lookup(vr)

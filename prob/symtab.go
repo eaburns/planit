@@ -3,12 +3,12 @@ package prob
 import "bytes"
 
 type Symtab struct {
-	predNames []string
-	predParms [][]string
-	predNums map[string]int
+	predNames  []string
+	predParms  [][]string
+	predNums   map[string]int
 	constNames []string
-	constNums map[string]int
-	varNames []string
+	constNums  map[string]int
+	varNames   []string
 }
 
 func (s *Symtab) ConstNum(name string) int {
@@ -74,9 +74,9 @@ func predString(name string, parms []string) string {
 }
 
 type Frame struct {
-	name string
+	name   string
 	number int
-	up *Frame
+	up     *Frame
 }
 
 func (f *Frame) push(vr string, num int) *Frame {

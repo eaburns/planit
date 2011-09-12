@@ -27,8 +27,8 @@ func (a *Action) UniquifyVars() os.Error {
 	return a.Effect.UniquifyVars(f)
 }
 
-func (d *Problem) UniquifyVars() os.Error {
-	return nil
+func (p *Problem) UniquifyVars() os.Error {
+	return p.Goal.UniquifyVars(nil)
 }
 
 func (l *Literal) UniquifyVars(f *frame) os.Error {

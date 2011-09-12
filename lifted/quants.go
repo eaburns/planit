@@ -16,11 +16,19 @@ func (d *Domain) ExpandQuants(objs []TypedName) {
 
 func expandParams(f *expandFrame, a *Action, ps []TypedName) (acts []Action) {
 	if len(ps) == 0 {
+		prec := a.Precondition.ExpandQuants(f)
+		if _, ok := prec.(ExprFalse); ok {
+			return
+		}
+		eff := a.Effect.ExpandQuants(f)
+		if _, ok := eff.(EffectNone); ok {
+			return
+		}
 		act := Action{
 			Name:         a.Name,
 			Parameters:   make([]TypedName, len(a.Parameters)),
-			Precondition: a.Precondition.ExpandQuants(f),
-			Effect:       a.Effect.ExpandQuants(f),
+			Precondition: prec,
+			Effect:       eff,
 		}
 		copy(act.Parameters, a.Parameters)
 		return []Action{act}

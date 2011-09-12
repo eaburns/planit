@@ -76,6 +76,7 @@ type ExprLiteral Literal
 
 type Effect interface {
 	UniquifyVars(*uniqFrame) os.Error
+	ExpandQuants(*expandFrame) Effect
 }
 
 type EffectBinary struct {

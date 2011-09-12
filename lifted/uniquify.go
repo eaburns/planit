@@ -1,5 +1,8 @@
 package lifted
 
+// Uniquify variable names to be of the form "?x#".
+// This eliminates any issues with variable shadowing.
+
 import (
 	"fmt"
 	"os"
@@ -15,7 +18,7 @@ func (d *Domain) UniquifyVars() os.Error {
 }
 
 func (a *Action) UniquifyVars() os.Error {
-	var f *frame
+	var f *uniqFrame
 	for i, p := range a.Parameters {
 		var uniq string
 		f, uniq = f.push(p.Name)
@@ -31,7 +34,7 @@ func (p *Problem) UniquifyVars() os.Error {
 	return p.Goal.UniquifyVars(nil)
 }
 
-func (l *Literal) UniquifyVars(f *frame) os.Error {
+func (l *Literal) UniquifyVars(f *uniqFrame) os.Error {
 	for i, t := range l.Parameters {
 		if t.Kind != TermVariable {
 			continue
@@ -45,87 +48,87 @@ func (l *Literal) UniquifyVars(f *frame) os.Error {
 	return nil
 }
 
-func (e *ExprBinary) UniquifyVars(f *frame) os.Error {
+func (e *ExprBinary) UniquifyVars(f *uniqFrame) os.Error {
 	if err := e.Left.UniquifyVars(f); err != nil {
 		return err
 	}
 	return e.Right.UniquifyVars(f)
 }
 
-func (ExprTrue) UniquifyVars(*frame) os.Error { return nil }
+func (ExprTrue) UniquifyVars(*uniqFrame) os.Error { return nil }
 
-func (ExprFalse) UniquifyVars(*frame) os.Error { return nil }
+func (ExprFalse) UniquifyVars(*uniqFrame) os.Error { return nil }
 
-func (e *ExprAnd) UniquifyVars(f *frame) os.Error {
+func (e *ExprAnd) UniquifyVars(f *uniqFrame) os.Error {
 	return (*ExprBinary)(e).UniquifyVars(f)
 }
 
-func (e *ExprOr) UniquifyVars(f *frame) os.Error {
+func (e *ExprOr) UniquifyVars(f *uniqFrame) os.Error {
 	return (*ExprBinary)(e).UniquifyVars(f)
 }
 
-func (e *ExprNot) UniquifyVars(f *frame) os.Error {
+func (e *ExprNot) UniquifyVars(f *uniqFrame) os.Error {
 	return e.Expr.UniquifyVars(f)
 }
 
-func (e *ExprQuant) UniquifyVars(f *frame) os.Error {
+func (e *ExprQuant) UniquifyVars(f *uniqFrame) os.Error {
 	f, uniq := f.push(e.Variable.Name)
 	e.Variable.Name = uniq
 	return e.Expr.UniquifyVars(f)
 }
 
-func (e *ExprForall) UniquifyVars(f *frame) os.Error {
+func (e *ExprForall) UniquifyVars(f *uniqFrame) os.Error {
 	return (*ExprQuant)(e).UniquifyVars(f)
 }
 
-func (e *ExprExists) UniquifyVars(f *frame) os.Error {
+func (e *ExprExists) UniquifyVars(f *uniqFrame) os.Error {
 	return (*ExprQuant)(e).UniquifyVars(f)
 }
 
-func (e *ExprLiteral) UniquifyVars(f *frame) os.Error {
+func (e *ExprLiteral) UniquifyVars(f *uniqFrame) os.Error {
 	return (*Literal)(e).UniquifyVars(f)
 }
 
-func (e *EffectUnary) UniquifyVars(f *frame) os.Error {
+func (e *EffectUnary) UniquifyVars(f *uniqFrame) os.Error {
 	return e.Effect.UniquifyVars(f)
 }
 
-func (EffectNone) UniquifyVars(*frame) os.Error { return nil }
+func (EffectNone) UniquifyVars(*uniqFrame) os.Error { return nil }
 
-func (e *EffectAnd) UniquifyVars(f *frame) os.Error {
+func (e *EffectAnd) UniquifyVars(f *uniqFrame) os.Error {
 	if err := e.Left.UniquifyVars(f); err != nil {
 		return err
 	}
 	return e.Right.UniquifyVars(f)
 }
 
-func (e *EffectForall) UniquifyVars(f *frame) os.Error {
+func (e *EffectForall) UniquifyVars(f *uniqFrame) os.Error {
 	f, uniq := f.push(e.Variable.Name)
 	e.Variable.Name = uniq
 	return e.Effect.UniquifyVars(f)
 }
 
-func (e *EffectWhen) UniquifyVars(f *frame) os.Error {
+func (e *EffectWhen) UniquifyVars(f *uniqFrame) os.Error {
 	if err := e.Condition.UniquifyVars(f); err != nil {
 		return err
 	}
 	return e.Effect.UniquifyVars(f)
 }
 
-func (e *EffectLiteral) UniquifyVars(f *frame) os.Error {
+func (e *EffectLiteral) UniquifyVars(f *uniqFrame) os.Error {
 	return (*Literal)(e).UniquifyVars(f)
 }
 
-func (e *EffectAssign) UniquifyVars(f *frame) os.Error { return nil }
+func (e *EffectAssign) UniquifyVars(f *uniqFrame) os.Error { return nil }
 
-type frame struct {
+type uniqFrame struct {
 	name string
 	uniq string
 	num  int
-	up   *frame
+	up   *uniqFrame
 }
 
-func (f *frame) push(name string) (*frame, string) {
+func (f *uniqFrame) push(name string) (*uniqFrame, string) {
 	var num int
 	var uniq string
 	if f == nil {
@@ -135,10 +138,10 @@ func (f *frame) push(name string) (*frame, string) {
 		num = f.num + 1
 		uniq = fmt.Sprintf("?x%d", num)
 	}
-	return &frame{name: name, uniq: uniq, num: num, up: f}, uniq
+	return &uniqFrame{name: name, uniq: uniq, num: num, up: f}, uniq
 }
 
-func (f *frame) lookup(name string) (string, bool) {
+func (f *uniqFrame) lookup(name string) (string, bool) {
 	if f == nil {
 		return "", false
 	}

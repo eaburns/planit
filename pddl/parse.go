@@ -306,21 +306,12 @@ func (p *Parser) parseAndExpr(nested func(*Parser) Expr) Expr {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	res := seqAndExpr(conj)
-	p.expect(tokClose)
-	return res
-}
-
-func seqAndExpr(conj []Expr) (res Expr) {
-	switch len(conj) {
-	case 0:
-		res = ExprTrue(1)
-	case 1:
-		res = conj[0]
-	default:
-		res = &ExprAnd{Left: conj[0], Right: seqAndExpr(conj[1:])}
+	e := Expr(ExprTrue(1))
+	for i := len(conj) - 1; i >= 0; i-- {
+		e = ExprConj(conj[i], e)
 	}
-	return
+	p.expect(tokClose)
+	return e
 }
 
 func (p *Parser) parseOrExpr(nested func(*Parser) Expr) Expr {
@@ -328,22 +319,12 @@ func (p *Parser) parseOrExpr(nested func(*Parser) Expr) Expr {
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
 	}
-	res := seqOrExpr(disj)
-
-	p.expect(tokClose)
-	return res
-}
-
-func seqOrExpr(disj []Expr) (res Expr) {
-	switch len(disj) {
-	case 0:
-		res = ExprFalse(0)
-	case 1:
-		res = disj[0]
-	default:
-		res = &ExprOr{Left: disj[0], Right: seqOrExpr(disj[1:])}
+	e := Expr(ExprFalse(1))
+	for i := len(disj) - 1; i >= 0; i-- {
+		e = ExprConj(disj[i], e)
 	}
-	return
+	p.expect(tokClose)
+	return e
 }
 
 func (p *Parser) parseForallExpr(nested func(*Parser) Expr) Expr {
@@ -401,21 +382,12 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Effect) Effect {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	res := seqAndEffect(conj)
-	p.expect(tokClose)
-	return res
-}
-
-func seqAndEffect(conj []Effect) (res Effect) {
-	switch len(conj) {
-	case 0:
-		res = EffectNone(0)
-	case 1:
-		res = conj[0]
-	default:
-		res = &EffectAnd{Left: conj[0], Right: seqAndEffect(conj[1:])}
+	e := Effect(EffectNone(0))
+	for i := len(conj) - 1; i >= 0; i-- {
+		e = EffectConj(conj[i], e)
 	}
-	return
+	p.expect(tokClose)
+	return e
 }
 
 func (p *Parser) parseCeffect() (res Effect) {

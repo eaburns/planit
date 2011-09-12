@@ -48,7 +48,8 @@ type Literal struct {
 }
 
 type Expr interface {
-	UniquifyVars(*frame) os.Error
+	UniquifyVars(*uniqFrame) os.Error
+//	ExpandQuants(*expandFrame) Expr
 }
 
 type ExprBinary struct {
@@ -74,7 +75,7 @@ type ExprExists ExprQuant
 type ExprLiteral Literal
 
 type Effect interface {
-	UniquifyVars(*frame) os.Error
+	UniquifyVars(*uniqFrame) os.Error
 }
 
 type EffectBinary struct {

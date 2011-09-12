@@ -1,5 +1,7 @@
 package lifted
 
+import "os"
+
 type Domain struct {
 	Name         string
 	Requirements []string
@@ -26,13 +28,28 @@ type Action struct {
 	Effect       Effect
 }
 
+type TermKind int
+
+const (
+	TermVariable TermKind = iota
+	TermConstant
+)
+
+type Term struct {
+	Kind TermKind
+	Name string
+	Loc  string
+}
+
 type Literal struct {
 	Positive   bool
 	Name       string
-	Parameters []string
+	Parameters []Term
 }
 
-type Expr interface{}
+type Expr interface {
+	UniquifyVars(*frame) os.Error
+}
 
 type ExprBinary struct {
 	Left, Right Expr
@@ -56,27 +73,34 @@ type ExprForall ExprQuant
 type ExprExists ExprQuant
 type ExprLiteral Literal
 
-type Effect interface{}
+type Effect interface {
+	UniquifyVars(*frame) os.Error
+}
 
-type EffBinary struct {
+type EffectBinary struct {
 	Left, Right Effect
 }
 
-type EffUnary struct {
+type EffectUnary struct {
 	Effect Effect
 }
 
-type EffNone int
-type EffAnd EffBinary
-type EffForall struct {
+type EffectNone int
+type EffectAnd EffectBinary
+type EffectForall struct {
 	Variable TypedName
-	EffUnary
+	EffectUnary
 }
-type EffWhen struct {
+type EffectWhen struct {
 	Condition Expr
-	EffUnary
+	EffectUnary
 }
-type EffLiteral Literal
+type EffectLiteral Literal
+type EffectAssign struct {
+	Op   AssignOp
+	Lval Fhead
+	Rval Fexp
+}
 
 type AssignOp int
 
@@ -102,12 +126,6 @@ type Fhead struct {
 	Name string
 }
 type Fexp string // Just a number for now
-
-type EffAssign struct {
-	Op   AssignOp
-	Lval Fhead
-	Rval Fexp
-}
 
 type Problem struct {
 	Name         string

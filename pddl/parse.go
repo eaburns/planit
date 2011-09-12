@@ -11,6 +11,10 @@ type Parser struct {
 	npeeks int
 }
 
+func (p *Parser) locString() string {
+	return fmt.Sprintf("%s:%d", p.lex.name, p.lex.lineno)
+}
+
 func (p *Parser) next() token {
 	if p.npeeks == 0 {
 		return p.lex.token()
@@ -67,9 +71,7 @@ func (p *Parser) acceptNamedList(name string) bool {
 }
 
 func (p *Parser) errorf(format string, args ...interface{}) {
-	pre := fmt.Sprintf("%s:%d", p.lex.name, p.lex.lineno)
-	suf := fmt.Sprintf(format, args...)
-	panic(fmt.Errorf("%s: %s", pre, suf))
+	panic(fmt.Errorf("%s: %s", p.locString(),  fmt.Sprintf(format, args...)))
 }
 
 func (p *Parser) expect(typ tokenType) token {
@@ -240,28 +242,31 @@ func (p *Parser) parseExpr() (res Expr) {
 	case p.acceptNamedList("or"):
 		res = p.parseOrExpr(parseNested)
 	case p.acceptNamedList("not"):
-		res = ExprNot{Expr: p.parseExpr()}
+		res = &ExprNot{Expr: p.parseExpr()}
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
-		res = ExprOr{Left: ExprNot{Expr: p.parseExpr()}, Right: p.parseExpr()}
+		res = &ExprOr{
+			Left: &ExprNot{Expr: p.parseExpr()},
+			Right: p.parseExpr(),
+		}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
 		res = p.parseExistsExpr(parseNested)
 	case p.acceptNamedList("forall"):
 		res = p.parseForallExpr(parseNested)
 	default:
-		res = ExprLiteral(p.parseLiteral())
+		res = (*ExprLiteral)(p.parseLiteral())
 	}
 	return
 }
 
-func (p *Parser) parseLiteral() Literal {
+func (p *Parser) parseLiteral() *Literal {
 	pos := true
 	if p.acceptNamedList("not") {
 		pos = false
 	}
 	p.expect(tokOpen)
-	res := Literal{
+	res := &Literal{
 		Positive:   pos,
 		Name:       p.expect(tokId).txt,
 		Parameters: p.parseTerms(),
@@ -273,14 +278,22 @@ func (p *Parser) parseLiteral() Literal {
 	return res
 }
 
-func (p *Parser) parseTerms() (lst []string) {
+func (p *Parser) parseTerms() (lst []Term) {
 	for {
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, t.txt)
+			lst = append(lst, Term{
+				Kind: TermConstant,
+				Name: t.txt,
+				Loc: p.locString(),
+			})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, t.txt)
+			lst = append(lst, Term{
+				Kind: TermVariable,
+				Name: t.txt,
+				Loc: p.locString(),
+			})
 			continue
 		}
 		break
@@ -305,7 +318,7 @@ func seqAndExpr(conj []Expr) (res Expr) {
 	case 1:
 		res = conj[0]
 	default:
-		res = ExprAnd{Left: conj[0], Right: seqAndExpr(conj[1:])}
+		res = &ExprAnd{Left: conj[0], Right: seqAndExpr(conj[1:])}
 	}
 	return
 }
@@ -328,7 +341,7 @@ func seqOrExpr(disj []Expr) (res Expr) {
 	case 1:
 		res = disj[0]
 	default:
-		res = ExprOr{Left: disj[0], Right: seqOrExpr(disj[1:])}
+		res = &ExprOr{Left: disj[0], Right: seqOrExpr(disj[1:])}
 	}
 	return
 }
@@ -338,13 +351,13 @@ func (p *Parser) parseForallExpr(nested func(*Parser) Expr) Expr {
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
 
-	res := ExprForall{}
+	res := &ExprForall{}
 	bottom := res
 	for i, vr := range vrs {
 		bottom.Variable = vr
 		if i < len(vrs)-1 {
-			bottom.Expr = ExprForall{}
-			bottom = bottom.Expr.(ExprForall)
+			bottom.Expr = &ExprForall{}
+			bottom = bottom.Expr.(*ExprForall)
 		}
 	}
 
@@ -358,13 +371,13 @@ func (p *Parser) parseExistsExpr(nested func(*Parser) Expr) Expr {
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
 
-	res := ExprExists{}
+	res := &ExprExists{}
 	bottom := res
 	for i, vr := range vrs {
 		bottom.Variable = vr
 		if i < len(vrs)-1 {
-			bottom.Expr = ExprExists{}
-			bottom = bottom.Expr.(ExprExists)
+			bottom.Expr = &ExprExists{}
+			bottom = bottom.Expr.(*ExprExists)
 		}
 	}
 
@@ -396,11 +409,11 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Effect) Effect {
 func seqAndEffect(conj []Effect) (res Effect) {
 	switch len(conj) {
 	case 0:
-		res = EffNone(0)
+		res = EffectNone(0)
 	case 1:
 		res = conj[0]
 	default:
-		res = EffAnd{Left: conj[0], Right: seqAndEffect(conj[1:])}
+		res = &EffectAnd{Left: conj[0], Right: seqAndEffect(conj[1:])}
 	}
 	return
 }
@@ -428,13 +441,13 @@ func (p *Parser) parseForallEffect(nested func(*Parser) Effect) Effect {
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
 
-	res := EffForall{}
+	res := &EffectForall{}
 	bottom := res
 	for i, vr := range vrs {
 		bottom.Variable = vr
 		if i < len(vrs)-1 {
-			bottom.Effect = EffForall{}
-			bottom = bottom.Effect.(EffForall)
+			bottom.Effect = &EffectForall{}
+			bottom = bottom.Effect.(*EffectForall)
 		}
 	}
 
@@ -444,7 +457,7 @@ func (p *Parser) parseForallEffect(nested func(*Parser) Effect) Effect {
 }
 
 func (p *Parser) parseWhen(nested func(*Parser) Effect) Effect {
-	res := EffWhen{
+	res := &EffectWhen{
 		Condition: p.parseExpr(),
 	}
 	res.Effect = nested(p)
@@ -456,12 +469,12 @@ func (p *Parser) parsePeffect() Effect {
 	if _, ok := AssignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
 		return p.parseAssign()
 	}
-	return EffLiteral(p.parseLiteral())
+	return (*EffectLiteral)(p.parseLiteral())
 }
 
 func (p *Parser) parseAssign() Effect {
 	p.expect(tokOpen)
-	res := EffAssign{
+	res := &EffectAssign{
 		Op:   AssignOps[p.expect(tokId).txt],
 		Lval: p.parseFhead(),
 		Rval: p.parseFexp(),
@@ -552,7 +565,7 @@ func (p *Parser) parseInitEl() InitEl {
 		p.expect(tokClose)
 		return eq
 	}
-	return InitLiteral(p.parseLiteral())
+	return (*InitLiteral)(p.parseLiteral())
 }
 
 func (p *Parser) parseGoal() Expr {

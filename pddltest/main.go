@@ -7,7 +7,7 @@ import (
 	"goplan/pddl"
 )
 
-const dump = false
+const dump = true
 
 func main() {
 	s, err := ioutil.ReadAll(os.Stdin)
@@ -16,9 +16,13 @@ func main() {
 	}
 
 	p := pddl.Parse(pddl.Lex("stdin", string(s)))
-	d := p.ParseDomain()
-//	d := p.ParseProblem()
+	res := p.ParseDomain()
+//	res := p.ParseProblem()
+	err = res.UniquifyVars()
+	if err != nil {
+		panic(err)
+	}
 	if (dump) {
-		fmt.Printf("%+v\n", d)
+		fmt.Printf("%+v\n", res)
 	}
 }

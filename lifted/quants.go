@@ -4,11 +4,40 @@ package lifted
 
 func (d *Domain) ExpandQuants(objs []TypedName) {
 	f := newExpandFrame(objs)
+	acts := make([]Action, 0, len(d.Actions))
 	for i, _ := range d.Actions {
 		a := &d.Actions[i]
 		a.Precondition = a.Precondition.ExpandQuants(f)
 		a.Effect = a.Effect.ExpandQuants(f)
+		acts = append(acts, expandParams(f, a, a.Parameters)...)
 	}
+	d.Actions = acts
+}
+
+func expandParams(f *expandFrame, a *Action, ps []TypedName) (acts []Action) {
+	if len(ps) == 0 {
+		act := Action{
+			Name: a.Name,
+			Parameters: make([]TypedName, len(a.Parameters)),
+			Precondition: a.Precondition.ExpandQuants(f),
+			Effect: a.Effect.ExpandQuants(f),
+		}
+		copy(act.Parameters, a.Parameters)
+		return []Action{ act }
+	}
+
+	pnum := len(a.Parameters) - len(ps)
+	saved := a.Parameters[pnum]
+
+	objs := objsOfType(f, saved.Type)
+	for _, obj := range objs {
+		a.Parameters[pnum].Name = obj
+		g := f.push(saved.Name, obj)
+		acts = append(acts, expandParams(g, a, ps[1:])...)
+	}
+ 	a.Parameters[pnum] = saved
+
+	return
 }
 
 func (l *Literal) ExpandQuants(f *expandFrame) *Literal {

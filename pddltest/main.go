@@ -12,7 +12,7 @@ import (
 var dpath *string = flag.String("d", "", "The PDDL domain file")
 var ppath *string = flag.String("p", "", "The PDDL problem file")
 
-const dump = true
+const dump = false
 
 func main() {
 	flag.Parse()
@@ -35,10 +35,13 @@ func main() {
 		panic(err)
 	}
 
+	nacts := len(dom.Actions)
 	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
 	if (dump) {
 		fmt.Printf("%+v\n\n%+v", dom, prob)
 	}
+	fmt.Printf("%d actions\n", nacts)
+	fmt.Printf("%d grounded actions\n", len(dom.Actions))
 }
 
 func domain() (*lifted.Domain, os.Error) {

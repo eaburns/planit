@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"io/ioutil"
-	"pddl"
+	"goplan/pddl"
 )
 
 const dump = false

@@ -1,0 +1,18 @@
+* Check that we support all of a domain/problem's requirements
+
+* Verify that we handle all of the same requirements as FF
+
+* Better pretty printing of a domain
+
+* Don't ignore :functions
+
+:adl
+	= :strips
+	+ :typing
+	+ :negative-preconditions
+	+ :disjunctive-preconditions
+	+ :equality
+	+ :quantified-preconditions
+		+ :universal-precondition
+		+ :extential-preconditions
+	+ :conditional-effects

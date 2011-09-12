@@ -2,7 +2,16 @@ package lifted
 
 // Quantifier removal
 
-import "fmt"
+import ("fmt"
+	"os")
+
+func (d *Domain) ExpandQuants(objs []TypedName) {
+	f := newExpandFrame(objs)
+	for i, _ := range d.Actions {
+		a := &d.Actions[i]
+		a.Precondition = a.Precondition.ExpandQuants(f)
+	}
+}
 
 func (e ExprTrue) ExpandQuants(*expandFrame) Expr {
 	return e
@@ -29,8 +38,10 @@ comb func(Expr, Expr) Expr) Expr {
 	objs := objsOfType(f, e.Variable.Type)
 	seq := base
 	for _, obj := range objs {
+		fmt.Fprintf(os.Stderr, "binding %s to %s\n", e.Variable.Name, obj)
 		g := f.push(e.Variable.Name, obj)
 		seq = comb(e.Expr.ExpandQuants(g), seq)
+		fmt.Fprintf(os.Stderr, "unbinding %s to %s\n", e.Variable.Name, obj)
 	}
 	return seq
 }
@@ -49,18 +60,21 @@ func (e *ExprLiteral) ExpandQuants(f *expandFrame) Expr {
 		Name:       e.Name,
 		Parameters: make([]Term, len(e.Parameters)),
 	}
-	for i, t := range res.Parameters {
+	for i, t := range e.Parameters {
 		if t.Kind == TermConstant {
+			res.Parameters[i] = t
 			continue
 		}
 		o, ok := f.lookup(t.Name)
-		// This should never happen since an error would have
-		// been reported during uniquification.
 		if !ok {
-			panic(fmt.Sprintf("%s: Unbound variable %s", t.Loc, t.Name))
+			res.Parameters[i] = t
+			continue
 		}
-		res.Parameters[i].Kind = TermConstant
-		res.Parameters[i].Name = o
+		res.Parameters[i] = Term{
+			Kind: TermConstant,
+			Name: o,
+			Loc: t.Loc,
+		}
 	}
 	return res
 }
@@ -70,6 +84,19 @@ type expandFrame struct {
 	variable   string
 	object     string
 	up         *expandFrame
+}
+
+func newExpandFrame(objs []TypedName) *expandFrame {
+	objsByType := make(map[string][]string)
+
+	for _, obj := range objs {
+		for _, t := range obj.Type {
+			lst, _ := objsByType[t]
+			objsByType[t] = append(lst, obj.Name)
+		}
+	}
+
+	return &expandFrame{ objsByType: objsByType }
 }
 
 func (f *expandFrame) push(vr string, obj string) *expandFrame {

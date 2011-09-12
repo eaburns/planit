@@ -1,6 +1,44 @@
 package lifted
 
-import "fmt"
+import (
+	"fmt"
+	"bytes"
+)
+
+func (d *Domain) String() string {
+	buf := bytes.NewBuffer(make([]byte, 0, 100))
+
+	buf.WriteString("&Domain{")
+	fmt.Fprintf(buf, "Name:%s,\n", d.Name)
+	fmt.Fprintf(buf, "Requirements:%+v\n", d.Requirements)
+	fmt.Fprintf(buf, "Types:%+v\n", d.Types)
+	fmt.Fprintf(buf, "Constants:%+v\n", d.Constants)
+	fmt.Fprintf(buf, "Predicates:%+v\n", d.Predicates)
+
+	buf.WriteString("Actions:[\n")
+	for i, a := range d.Actions {
+		buf.WriteString(a.String())
+		if i < len(d.Actions) - 1 {
+			buf.WriteString("\n\n")
+		}
+	}
+	buf.WriteString("],\n}")
+
+	return buf.String()
+}
+
+func (a Action) String() string {
+	buf := bytes.NewBuffer(make([]byte, 0, 100))
+
+	buf.WriteString("Action{")
+	fmt.Fprintf(buf, "Name:%s", a.Name)
+	fmt.Fprintf(buf, "\nParameters:%+v", a.Parameters)
+	fmt.Fprintf(buf, "\nPrecondition:%+v", a.Precondition)
+	fmt.Fprintf(buf, "\nEffect:%+v", a.Effect)
+	buf.WriteString("}")
+
+	return buf.String()
+}
 
 func (k TermKind) String() string {
 	switch k {
@@ -91,6 +129,10 @@ func (eff *EffectWhen) String() string {
 func (eff *EffectAssign) String() string {
 	return fmt.Sprintf("EffAssign{Op:%v, Lval:%v, Rval:%v}",
 		eff.Op, eff.Lval, eff.Rval)
+}
+
+func (e *EffectLiteral) String() string {
+	return fmt.Sprintf("%v", (*Literal)(e))
 }
 
 var assignOpNames = map[AssignOp]string{

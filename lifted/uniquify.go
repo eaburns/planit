@@ -19,9 +19,9 @@ func (d *Domain) UniquifyVars() os.Error {
 
 func (a *Action) UniquifyVars() os.Error {
 	var f *uniqFrame
-	for i, p := range a.Parameters {
+	for i, _ := range a.Parameters {
 		var uniq string
-		f, uniq = f.push(p.Name)
+		f, uniq = f.push(a.Parameters[i].Name)
 		a.Parameters[i].Name = uniq
 	}
 	if err := a.Precondition.UniquifyVars(f); err != nil {

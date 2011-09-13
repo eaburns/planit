@@ -13,11 +13,13 @@ type Domain struct {
 
 type TypedName struct {
 	Name string
+	Num int
 	Type []string
 }
 
 type Predicate struct {
 	Name       string
+	Num int
 	Parameters []TypedName
 }
 
@@ -38,12 +40,14 @@ const (
 type Term struct {
 	Kind TermKind
 	Name string
+	Num int
 	Loc  string
 }
 
 type Literal struct {
 	Positive   bool
 	Name       string
+	Num	int
 	Parameters []Term
 }
 

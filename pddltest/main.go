@@ -11,8 +11,7 @@ import (
 
 var dpath *string = flag.String("d", "", "The PDDL domain file")
 var ppath *string = flag.String("p", "", "The PDDL problem file")
-
-const dump = false
+var dump *bool  = flag.Bool("dump", false, "Dump ground planning problem")
 
 func main() {
 	flag.Parse()
@@ -37,7 +36,7 @@ func main() {
 
 	nacts := len(dom.Actions)
 	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
-	if (dump) {
+	if (*dump) {
 		fmt.Printf("%+v\n\n%+v", dom, prob)
 	}
 	fmt.Printf("%d actions\n", nacts)

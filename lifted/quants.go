@@ -38,8 +38,8 @@ func (a *Action) expand(f *expandFrame) []Action {
 }
 
 // Return a ground instance of the given action
-// which has all of its parameters replaced with
-// constants
+// which already has all of its parameters replaced
+// with constants.
 func grndAction(f *expandFrame, a *Action) (act *Action) {
 	prec := a.Precondition.ExpandQuants(f)
 	if _, ok := prec.(ExprFalse); ok {

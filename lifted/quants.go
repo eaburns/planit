@@ -9,42 +9,53 @@ func (d *Domain) ExpandQuants(objs []TypedName) {
 		a := &d.Actions[i]
 		a.Precondition = a.Precondition.ExpandQuants(f)
 		a.Effect = a.Effect.ExpandQuants(f)
-		acts = append(acts, expandParams(f, a, a.Parameters)...)
+		acts = append(acts, a.expand(f)...)
 	}
 	d.Actions = acts
 }
 
-func expandParams(f *expandFrame, a *Action, ps []TypedName) (acts []Action) {
-	if len(ps) == 0 {
-		prec := a.Precondition.ExpandQuants(f)
-		if _, ok := prec.(ExprFalse); ok {
-			return
+func (a *Action) expand(f *expandFrame) []Action {
+	var expnd func(*expandFrame, []TypedName) []Action
+	expnd = func(f *expandFrame, ps []TypedName) (acts []Action) {
+		if len(ps) == 0 {
+			return []Action{ *grndAction(f, a) }
 		}
-		eff := a.Effect.ExpandQuants(f)
-		if _, ok := eff.(EffectNone); ok {
-			return
+	
+		pnum := len(a.Parameters) - len(ps)
+		saved := a.Parameters[pnum]
+	
+		objs := objsOfType(f, saved.Type)
+		for _, obj := range objs {
+			a.Parameters[pnum].Name = obj
+			g := f.push(saved.Name, obj)
+			acts = append(acts, expnd(g, ps[1:])...)
 		}
-		act := Action{
-			Name:         a.Name,
-			Parameters:   make([]TypedName, len(a.Parameters)),
-			Precondition: prec,
-			Effect:       eff,
-		}
-		copy(act.Parameters, a.Parameters)
-		return []Action{act}
+
+		a.Parameters[pnum] = saved
+		return
 	}
+	return expnd(f, a.Parameters)
+}
 
-	pnum := len(a.Parameters) - len(ps)
-	saved := a.Parameters[pnum]
-
-	objs := objsOfType(f, saved.Type)
-	for _, obj := range objs {
-		a.Parameters[pnum].Name = obj
-		g := f.push(saved.Name, obj)
-		acts = append(acts, expandParams(g, a, ps[1:])...)
+// Return a ground instance of the given action
+// which has all of its parameters replaced with
+// constants
+func grndAction(f *expandFrame, a *Action) (act *Action) {
+	prec := a.Precondition.ExpandQuants(f)
+	if _, ok := prec.(ExprFalse); ok {
+		return
 	}
-	a.Parameters[pnum] = saved
-
+	eff := a.Effect.ExpandQuants(f)
+	if _, ok := eff.(EffectNone); ok {
+		return
+	}
+	act = &Action{
+		Name:         a.Name,
+		Parameters:   make([]TypedName, len(a.Parameters)),
+		Precondition: prec,
+		Effect:       eff,
+	}
+	copy(act.Parameters, a.Parameters)
 	return
 }
 

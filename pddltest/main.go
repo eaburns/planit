@@ -5,16 +5,28 @@ import (
 	"os"
 	"flag"
 	"io/ioutil"
+	"log"
+	"runtime/pprof"
 	"goplan/pddl"
 	"goplan/lifted"
 )
 
-var dpath *string = flag.String("d", "", "The PDDL domain file")
-var ppath *string = flag.String("p", "", "The PDDL problem file")
-var dump *bool = flag.Bool("dump", false, "Dump ground planning problem")
+var dpath = flag.String("d", "", "The PDDL domain file")
+var ppath = flag.String("p", "", "The PDDL problem file")
+var dump = flag.Bool("dump", false, "Dump ground planning problem")
+var cpuprofile = flag.String("cpuprofile", "", "Write CPU profile to file")
 
 func main() {
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	dom, err := domain()
 	if err != nil {

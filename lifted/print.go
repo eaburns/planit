@@ -77,6 +77,13 @@ func (t Term) String() string {
 		t.Kind, t.Name)
 }
 
+func (n Name) String() string {
+	if n.Num < 0 {
+		return fmt.Sprintf("{%s}", n.Str)
+	}
+	return fmt.Sprintf("{%s, %d}", n.Str, n.Num)
+}
+
 func (lit *Literal) String() string {
 	return fmt.Sprintf("Literal{Positive:%t, Name:%v, Parameters:%v}",
 		lit.Positive, lit.Name, lit.Parameters)

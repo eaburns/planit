@@ -1,7 +1,6 @@
 package lifted
 
-// Uniquify variable names to be of the form "?x#".
-// This eliminates any issues with variable shadowing.
+// Assign numbers to all things of type Name
 
 import (
 	"fmt"

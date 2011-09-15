@@ -7,223 +7,219 @@ import (
 	"os"
 )
 
-var (
-	constNums = make(map[string]int)
-	constNames []string
-
-	predNums = make(map[string]int)
-	predNames []string
-
-	typeNums = make(map[string]int)
-	typeNames []string
-	typeObjs [][]int
-
-	varNames []string
-)
-
-func (d *Domain) AssignNums() os.Error {
+func (d *Domain) AssignNums(s *Symtab) os.Error {
 	for i, _ := range d.Types {
 		t := &d.Types[i]
-		t.Name.numberType()
+		t.Name.numberType(s)
 		for j, _ := range t.Type {
-			t.Type[j].numberType()
+			t.Type[j].numberType(s)
 		}
 	}
-	typeObjs = make([][]int, len(typeNames))
-	numberConsts(d.Constants)
+	s.typeObjs = make([][]int, len(s.typeNames))
+	numberConsts(s, d.Constants)
 	for i, _ := range d.Predicates {
-		d.Predicates[i].Name.numberPred()
+		d.Predicates[i].Name.numberPred(s)
 	}
 	for _, a := range d.Actions {
-		if err := a.AssignNums(); err != nil {
+		if err := a.AssignNums(s); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func numberConsts(consts []TypedName) {
+func numberConsts(s *Symtab, consts []TypedName) {
 	for i, _ := range consts {
 		c := &consts[i]
-		first := c.Name.numberConst()
+		first := c.Name.numberConst(s)
 		cnum := c.Name.Num
 		for j, _ := range c.Type {
-			c.Type[j].numberType()
+			c.Type[j].numberType(s)
 			// If this is the 1st decl of this object
 			// then add it to the table of all objects
 			// of the given type
 			if !first {
 				tnum := c.Type[j].Num
-				typeObjs[tnum] = append(typeObjs[tnum], cnum)
+				s.typeObjs[tnum] = append(s.typeObjs[tnum], cnum)
 			}
 		}
 	}
 }
 
-func (a *Action) AssignNums() os.Error {
+func (a *Action) AssignNums(s *Symtab) os.Error {
 	var f *numFrame
 	for i, _ := range a.Parameters {
 		p := &a.Parameters[i]
-		f = p.Name.numberVar(f)
+		f = p.Name.numberVar(s, f)
 		for j, _ := range p.Type {
-			p.Type[j].numberType()
+			p.Type[j].numberType(s)
 		}
 	}
-	if err := a.Precondition.AssignNums(f); err != nil {
+	if err := a.Precondition.AssignNums(s, f); err != nil {
 		return err
 	}
-	return a.Effect.AssignNums(f)
+	return a.Effect.AssignNums(s, f)
 }
 
-func (p *Problem) AssignNums() os.Error {
-	numberConsts(p.Objects)
+func (p *Problem) AssignNums(s *Symtab) os.Error {
+	numberConsts(s, p.Objects)
 	for _, init := range p.Init {
-		if err := init.AssignNums(nil); err != nil {
+		if err := init.AssignNums(s, nil); err != nil {
 			return err
 		}
 	}
-	return p.Goal.AssignNums(nil)
+	return p.Goal.AssignNums(s, nil)
 }
 
-func (l *Literal) AssignNums(f *numFrame) os.Error {
+func (l *Literal) AssignNums(s *Symtab, f *numFrame) os.Error {
 	for i, t := range l.Parameters {
 		name := &l.Parameters[i].Name
 		switch t.Kind {
 		case TermVariable:
-			if fnxt := name.numberVar(f); fnxt == f {
+			if fnxt := name.numberVar(s, f); fnxt == f {
 				break
 			}
 			return fmt.Errorf("%s: Unbound variable %s\n", t.Loc, name.Str)
 		case TermConstant:
-			name.numberConst()
+			name.numberConst(s)
 		}
 	}
-	l.Name.numberPred()
+	l.Name.numberPred(s)
 	return nil
 }
 
-func (e *ExprBinary) AssignNums(f *numFrame) os.Error {
-	if err := e.Left.AssignNums(f); err != nil {
+func (e *ExprBinary) AssignNums(s *Symtab, f *numFrame) os.Error {
+	if err := e.Left.AssignNums(s, f); err != nil {
 		return err
 	}
-	return e.Right.AssignNums(f)
+	return e.Right.AssignNums(s, f)
 }
 
-func (ExprTrue) AssignNums(*numFrame) os.Error { return nil }
-
-func (ExprFalse) AssignNums(*numFrame) os.Error { return nil }
-
-func (e *ExprAnd) AssignNums(f *numFrame) os.Error {
-	return (*ExprBinary)(e).AssignNums(f)
+func (ExprTrue) AssignNums(*Symtab, *numFrame) os.Error {
+	return nil
 }
 
-func (e *ExprOr) AssignNums(f *numFrame) os.Error {
-	return (*ExprBinary)(e).AssignNums(f)
+func (ExprFalse) AssignNums(*Symtab, *numFrame) os.Error {
+	return nil
 }
 
-func (e *ExprNot) AssignNums(f *numFrame) os.Error {
-	return e.Expr.AssignNums(f)
+func (e *ExprAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprBinary)(e).AssignNums(s, f)
 }
 
-func (e *ExprQuant) AssignNums(f *numFrame) os.Error {
-	f = e.Variable.Name.numberVar(f)
+func (e *ExprOr) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprBinary)(e).AssignNums(s, f)
+}
+
+func (e *ExprNot) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return e.Expr.AssignNums(s, f)
+}
+
+func (e *ExprQuant) AssignNums(s *Symtab, f *numFrame) os.Error {
+	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
-		e.Variable.Type[i].numberType()
+		e.Variable.Type[i].numberType(s)
 	}
-	return e.Expr.AssignNums(f)
+	return e.Expr.AssignNums(s, f)
 }
 
-func (e *ExprForall) AssignNums(f *numFrame) os.Error {
-	return (*ExprQuant)(e).AssignNums(f)
+func (e *ExprForall) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprQuant)(e).AssignNums(s, f)
 }
 
-func (e *ExprExists) AssignNums(f *numFrame) os.Error {
-	return (*ExprQuant)(e).AssignNums(f)
+func (e *ExprExists) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprQuant)(e).AssignNums(s, f)
 }
 
-func (e *ExprLiteral) AssignNums(f *numFrame) os.Error {
-	return (*Literal)(e).AssignNums(f)
+func (e *ExprLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(e).AssignNums(s, f)
 }
 
-func (e *EffectUnary) AssignNums(f *numFrame) os.Error {
-	return e.Effect.AssignNums(f)
+func (e *EffectUnary) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return e.Effect.AssignNums(s, f)
 }
 
-func (EffectNone) AssignNums(*numFrame) os.Error { return nil }
+func (EffectNone) AssignNums(*Symtab, *numFrame) os.Error {
+	return nil
+}
 
-func (e *EffectAnd) AssignNums(f *numFrame) os.Error {
-	if err := e.Left.AssignNums(f); err != nil {
+func (e *EffectAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
+	if err := e.Left.AssignNums(s, f); err != nil {
 		return err
 	}
-	return e.Right.AssignNums(f)
+	return e.Right.AssignNums(s, f)
 }
 
-func (e *EffectForall) AssignNums(f *numFrame) os.Error {
-	f = e.Variable.Name.numberVar(f)
+func (e *EffectForall) AssignNums(s *Symtab, f *numFrame) os.Error {
+	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
-		e.Variable.Type[i].numberType()
+		e.Variable.Type[i].numberType(s)
 	}
-	return e.Effect.AssignNums(f)
+	return e.Effect.AssignNums(s, f)
 }
 
-func (e *EffectWhen) AssignNums(f *numFrame) os.Error {
-	if err := e.Condition.AssignNums(f); err != nil {
+func (e *EffectWhen) AssignNums(s *Symtab, f *numFrame) os.Error {
+	if err := e.Condition.AssignNums(s, f); err != nil {
 		return err
 	}
-	return e.Effect.AssignNums(f)
+	return e.Effect.AssignNums(s, f)
 }
 
-func (e *EffectLiteral) AssignNums(f *numFrame) os.Error {
-	return (*Literal)(e).AssignNums(f)
+func (e *EffectLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(e).AssignNums(s, f)
 }
 
-func (e *EffectAssign) AssignNums(*numFrame) os.Error { return nil }
-
-func (i *InitLiteral) AssignNums(f *numFrame) os.Error {
-	return (*Literal)(i).AssignNums(f)
+func (e *EffectAssign) AssignNums(*Symtab, *numFrame) os.Error {
+	return nil
 }
 
-func (i *InitEq) AssignNums(f *numFrame) os.Error { return nil }
+func (i *InitLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(i).AssignNums(s, f)
+}
 
-func (name *Name) numberType() {
-	if n, ok := typeNums[name.Str]; ok {
+func (i *InitEq) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return nil
+}
+
+func (name *Name) numberType(s *Symtab) {
+	if n, ok := s.typeNums[name.Str]; ok {
 		name.Num = n
 	} else {
-		name.Num = len(typeNames)
-		typeNums[name.Str] = name.Num
-		typeNames = append(typeNames, name.Str)
+		name.Num = len(s.typeNames)
+		s.typeNums[name.Str] = name.Num
+		s.typeNames = append(s.typeNames, name.Str)
 	}
 }
 
-func (name *Name) numberConst() bool {
-	if n, ok := constNums[name.Str]; ok {
+func (name *Name) numberConst(s *Symtab) bool {
+	if n, ok := s.constNums[name.Str]; ok {
 		name.Num = n
 		return true
 	}
-	name.Num = len(constNames)
-	constNums[name.Str] = name.Num
-	constNames = append(constNames, name.Str)
+	name.Num = len(s.constNames)
+	s.constNums[name.Str] = name.Num
+	s.constNames = append(s.constNames, name.Str)
 	return false
 }
 
-func (name *Name) numberPred() {
-	if n, ok := predNums[name.Str]; ok {
+func (name *Name) numberPred(s *Symtab) {
+	if n, ok := s.predNums[name.Str]; ok {
 		name.Num = n
 	} else {
-		name.Num = len(predNames)
-		predNums[name.Str] = name.Num
-		predNames = append(predNames, name.Str)
+		name.Num = len(s.predNames)
+		s.predNums[name.Str] = name.Num
+		s.predNames = append(s.predNames, name.Str)
 	}
 }
 
-func (name *Name) numberVar(f *numFrame) *numFrame {
+func (name *Name) numberVar(s *Symtab, f *numFrame) *numFrame {
 	if n, ok := f.lookup(name.Str); ok {
 		name.Num = n
 		return f
 	}
-	n := len(varNames)
+	n := len(s.varNames)
 	name.Num = n
-	varNames = append(varNames, name.Str)
+	s.varNames = append(s.varNames, name.Str)
 	return &numFrame{name: name.Str, num: n, up: f}
 }
 

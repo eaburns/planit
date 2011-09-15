@@ -57,7 +57,7 @@ type Literal struct {
 }
 
 type Expr interface {
-	AssignNums(*numFrame) os.Error
+	AssignNums(*Symtab, *numFrame) os.Error
 }
 
 type ExprBinary struct {
@@ -83,7 +83,7 @@ type ExprExists ExprQuant
 type ExprLiteral Literal
 
 type Effect interface {
-	AssignNums(*numFrame) os.Error
+	AssignNums(*Symtab, *numFrame) os.Error
 }
 
 type EffectBinary struct {
@@ -154,7 +154,7 @@ const (
 )
 
 type InitEl interface{
-	AssignNums(*numFrame) os.Error
+	AssignNums(*Symtab, *numFrame) os.Error
 }
 
 type InitLiteral Literal

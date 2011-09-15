@@ -19,7 +19,7 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 		return err
 	}
 	for _, a := range d.Actions {
-		if err := a.AssignNums(s); err != nil {
+		if err := a.assignNums(s); err != nil {
 			return err
 		}
 	}
@@ -90,7 +90,7 @@ func (c *TypedName) numberConst(s *Symtab) os.Error {
 	return nil
 }
 
-func (a *Action) AssignNums(s *Symtab) os.Error {
+func (a *Action) assignNums(s *Symtab) os.Error {
 	var f *numFrame
 	for i, _ := range a.Parameters {
 		p := &a.Parameters[i]
@@ -101,23 +101,23 @@ func (a *Action) AssignNums(s *Symtab) os.Error {
 			}
 		}
 	}
-	if err := a.Precondition.AssignNums(s, f); err != nil {
+	if err := a.Precondition.assignNums(s, f); err != nil {
 		return err
 	}
-	return a.Effect.AssignNums(s, f)
+	return a.Effect.assignNums(s, f)
 }
 
 func (p *Problem) AssignNums(s *Symtab) os.Error {
 	numberConsts(s, p.Objects)
 	for _, init := range p.Init {
-		if err := init.AssignNums(s, nil); err != nil {
+		if err := init.assignNums(s, nil); err != nil {
 			return err
 		}
 	}
-	return p.Goal.AssignNums(s, nil)
+	return p.Goal.assignNums(s, nil)
 }
 
-func (l *Literal) AssignNums(s *Symtab, f *numFrame) os.Error {
+func (l *Literal) assignNums(s *Symtab, f *numFrame) os.Error {
 	for i, t := range l.Parameters {
 		name := &l.Parameters[i].Name
 		switch t.Kind {
@@ -137,100 +137,100 @@ func (l *Literal) AssignNums(s *Symtab, f *numFrame) os.Error {
 	return nil
 }
 
-func (e *ExprBinary) AssignNums(s *Symtab, f *numFrame) os.Error {
-	if err := e.Left.AssignNums(s, f); err != nil {
+func (e *ExprBinary) assignNums(s *Symtab, f *numFrame) os.Error {
+	if err := e.Left.assignNums(s, f); err != nil {
 		return err
 	}
-	return e.Right.AssignNums(s, f)
+	return e.Right.assignNums(s, f)
 }
 
-func (ExprTrue) AssignNums(*Symtab, *numFrame) os.Error {
+func (ExprTrue) assignNums(*Symtab, *numFrame) os.Error {
 	return nil
 }
 
-func (ExprFalse) AssignNums(*Symtab, *numFrame) os.Error {
+func (ExprFalse) assignNums(*Symtab, *numFrame) os.Error {
 	return nil
 }
 
-func (e *ExprAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*ExprBinary)(e).AssignNums(s, f)
+func (e *ExprAnd) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprBinary)(e).assignNums(s, f)
 }
 
-func (e *ExprOr) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*ExprBinary)(e).AssignNums(s, f)
+func (e *ExprOr) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprBinary)(e).assignNums(s, f)
 }
 
-func (e *ExprNot) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return e.Expr.AssignNums(s, f)
+func (e *ExprNot) assignNums(s *Symtab, f *numFrame) os.Error {
+	return e.Expr.assignNums(s, f)
 }
 
-func (e *ExprQuant) AssignNums(s *Symtab, f *numFrame) os.Error {
+func (e *ExprQuant) assignNums(s *Symtab, f *numFrame) os.Error {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
 		if found := e.Variable.Type[i].numberType(s); !found {
 			return undeclType(&e.Variable.Type[i])
 		}
 	}
-	return e.Expr.AssignNums(s, f)
+	return e.Expr.assignNums(s, f)
 }
 
-func (e *ExprForall) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*ExprQuant)(e).AssignNums(s, f)
+func (e *ExprForall) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprQuant)(e).assignNums(s, f)
 }
 
-func (e *ExprExists) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*ExprQuant)(e).AssignNums(s, f)
+func (e *ExprExists) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*ExprQuant)(e).assignNums(s, f)
 }
 
-func (e *ExprLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*Literal)(e).AssignNums(s, f)
+func (e *ExprLiteral) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(e).assignNums(s, f)
 }
 
-func (e *EffectUnary) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return e.Effect.AssignNums(s, f)
+func (e *EffectUnary) assignNums(s *Symtab, f *numFrame) os.Error {
+	return e.Effect.assignNums(s, f)
 }
 
-func (EffectNone) AssignNums(*Symtab, *numFrame) os.Error {
+func (EffectNone) assignNums(*Symtab, *numFrame) os.Error {
 	return nil
 }
 
-func (e *EffectAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
-	if err := e.Left.AssignNums(s, f); err != nil {
+func (e *EffectAnd) assignNums(s *Symtab, f *numFrame) os.Error {
+	if err := e.Left.assignNums(s, f); err != nil {
 		return err
 	}
-	return e.Right.AssignNums(s, f)
+	return e.Right.assignNums(s, f)
 }
 
-func (e *EffectForall) AssignNums(s *Symtab, f *numFrame) os.Error {
+func (e *EffectForall) assignNums(s *Symtab, f *numFrame) os.Error {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
 		if found := e.Variable.Type[i].numberType(s); !found {
 			return undeclType(&e.Variable.Type[i])
 		}
 	}
-	return e.Effect.AssignNums(s, f)
+	return e.Effect.assignNums(s, f)
 }
 
-func (e *EffectWhen) AssignNums(s *Symtab, f *numFrame) os.Error {
-	if err := e.Condition.AssignNums(s, f); err != nil {
+func (e *EffectWhen) assignNums(s *Symtab, f *numFrame) os.Error {
+	if err := e.Condition.assignNums(s, f); err != nil {
 		return err
 	}
-	return e.Effect.AssignNums(s, f)
+	return e.Effect.assignNums(s, f)
 }
 
-func (e *EffectLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*Literal)(e).AssignNums(s, f)
+func (e *EffectLiteral) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(e).assignNums(s, f)
 }
 
-func (e *EffectAssign) AssignNums(*Symtab, *numFrame) os.Error {
+func (e *EffectAssign) assignNums(*Symtab, *numFrame) os.Error {
 	return nil
 }
 
-func (i *InitLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
-	return (*Literal)(i).AssignNums(s, f)
+func (i *InitLiteral) assignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(i).assignNums(s, f)
 }
 
-func (i *InitEq) AssignNums(s *Symtab, f *numFrame) os.Error {
+func (i *InitEq) assignNums(s *Symtab, f *numFrame) os.Error {
 	return nil
 }
 

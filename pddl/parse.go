@@ -530,7 +530,7 @@ func (p *Parser) parseInit() (els []InitEl) {
 
 func (p *Parser) parseInitEl() InitEl {
 	if p.acceptNamedList("=") {
-		eq := InitEq{
+		eq := &InitEq{
 			Lval: p.parseFhead(),
 			Rval: p.expect(tokNum).txt,
 		}

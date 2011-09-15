@@ -36,8 +36,9 @@ func main() {
 	}
 
 	nacts := len(dom.Actions)
-	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
+//	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
 	if (*dump) {
+		fmt.Printf("%+v\n\n", syms);
 		fmt.Printf("%+v\n\n%+v", dom, prob)
 	}
 	fmt.Printf("%d actions\n", nacts)

@@ -32,6 +32,9 @@ func (a *Action) AssignNums(s *Symtab) os.Error {
 	var f *numFrame
 	for i, _ := range a.Parameters {
 		f = s.VarNum(f, &a.Parameters[i].Name)
+		for j, _ := range a.Parameters[i].Type {
+			s.types.Number(&a.Parameters[i].Type[j])
+		}
 	}
 	if err := a.Precondition.AssignNums(s, f); err != nil {
 		return err
@@ -42,6 +45,11 @@ func (a *Action) AssignNums(s *Symtab) os.Error {
 func (p *Problem) AssignNums(s *Symtab) os.Error {
 	for i, _ := range p.Objects {
 		s.consts.Number(&p.Objects[i].Name)
+	}
+	for _, init := range p.Init {
+		if err := init.AssignNums(s, nil); err != nil {
+			return err
+		}
 	}
 	return p.Goal.AssignNums(s, nil)
 }
@@ -88,6 +96,9 @@ func (e *ExprNot) AssignNums(s *Symtab, f *numFrame) os.Error {
 
 func (e *ExprQuant) AssignNums(s *Symtab, f *numFrame) os.Error {
 	f = s.VarNum(f, &e.Variable.Name)
+	for i, _ := range e.Variable.Type {
+		s.types.Number(&e.Variable.Type[i])
+	}
 	return e.Expr.AssignNums(s, f)
 }
 
@@ -118,6 +129,9 @@ func (e *EffectAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
 
 func (e *EffectForall) AssignNums(s *Symtab, f *numFrame) os.Error {
 	f = s.VarNum(f, &e.Variable.Name)
+	for i, _ := range e.Variable.Type {
+		s.types.Number(&e.Variable.Type[i])
+	}
 	return e.Effect.AssignNums(s, f)
 }
 
@@ -160,3 +174,9 @@ func (f *numFrame) lookup(name string) (int, bool) {
 	}
 	return f.up.lookup(name)
 }
+
+func (i *InitLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
+	return (*Literal)(i).AssignNums(s, f)
+}
+
+func (i *InitEq) AssignNums(s *Symtab, f *numFrame) os.Error { return nil }

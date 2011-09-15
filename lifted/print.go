@@ -11,8 +11,8 @@ func (d *Domain) String() string {
 	buf.WriteString("&Domain{")
 	fmt.Fprintf(buf, "Name:%s,\n", d.Name)
 	fmt.Fprintf(buf, "Requirements:%+v\n", d.Requirements)
-	fmt.Fprintf(buf, "Types:%+v\n", d.Types)
-	fmt.Fprintf(buf, "Constants:%+v\n", d.Constants)
+	fmt.Fprintf(buf, "Types:%v\n", d.Types)
+	fmt.Fprintf(buf, "Constants:%v\n", d.Constants)
 	fmt.Fprintf(buf, "Predicates:%+v\n", d.Predicates)
 
 	buf.WriteString("Actions:[\n")
@@ -27,6 +27,11 @@ func (d *Domain) String() string {
 	return buf.String()
 }
 
+func (p Predicate) String() string {
+	return fmt.Sprintf("Predicate{Name:%v, Parameters:%v}",
+		p.Name, p.Parameters)
+}
+
 func (a Action) String() string {
 	buf := bytes.NewBuffer(make([]byte, 0, 100))
 
@@ -36,6 +41,22 @@ func (a Action) String() string {
 	fmt.Fprintf(buf, "\nPrecondition:%+v", a.Precondition)
 	fmt.Fprintf(buf, "\nEffect:%+v", a.Effect)
 	buf.WriteString("}")
+
+	return buf.String()
+}
+
+func (p *Problem) String() string {
+	buf := bytes.NewBuffer(make([]byte, 0, 100))
+
+	buf.WriteString("Problem{")
+	fmt.Fprintf(buf, "Name:%s\n", p.Name)
+	fmt.Fprintf(buf, "Domain:%s\n", p.Domain)
+	fmt.Fprintf(buf, "Requirements:%v\n", p.Requirements)
+	fmt.Fprintf(buf, "Objects:%v\n", p.Objects)
+	fmt.Fprintf(buf, "Init:%+v\n", p.Init)
+	fmt.Fprintf(buf, "Goal:%+v\n", p.Goal)
+	fmt.Fprintf(buf, "Metric:%+v\n", p.Metric)
+	buf.WriteByte('}');
 
 	return buf.String()
 }
@@ -149,4 +170,12 @@ var assignOpNames = map[AssignOp]string{
 
 func (o AssignOp) String() string {
 	return assignOpNames[o]
+}
+
+func (i *InitLiteral) String() string {
+	return fmt.Sprintf("%v", (*Literal)(i))
+}
+
+func (i *InitEq) String() string {
+	return fmt.Sprintf("InitEq{Lval:%v, Rval:%v}", i.Lval, i.Rval)
 }

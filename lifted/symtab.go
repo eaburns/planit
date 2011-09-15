@@ -28,6 +28,7 @@ func MakeCoatCheck() CoatCheck {
 func (n *CoatCheck) Number(name *Name) {
 	if num, ok := n.nums[name.String]; ok {
 		name.Number = num
+		return
 	}
 	num := len(n.strings)
 	n.nums[name.String] = num

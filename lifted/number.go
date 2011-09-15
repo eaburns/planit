@@ -15,11 +15,21 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 			t.Type[j].numberType(s)
 		}
 	}
+
 	s.typeObjs = make([][]int, len(s.typeNames))
 	numberConsts(s, d.Constants)
+
 	for i, _ := range d.Predicates {
-		d.Predicates[i].Name.numberPred(s)
+		p := &d.Predicates[i]
+		p.Name.numberPred(s)
+		for j, _ := range p.Parameters {
+			parm := p.Parameters[j]
+			for k, _ := range parm.Type {
+				parm.Type[k].numberType(s)
+			}
+		}
 	}
+
 	for _, a := range d.Actions {
 		if err := a.AssignNums(s); err != nil {
 			return err

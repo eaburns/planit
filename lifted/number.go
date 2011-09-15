@@ -135,40 +135,6 @@ func (e *EffectLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
 
 func (e *EffectAssign) AssignNums(*Symtab, *numFrame) os.Error { return nil }
 
-type Symtab struct {
-	consts   CoatCheck
-	preds    CoatCheck
-	types    CoatCheck
-	varNames []string
-}
-
-func NewSymtab() *Symtab {
-	return &Symtab{
-		consts: MakeCoatCheck(),
-		preds:  MakeCoatCheck(),
-		types:  MakeCoatCheck(),
-	}
-}
-
-type CoatCheck struct {
-	nums    map[string]int
-	strings []string
-}
-
-func MakeCoatCheck() CoatCheck {
-	return CoatCheck{nums: make(map[string]int)}
-}
-
-func (n *CoatCheck) Number(name *Name) {
-	if num, ok := n.nums[name.String]; ok {
-		name.Number = num
-	}
-	num := len(n.strings)
-	n.nums[name.String] = num
-	n.strings = append(n.strings, name.String)
-	name.Number = num
-}
-
 func (s *Symtab) VarNum(f *numFrame, name *Name) *numFrame {
 	if n, ok := f.lookup(name.String); ok {
 		name.Number = n

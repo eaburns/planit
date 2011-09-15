@@ -136,22 +136,22 @@ func (e *EffectLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
 func (e *EffectAssign) AssignNums(*Symtab, *numFrame) os.Error { return nil }
 
 type Symtab struct {
-	consts Numberer
-	preds Numberer
-	types Numberer
-	varNames[]string
+	consts   Numberer
+	preds    Numberer
+	types    Numberer
+	varNames []string
 }
 
 func NewSymtab() *Symtab {
 	return &Symtab{
 		consts: MakeNumberer(),
-		preds: MakeNumberer(),
-		types: MakeNumberer(),
+		preds:  MakeNumberer(),
+		types:  MakeNumberer(),
 	}
 }
 
 type Numberer struct {
-	nums map[string]int
+	nums    map[string]int
 	strings []string
 }
 
@@ -176,7 +176,7 @@ func (s *Symtab) VarNum(f *numFrame, name *Name) *numFrame {
 	}
 	n := len(s.varNames)
 	s.varNames = append(s.varNames, name.String)
-	name.Number = n;
+	name.Number = n
 	return &numFrame{name: name.String, num: n, up: f}
 }
 

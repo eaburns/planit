@@ -11,6 +11,13 @@ type Domain struct {
 	Actions      []Action
 }
 
+type Action struct {
+	Name         string
+	Parameters   []TypedName
+	Precondition Expr
+	Effect       Effect
+}
+
 type TypedName struct {
 	Name string
 	Num int
@@ -21,13 +28,6 @@ type Predicate struct {
 	Name       string
 	Num int
 	Parameters []TypedName
-}
-
-type Action struct {
-	Name         string
-	Parameters   []TypedName
-	Precondition Expr
-	Effect       Effect
 }
 
 type TermKind int
@@ -52,7 +52,7 @@ type Literal struct {
 }
 
 type Expr interface {
-	UniquifyVars(*uniqFrame) os.Error
+	AssignNums(*Symtab, *numFrame) os.Error
 	ExpandQuants(*expandFrame) Expr
 }
 
@@ -79,7 +79,7 @@ type ExprExists ExprQuant
 type ExprLiteral Literal
 
 type Effect interface {
-	UniquifyVars(*uniqFrame) os.Error
+	AssignNums(*Symtab, *numFrame) os.Error
 	ExpandQuants(*expandFrame) Effect
 }
 

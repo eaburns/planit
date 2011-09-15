@@ -20,7 +20,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = dom.UniquifyVars()
+	syms := lifted.NewSymtab()
+	err = dom.AssignNums(syms)
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = prob.UniquifyVars()
+	err = prob.AssignNums(syms)
 	if err != nil {
 		panic(err)
 	}

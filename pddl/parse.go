@@ -71,7 +71,7 @@ func (p *Parser) acceptNamedList(name string) bool {
 }
 
 func (p *Parser) errorf(format string, args ...interface{}) {
-	panic(fmt.Errorf("%s: %s", p.locString(),  fmt.Sprintf(format, args...)))
+	panic(fmt.Errorf("%s: %s", p.locString(), fmt.Sprintf(format, args...)))
 }
 
 func (p *Parser) expect(typ tokenType) token {
@@ -256,7 +256,7 @@ func (p *Parser) parseExpr() (res Expr) {
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
 		res = &ExprOr{
-			Left: &ExprNot{Expr: p.parseExpr()},
+			Left:  &ExprNot{Expr: p.parseExpr()},
 			Right: p.parseExpr(),
 		}
 		p.expect(tokClose)

@@ -227,8 +227,10 @@ func (e *EffectLiteral) assignNums(s *Symtab, f *numFrame) os.Error {
 		return err
 	}
 	switch e.Positive {
-	case true: s.predInertia[e.Name.Num] &^= posInertia
-	case false: s.predInertia[e.Name.Num] &^= negInertia
+	case true:
+		s.predInertia[e.Name.Num] &^= posInertia
+	case false:
+		s.predInertia[e.Name.Num] &^= negInertia
 	}
 	return nil
 }

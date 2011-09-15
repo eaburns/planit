@@ -153,7 +153,7 @@ const (
 	MetricMinCost
 )
 
-type InitEl interface{
+type InitEl interface {
 	assignNums(*Symtab, *numFrame) os.Error
 }
 

@@ -18,7 +18,7 @@ func (d *Domain) String() string {
 	buf.WriteString("Actions:[\n")
 	for i, a := range d.Actions {
 		buf.WriteString(a.String())
-		if i < len(d.Actions) - 1 {
+		if i < len(d.Actions)-1 {
 			buf.WriteString("\n\n")
 		}
 	}
@@ -56,7 +56,7 @@ func (p *Problem) String() string {
 	fmt.Fprintf(buf, "Init:%+v\n", p.Init)
 	fmt.Fprintf(buf, "Goal:%+v\n", p.Goal)
 	fmt.Fprintf(buf, "Metric:%+v\n", p.Metric)
-	buf.WriteByte('}');
+	buf.WriteByte('}')
 
 	return buf.String()
 }

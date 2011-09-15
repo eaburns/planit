@@ -14,7 +14,8 @@ import (
 var dpath = flag.String("d", "", "The PDDL domain file")
 var ppath = flag.String("p", "", "The PDDL problem file")
 var dump = flag.Bool("dump", false, "Dump ground planning problem")
-var cpuprofile = flag.String("cpuprofile", "", "Write CPU profile to file")
+var cpuprofile = flag.String("cpuprofile", "", "Write CPU profile to this file")
+var memprofile = flag.String("memprofile", "", "Write memory profile to this file")
 
 func main() {
 	flag.Parse()
@@ -37,7 +38,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	prob, err := problem()
 	if err != nil {
 		panic(err)
@@ -45,6 +45,16 @@ func main() {
 	err = prob.AssignNums(syms)
 	if err != nil {
 		panic(err)
+	}
+
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+		return
 	}
 
 	nacts := len(dom.Actions)

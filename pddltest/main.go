@@ -20,8 +20,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	syms := lifted.NewSymtab()
-	err = dom.AssignNums(syms)
+	err = dom.AssignNums()
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = prob.AssignNums(syms)
+	err = prob.AssignNums()
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +37,6 @@ func main() {
 	nacts := len(dom.Actions)
 //	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
 	if (*dump) {
-		fmt.Printf("%+v\n\n", syms);
 		fmt.Printf("%+v\n\n%+v", dom, prob)
 	}
 	fmt.Printf("%d actions\n", nacts)

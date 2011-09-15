@@ -12,12 +12,12 @@ type Domain struct {
 }
 
 type Name struct {
-	String string
-	Number int
+	Str string
+	Num int
 }
 
 func MakeName(s string) Name {
-	return Name{String: s, Number: -1}
+	return Name{Str: s, Num: -1}
 }
 
 type Action struct {
@@ -57,7 +57,7 @@ type Literal struct {
 }
 
 type Expr interface {
-	AssignNums(*Symtab, *numFrame) os.Error
+	AssignNums(*numFrame) os.Error
 }
 
 type ExprBinary struct {
@@ -83,7 +83,7 @@ type ExprExists ExprQuant
 type ExprLiteral Literal
 
 type Effect interface {
-	AssignNums(*Symtab, *numFrame) os.Error
+	AssignNums(*numFrame) os.Error
 }
 
 type EffectBinary struct {
@@ -154,7 +154,7 @@ const (
 )
 
 type InitEl interface{
-	AssignNums(*Symtab, *numFrame) os.Error
+	AssignNums(*numFrame) os.Error
 }
 
 type InitLiteral Literal

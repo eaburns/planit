@@ -9,11 +9,17 @@ import (
 )
 
 func (d *Domain) AssignNums(s *Symtab) os.Error {
+	for i, _ := range d.Types {
+		s.types.Number(&d.Types[i].Name)
+		for j, _ := range d.Types[i].Type {
+			s.types.Number(&d.Types[i].Type[j])
+		}
+	}
 	for i, _ := range d.Constants {
-		d.Constants[i].Num = s.ConstNum(d.Constants[i].Name)
+		s.consts.Number(&d.Constants[i].Name)
 	}
 	for i, _ := range d.Predicates {
-		d.Predicates[i].Num = s.PredNum(d.Predicates[i].Name)
+		s.preds.Number(&d.Predicates[i].Name)
 	}
 	for _, a := range d.Actions {
 		if err := a.AssignNums(s); err != nil {
@@ -26,9 +32,7 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 func (a *Action) AssignNums(s *Symtab) os.Error {
 	var f *numFrame
 	for i, _ := range a.Parameters {
-		fnxt, n := s.VarNum(f, a.Parameters[i].Name)
-		f = fnxt
-		a.Parameters[i].Num = n
+		f = s.VarNum(f, &a.Parameters[i].Name)
 	}
 	if err := a.Precondition.AssignNums(s, f); err != nil {
 		return err
@@ -38,27 +42,25 @@ func (a *Action) AssignNums(s *Symtab) os.Error {
 
 func (p *Problem) AssignNums(s *Symtab) os.Error {
 	for i, _ := range p.Objects {
-		p.Objects[i].Num = s.ConstNum(p.Objects[i].Name)
+		s.consts.Number(&p.Objects[i].Name)
 	}
 	return p.Goal.AssignNums(s, nil)
 }
 
 func (l *Literal) AssignNums(s *Symtab, f *numFrame) os.Error {
 	for i, t := range l.Parameters {
-		var n int
 		switch t.Kind {
 		case TermVariable:
-			if fnxt, num := s.VarNum(f, t.Name); fnxt != f {
-				return fmt.Errorf("%s: Unbound variable %s\n", t.Loc, t.Name)
-			} else {
-	 			n = num
+			if fnxt := s.VarNum(f, &l.Parameters[i].Name); fnxt == f {
+				break
 			}
+			name := l.Parameters[i].Name.String
+			return fmt.Errorf("%s: Unbound variable %s\n", t.Loc, name)
 		case TermConstant:
-			n = s.ConstNum(t.Name)
+			s.consts.Number(&l.Parameters[i].Name)
 		}
-		l.Parameters[i].Num = n
 	}
-	l.Num = s.PredNum(l.Name)
+	s.preds.Number(&l.Name)
 	return nil
 }
 
@@ -86,8 +88,7 @@ func (e *ExprNot) AssignNums(s *Symtab, f *numFrame) os.Error {
 }
 
 func (e *ExprQuant) AssignNums(s *Symtab, f *numFrame) os.Error {
-	f, n := s.VarNum(f, e.Variable.Name)
-	e.Variable.Num = n
+	f = s.VarNum(f, &e.Variable.Name)
 	return e.Expr.AssignNums(s, f)
 }
 
@@ -117,8 +118,7 @@ func (e *EffectAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
 }
 
 func (e *EffectForall) AssignNums(s *Symtab, f *numFrame) os.Error {
-	f, n := s.VarNum(f, e.Variable.Name)
-	e.Variable.Num = n
+	f = s.VarNum(f, &e.Variable.Name)
 	return e.Effect.AssignNums(s, f)
 }
 
@@ -136,68 +136,48 @@ func (e *EffectLiteral) AssignNums(s *Symtab, f *numFrame) os.Error {
 func (e *EffectAssign) AssignNums(*Symtab, *numFrame) os.Error { return nil }
 
 type Symtab struct {
-	constNums map[string]int
-	constNames []string
-	predNums map[string]int
-	predNames []string
+	consts Numberer
+	preds Numberer
+	types Numberer
 	varNames[]string
 }
 
 func NewSymtab() *Symtab {
 	return &Symtab{
-		constNums: make(map[string]int),
-		predNums: make(map[string]int),
+		consts: MakeNumberer(),
+		preds: MakeNumberer(),
+		types: MakeNumberer(),
 	}
 }
 
-func (s *Symtab) ConstNum(name string) int {
-	if n, ok := s.constNums[name]; ok {
-		return n
+type Numberer struct {
+	nums map[string]int
+	strings []string
+}
+
+func MakeNumberer() Numberer {
+	return Numberer{nums: make(map[string]int)}
+}
+
+func (n *Numberer) Number(name *Name) {
+	if num, ok := n.nums[name.String]; ok {
+		name.Number = num
 	}
-	n := len(s.constNames)
-	s.constNums[name] = n
-	s.constNames = append(s.constNames, name)
-	return n
+	num := len(n.strings)
+	n.nums[name.String] = num
+	n.strings = append(n.strings, name.String)
+	name.Number = num
 }
 
-func (s *Symtab) ConstName(n int) (string, bool) {
-	if n < 0 || n > len(s.constNames) {
-		return "", false
-	}	
-	return s.constNames[n], true
-}
-
-func (s *Symtab) PredNum(name string) int {
-	if n, ok := s.predNums[name]; ok {
-		return n
-	}
-	n := len(s.predNums)
-	s.predNums[name] = n
-	s.predNames = append(s.predNames, name)
-	return n
-}
-
-func (s *Symtab) PredName(n int) (string, bool) {
-	if n < 0 || n > len(s.predNames) {
-		return "", false
-	}	
-	return s.predNames[n], true
-}
-
-func (s *Symtab) VarNum(f *numFrame, name string) (*numFrame, int) {
-	if n, ok := f.lookup(name); ok {
-		return f, n
+func (s *Symtab) VarNum(f *numFrame, name *Name) *numFrame {
+	if n, ok := f.lookup(name.String); ok {
+		name.Number = n
+		return f
 	}
 	n := len(s.varNames)
-	s.varNames = append(s.varNames, name)
-	return &numFrame{name: name, num: n, up: f}, n
-}
-
-func (s *Symtab) VarName(n int) (string, bool) {
-	if n < 0 || n > len(s.varNames) {
-		return "", false
-	}	
-	return s.varNames[n], true
+	s.varNames = append(s.varNames, name.String)
+	name.Number = n;
+	return &numFrame{name: name.String, num: n, up: f}
 }
 
 type numFrame struct {

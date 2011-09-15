@@ -175,7 +175,7 @@ func (p *Parser) parsePredsDef() (Predicates []Predicate) {
 func (p *Parser) parseAtomicFormSkele() Predicate {
 	p.expect(tokOpen)
 	pred := Predicate{
-		Name:       p.expect(tokId).txt,
+		Name:       MakeName(p.expect(tokId).txt),
 		Parameters: p.parseTypedListString(tokQid),
 	}
 	p.expect(tokClose)
@@ -268,7 +268,7 @@ func (p *Parser) parseLiteral() *Literal {
 	p.expect(tokOpen)
 	res := &Literal{
 		Positive:   pos,
-		Name:       p.expect(tokId).txt,
+		Name:       MakeName(p.expect(tokId).txt),
 		Parameters: p.parseTerms(),
 	}
 	if !pos {
@@ -283,7 +283,7 @@ func (p *Parser) parseTerms() (lst []Term) {
 		if t, ok := p.accept(tokId); ok {
 			lst = append(lst, Term{
 				Kind: TermConstant,
-				Name: t.txt,
+				Name: MakeName(t.txt),
 				Loc: p.locString(),
 			})
 			continue
@@ -291,7 +291,7 @@ func (p *Parser) parseTerms() (lst []Term) {
 		if t, ok := p.accept(tokQid); ok {
 			lst = append(lst, Term{
 				Kind: TermVariable,
-				Name: t.txt,
+				Name: MakeName(t.txt),
 				Loc: p.locString(),
 			})
 			continue
@@ -568,24 +568,26 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 		}
 		typ := p.parseType()
 		for _, n := range names {
-			lst = append(lst, TypedName{Name: n, Type: typ})
+			lst = append(lst, TypedName{Name: MakeName(n), Type: typ})
 		}
 	}
 	return lst
 }
 
-func (p *Parser) parseType() []string {
+func (p *Parser) parseType() (typ []Name) {
 	if _, ok := p.accept(tokMinus); !ok {
-		return []string{"object"}
+		return []Name{MakeName("object")}
 	}
 	if _, ok := p.accept(tokOpen); ok {
 		p.expectId("either")
-		lst := p.parseStringPlus(tokId)
+		for _, s := range p.parseStringPlus(tokId) {
+			typ = append(typ, MakeName(s))
+		}
 		p.expect(tokClose)
-		return lst
+		return typ
 	}
 	t := p.expect(tokId)
-	return []string{t.txt}
+	return []Name{MakeName(t.txt)}
 }
 
 func (p *Parser) parseStringPlus(typ tokenType) []string {

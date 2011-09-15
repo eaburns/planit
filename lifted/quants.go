@@ -26,8 +26,8 @@ func (a *Action) expand(f *expandFrame) []Action {
 	
 		objs := objsOfType(f, saved.Type)
 		for _, obj := range objs {
-			a.Parameters[pnum].Name = obj
-			g := f.push(saved.Name, obj)
+			a.Parameters[pnum].Name.String = obj
+			g := f.push(saved.Name.String, obj)
 			acts = append(acts, expnd(g, ps[1:])...)
 		}
 
@@ -70,14 +70,14 @@ func (l *Literal) ExpandQuants(f *expandFrame) *Literal {
 			res.Parameters[i] = t
 			continue
 		}
-		o, ok := f.lookup(t.Name)
+		o, ok := f.lookup(t.Name.String)
 		if !ok {
 			res.Parameters[i] = t
 			continue
 		}
 		res.Parameters[i] = Term{
 			Kind: TermConstant,
-			Name: o,
+			Name: MakeName(o),
 			Loc:  t.Loc,
 		}
 	}
@@ -117,7 +117,7 @@ comb func(Expr, Expr) Expr) Expr {
 	objs := objsOfType(f, e.Variable.Type)
 	seq := base
 	for _, obj := range objs {
-		g := f.push(e.Variable.Name, obj)
+		g := f.push(e.Variable.Name.String, obj)
 		seq = comb(e.Expr.ExpandQuants(g), seq)
 	}
 	return seq
@@ -147,7 +147,7 @@ func (e *EffectForall) ExpandQuants(f *expandFrame) Effect {
 	objs := objsOfType(f, e.Variable.Type)
 	seq := Effect(EffectNone(0))
 	for _, obj := range objs {
-		g := f.push(e.Variable.Name, obj)
+		g := f.push(e.Variable.Name.String, obj)
 		seq = EffectConj(e.Effect.ExpandQuants(g), seq)
 	}
 	return seq
@@ -184,8 +184,8 @@ func newExpandFrame(objs []TypedName) *expandFrame {
 
 	for _, obj := range objs {
 		for _, t := range obj.Type {
-			lst, _ := objsByType[t]
-			objsByType[t] = append(lst, obj.Name)
+			lst, _ := objsByType[t.String]
+			objsByType[t.String] = append(lst, obj.Name.String)
 		}
 	}
 
@@ -211,10 +211,10 @@ func (f *expandFrame) lookup(vr string) (string, bool) {
 	return f.up.lookup(vr)
 }
 
-func objsOfType(f *expandFrame, typ []string) (objs []string) {
+func objsOfType(f *expandFrame, typ []Name) (objs []string) {
 	seen := make(map[string]bool)
 	for _, t := range typ {
-		for _, o := range f.objsByType[t] {
+		for _, o := range f.objsByType[t.String] {
 			if _, ok := seen[o]; ok {
 				continue
 			}

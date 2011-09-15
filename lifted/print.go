@@ -52,20 +52,13 @@ func (k TermKind) String() string {
 }
 
 func (t Term) String() string {
-	if t.Num == 0 {
-		return fmt.Sprintf("Term{Kind:%v, Name:%s}", t.Kind, t.Name)
-	}
-	return fmt.Sprintf("Term{Kind:%v, Name:%s, Num:%d}",
-		t.Kind, t.Name, t.Num)
+	return fmt.Sprintf("Term{Kind:%v, Name:%v}",
+		t.Kind, t.Name)
 }
 
 func (lit *Literal) String() string {
-	if lit.Num == 0 {
-	return fmt.Sprintf("Literal{Positive:%t, Name:%s, Parameters:%v}",
+	return fmt.Sprintf("Literal{Positive:%t, Name:%v, Parameters:%v}",
 		lit.Positive, lit.Name, lit.Parameters)
-	}
-	return fmt.Sprintf("Literal{Positive:%t, Name:%s, Num:%s, Parameters:%v}",
-		lit.Positive, lit.Name, lit.Num, lit.Parameters)
 }
 
 func (e *ExprBinary) String() string {

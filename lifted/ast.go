@@ -11,6 +11,15 @@ type Domain struct {
 	Actions      []Action
 }
 
+type Name struct {
+	String string
+	Number int
+}
+
+func MakeName(s string) Name {
+	return Name{String: s, Number: -1}
+}
+
 type Action struct {
 	Name         string
 	Parameters   []TypedName
@@ -19,14 +28,12 @@ type Action struct {
 }
 
 type TypedName struct {
-	Name string
-	Num int
-	Type []string
+	Name Name
+	Type []Name
 }
 
 type Predicate struct {
-	Name       string
-	Num int
+	Name       Name
 	Parameters []TypedName
 }
 
@@ -39,15 +46,13 @@ const (
 
 type Term struct {
 	Kind TermKind
-	Name string
-	Num int
+	Name Name
 	Loc  string
 }
 
 type Literal struct {
 	Positive   bool
-	Name       string
-	Num	int
+	Name       Name
 	Parameters []Term
 }
 

@@ -6,7 +6,7 @@ type Symtab struct {
 
 	predNums  map[string]int
 	predNames []string
-	predInertia []inertia
+	predInertia []byte
 
 	typeNums  map[string]int
 	typeNames []string
@@ -15,12 +15,10 @@ type Symtab struct {
 	varNames []string
 }
 
-type inertia int
-
 const (
-	noInertia inertia = iota
-	posInertia
-	negInertia
+	// Inertia bit flags
+	posInertia = 1<<0
+	negInertia = 1<<1
 )
 
 func NewSymtab() *Symtab {

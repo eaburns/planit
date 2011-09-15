@@ -18,6 +18,10 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 	if err := d.numberPreds(s); err != nil {
 		return err
 	}
+	s.predInertia = make([]byte, len(s.predNames))
+	for i, _ := range s.predInertia {
+		s.predInertia[i] = posInertia | negInertia
+	}
 	for _, a := range d.Actions {
 		if err := a.assignNums(s); err != nil {
 			return err
@@ -219,7 +223,14 @@ func (e *EffectWhen) assignNums(s *Symtab, f *numFrame) os.Error {
 }
 
 func (e *EffectLiteral) assignNums(s *Symtab, f *numFrame) os.Error {
-	return (*Literal)(e).assignNums(s, f)
+	if err := (*Literal)(e).assignNums(s, f); err != nil {
+		return err
+	}
+	switch e.Positive {
+	case true: s.predInertia[e.Name.Num] &^= posInertia
+	case false: s.predInertia[e.Name.Num] &^= negInertia
+	}
+	return nil
 }
 
 func (e *EffectAssign) assignNums(*Symtab, *numFrame) os.Error {

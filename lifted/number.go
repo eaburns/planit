@@ -8,6 +8,25 @@ import (
 )
 
 func (d *Domain) AssignNums(s *Symtab) os.Error {
+	if err := d.numberTypes(s); err != nil {
+		return err
+	}
+	s.typeObjs = make([][]int, len(s.typeNames))
+	if err := numberConsts(s, d.Constants); err != nil {
+		return err
+	}
+	if err := d.numberPreds(s); err != nil {
+		return err
+	}
+	for _, a := range d.Actions {
+		if err := a.AssignNums(s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *Domain) numberTypes(s *Symtab) os.Error {
 	for i, _ := range d.Types {
 		d.Types[i].Name.numberType(s)
 	}
@@ -19,12 +38,10 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 			}
 		}
 	}
+	return nil
+}
 
-	s.typeObjs = make([][]int, len(s.typeNames))
-	if err := numberConsts(s, d.Constants); err != nil {
-		return err
-	}
-
+func (d *Domain) numberPreds(s *Symtab) os.Error {
 	for i, _ := range d.Predicates {
 		p := &d.Predicates[i]
 		p.Name.numberPred(s)
@@ -35,12 +52,6 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 					return undefType(&parm.Type[k])
 				}
 			}
-		}
-	}
-
-	for _, a := range d.Actions {
-		if err := a.AssignNums(s); err != nil {
-			return err
 		}
 	}
 	return nil

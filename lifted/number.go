@@ -38,6 +38,18 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 	return nil
 }
 
+// Number the types of a typed list.
+func (n TypedName) numberTypes(s *Symtab) os.Error {
+	for i, _ := range n.Type {
+		if found := n.Type[i].numberType(s); !found {
+			continue
+		}
+		typ := n.Type[i]
+		return fmt.Errorf("%s: Undefined type %s\n", typ.Loc, typ.Str)
+	}
+	return nil
+}
+
 func numberConsts(s *Symtab, consts []TypedName) {
 	for i, _ := range consts {
 		c := &consts[i]
@@ -89,7 +101,7 @@ func (l *Literal) AssignNums(s *Symtab, f *numFrame) os.Error {
 			if fnxt := name.numberVar(s, f); fnxt == f {
 				break
 			}
-			return fmt.Errorf("%s: Unbound variable %s\n", t.Loc, name.Str)
+			return fmt.Errorf("%s: Unbound variable %s\n", name.Loc, name.Str)
 		case TermConstant:
 			name.numberConst(s)
 		}

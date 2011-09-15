@@ -175,7 +175,7 @@ func (p *Parser) parsePredsDef() (Predicates []Predicate) {
 func (p *Parser) parseAtomicFormSkele() Predicate {
 	p.expect(tokOpen)
 	pred := Predicate{
-		Name:       MakeName(p.expect(tokId).txt),
+		Name:       MakeName(p.expect(tokId).txt, p.locString()),
 		Parameters: p.parseTypedListString(tokQid),
 	}
 	p.expect(tokClose)
@@ -268,7 +268,7 @@ func (p *Parser) parseLiteral() *Literal {
 	p.expect(tokOpen)
 	res := &Literal{
 		Positive:   pos,
-		Name:       MakeName(p.expect(tokId).txt),
+		Name:       MakeName(p.expect(tokId).txt, p.locString()),
 		Parameters: p.parseTerms(),
 	}
 	if !pos {
@@ -283,16 +283,14 @@ func (p *Parser) parseTerms() (lst []Term) {
 		if t, ok := p.accept(tokId); ok {
 			lst = append(lst, Term{
 				Kind: TermConstant,
-				Name: MakeName(t.txt),
-				Loc: p.locString(),
+				Name: MakeName(t.txt, p.locString()),
 			})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
 			lst = append(lst, Term{
 				Kind: TermVariable,
-				Name: MakeName(t.txt),
-				Loc: p.locString(),
+				Name: MakeName(t.txt, p.locString()),
 			})
 			continue
 		}
@@ -568,7 +566,8 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 		}
 		typ := p.parseType()
 		for _, n := range names {
-			lst = append(lst, TypedName{Name: MakeName(n), Type: typ})
+			name := MakeName(n, p.locString())
+			lst = append(lst, TypedName{Name: name, Type: typ})
 		}
 	}
 	return lst
@@ -576,18 +575,18 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 
 func (p *Parser) parseType() (typ []Name) {
 	if _, ok := p.accept(tokMinus); !ok {
-		return []Name{MakeName("object")}
+		return []Name{MakeName("object", p.locString())}
 	}
 	if _, ok := p.accept(tokOpen); ok {
 		p.expectId("either")
 		for _, s := range p.parseStringPlus(tokId) {
-			typ = append(typ, MakeName(s))
+			typ = append(typ, MakeName(s, p.locString()))
 		}
 		p.expect(tokClose)
 		return typ
 	}
 	t := p.expect(tokId)
-	return []Name{MakeName(t.txt)}
+	return []Name{MakeName(t.txt, p.locString())}
 }
 
 func (p *Parser) parseStringPlus(typ tokenType) []string {

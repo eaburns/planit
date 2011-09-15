@@ -14,10 +14,11 @@ type Domain struct {
 type Name struct {
 	Str string
 	Num int
+	Loc string
 }
 
-func MakeName(s string) Name {
-	return Name{Str: s, Num: -1}
+func MakeName(s string, loc string) Name {
+	return Name{Str: s, Num: -1, Loc: loc}
 }
 
 type Action struct {
@@ -47,7 +48,6 @@ const (
 type Term struct {
 	Kind TermKind
 	Name Name
-	Loc  string
 }
 
 type Literal struct {

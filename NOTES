@@ -6,6 +6,12 @@
 
 * Don't ignore :functions
 
+* Implement a hash table and compare
+	its performance to the C++ one.
+
+* Implement A* for tiles and see if it
+	performs OK.
+
 :adl
 	= :strips
 	+ :typing

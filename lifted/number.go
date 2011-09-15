@@ -34,7 +34,7 @@ func (d *Domain) numberTypes(s *Symtab) os.Error {
 		t := d.Types[i]
 		for j, _ := range t.Type {
 			if found := t.Type[j].numberType(s); !found {
-				return undefType(&t.Type[j])
+				return undeclType(&t.Type[j])
 			}
 		}
 	}
@@ -49,7 +49,7 @@ func (d *Domain) numberPreds(s *Symtab) os.Error {
 			parm := p.Parameters[j]
 			for k, _ := range parm.Type {
 				if found := parm.Type[k].numberType(s); !found {
-					return undefType(&parm.Type[k])
+					return undeclType(&parm.Type[k])
 				}
 			}
 		}
@@ -64,7 +64,7 @@ func numberConsts(s *Symtab, consts []TypedName) os.Error {
 		cnum := c.Name.Num
 		for j, _ := range c.Type {
 			if found := c.Type[j].numberType(s); !found {
-				return undefType(&c.Type[j])
+				return undeclType(&c.Type[j])
 			}
 			// If this is the 1st decl of this object
 			// then add it to the table of all objects
@@ -85,7 +85,7 @@ func (a *Action) AssignNums(s *Symtab) os.Error {
 		f = p.Name.numberVar(s, f)
 		for j, _ := range p.Type {
 			if found := p.Type[j].numberType(s); !found {
-				return undefType(&p.Type[j])
+				return undeclType(&p.Type[j])
 			}
 		}
 	}
@@ -110,15 +110,18 @@ func (l *Literal) AssignNums(s *Symtab, f *numFrame) os.Error {
 		name := &l.Parameters[i].Name
 		switch t.Kind {
 		case TermVariable:
-			if fnxt := name.numberVar(s, f); fnxt == f {
-				break
+			if fnxt := name.numberVar(s, f); fnxt != f {
+				return undeclVar(name)
 			}
-			return fmt.Errorf("%s: Unbound variable %s\n", name.Loc, name.Str)
 		case TermConstant:
-			name.numberConst(s)
+			if found := name.numberConst(s); !found {
+				return undeclConst(name)
+			}
 		}
 	}
-	l.Name.numberPred(s)
+	if found := l.Name.numberPred(s); !found {
+		return undeclPred(&l.Name)
+	}
 	return nil
 }
 
@@ -153,7 +156,7 @@ func (e *ExprQuant) AssignNums(s *Symtab, f *numFrame) os.Error {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
 		if found := e.Variable.Type[i].numberType(s); !found {
-			return undefType(&e.Variable.Type[i])
+			return undeclType(&e.Variable.Type[i])
 		}
 	}
 	return e.Expr.AssignNums(s, f)
@@ -190,7 +193,7 @@ func (e *EffectForall) AssignNums(s *Symtab, f *numFrame) os.Error {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
 		if found := e.Variable.Type[i].numberType(s); !found {
-			return undefType(&e.Variable.Type[i])
+			return undeclType(&e.Variable.Type[i])
 		}
 	}
 	return e.Effect.AssignNums(s, f)
@@ -279,6 +282,18 @@ func (f *numFrame) lookup(name string) (int, bool) {
 	return f.up.lookup(name)
 }
 
-func undefType(n *Name) os.Error {
-	return fmt.Errorf("%s: Undefined type %s\n", n.Loc, n.Str)
+func undeclType(n *Name) os.Error {
+	return fmt.Errorf("%s: Undeclared type %s\n", n.Loc, n.Str)
+}
+
+func undeclConst(n *Name) os.Error {
+	return fmt.Errorf("%s: Undeclared constant %s\n", n.Loc, n.Str)
+}
+
+func undeclPred(n *Name) os.Error {
+	return fmt.Errorf("%s: Undeclared predicate %s\n", n.Loc, n.Str)
+}
+
+func undeclVar(n *Name) os.Error {
+	return fmt.Errorf("%s: Unbound variable %s\n", n.Loc, n.Str)
 }

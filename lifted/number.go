@@ -191,14 +191,15 @@ func (i *InitEq) AssignNums(s *Symtab, f *numFrame) os.Error {
 	return nil
 }
 
-func (name *Name) numberType(s *Symtab) {
+func (name *Name) numberType(s *Symtab) bool {
 	if n, ok := s.typeNums[name.Str]; ok {
 		name.Num = n
-	} else {
-		name.Num = len(s.typeNames)
-		s.typeNums[name.Str] = name.Num
-		s.typeNames = append(s.typeNames, name.Str)
+		return true
 	}
+	name.Num = len(s.typeNames)
+	s.typeNums[name.Str] = name.Num
+	s.typeNames = append(s.typeNames, name.Str)
+	return false
 }
 
 func (name *Name) numberConst(s *Symtab) bool {
@@ -212,14 +213,15 @@ func (name *Name) numberConst(s *Symtab) bool {
 	return false
 }
 
-func (name *Name) numberPred(s *Symtab) {
+func (name *Name) numberPred(s *Symtab) bool {
 	if n, ok := s.predNums[name.Str]; ok {
 		name.Num = n
-	} else {
-		name.Num = len(s.predNames)
-		s.predNums[name.Str] = name.Num
-		s.predNames = append(s.predNames, name.Str)
+		return true
 	}
+	name.Num = len(s.predNames)
+	s.predNums[name.Str] = name.Num
+	s.predNames = append(s.predNames, name.Str)
+	return false
 }
 
 func (name *Name) numberVar(s *Symtab, f *numFrame) *numFrame {

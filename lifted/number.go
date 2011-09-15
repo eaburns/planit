@@ -43,14 +43,20 @@ func (d *Domain) numberTypes(s *Symtab) os.Error {
 
 func (d *Domain) numberPreds(s *Symtab) os.Error {
 	for i, _ := range d.Predicates {
-		p := &d.Predicates[i]
-		p.Name.numberPred(s)
-		for j, _ := range p.Parameters {
-			parm := p.Parameters[j]
-			for k, _ := range parm.Type {
-				if found := parm.Type[k].numberType(s); !found {
-					return undeclType(&parm.Type[k])
-				}
+		if err := d.Predicates[i].assignNums(s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Predicate) assignNums(s *Symtab) os.Error {
+	p.Name.numberPred(s)
+	for i, _ := range p.Parameters {
+		parm := p.Parameters[i]
+		for j, _ := range parm.Type {
+			if found := parm.Type[j].numberType(s); !found {
+				return undeclType(&parm.Type[j])
 			}
 		}
 	}
@@ -59,20 +65,26 @@ func (d *Domain) numberPreds(s *Symtab) os.Error {
 
 func numberConsts(s *Symtab, consts []TypedName) os.Error {
 	for i, _ := range consts {
-		c := &consts[i]
-		first := c.Name.numberConst(s)
-		cnum := c.Name.Num
-		for j, _ := range c.Type {
-			if found := c.Type[j].numberType(s); !found {
-				return undeclType(&c.Type[j])
-			}
-			// If this is the 1st decl of this object
-			// then add it to the table of all objects
-			// of the given type
-			if !first {
-				tnum := c.Type[j].Num
-				s.typeObjs[tnum] = append(s.typeObjs[tnum], cnum)
-			}
+		if err := consts[i].numberConst(s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *TypedName) numberConst(s *Symtab) os.Error {
+	first := c.Name.numberConst(s)
+	cnum := c.Name.Num
+	for i, _ := range c.Type {
+		if found := c.Type[i].numberType(s); !found {
+			return undeclType(&c.Type[i])
+		}
+		// If this is the 1st decl of this object
+		// then add it to the table of all objects
+		// of the given type
+		if !first {
+			tnum := c.Type[i].Num
+			s.typeObjs[tnum] = append(s.typeObjs[tnum], cnum)
 		}
 	}
 	return nil

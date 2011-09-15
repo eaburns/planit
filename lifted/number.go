@@ -26,6 +26,16 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 	return nil
 }
 
+func (p *Problem) AssignNums(s *Symtab) os.Error {
+	numberConsts(s, p.Objects)
+	for _, init := range p.Init {
+		if err := init.assignNums(s, nil); err != nil {
+			return err
+		}
+	}
+	return p.Goal.assignNums(s, nil)
+}
+
 func (d *Domain) numberTypes(s *Symtab) os.Error {
 	for i, _ := range d.Types {
 		d.Types[i].Name.numberType(s)
@@ -105,16 +115,6 @@ func (a *Action) assignNums(s *Symtab) os.Error {
 		return err
 	}
 	return a.Effect.assignNums(s, f)
-}
-
-func (p *Problem) AssignNums(s *Symtab) os.Error {
-	numberConsts(s, p.Objects)
-	for _, init := range p.Init {
-		if err := init.assignNums(s, nil); err != nil {
-			return err
-		}
-	}
-	return p.Goal.assignNums(s, nil)
 }
 
 func (l *Literal) assignNums(s *Symtab, f *numFrame) os.Error {

@@ -9,15 +9,21 @@ import (
 
 func (d *Domain) AssignNums(s *Symtab) os.Error {
 	for i, _ := range d.Types {
-		t := &d.Types[i]
-		t.Name.numberType(s)
+		d.Types[i].Name.numberType(s)
+	}
+	for i, _ := range d.Types {
+		t := d.Types[i]
 		for j, _ := range t.Type {
-			t.Type[j].numberType(s)
+			if found := t.Type[j].numberType(s); !found {
+				return undefType(&t.Type[j])
+			}
 		}
 	}
 
 	s.typeObjs = make([][]int, len(s.typeNames))
-	numberConsts(s, d.Constants)
+	if err := numberConsts(s, d.Constants); err != nil {
+		return err
+	}
 
 	for i, _ := range d.Predicates {
 		p := &d.Predicates[i]
@@ -25,7 +31,9 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 		for j, _ := range p.Parameters {
 			parm := p.Parameters[j]
 			for k, _ := range parm.Type {
-				parm.Type[k].numberType(s)
+				if found := parm.Type[k].numberType(s); !found {
+					return undefType(&parm.Type[k])
+				}
 			}
 		}
 	}
@@ -38,25 +46,15 @@ func (d *Domain) AssignNums(s *Symtab) os.Error {
 	return nil
 }
 
-// Number the types of a typed list.
-func (n TypedName) numberTypes(s *Symtab) os.Error {
-	for i, _ := range n.Type {
-		if found := n.Type[i].numberType(s); !found {
-			continue
-		}
-		typ := n.Type[i]
-		return fmt.Errorf("%s: Undefined type %s\n", typ.Loc, typ.Str)
-	}
-	return nil
-}
-
-func numberConsts(s *Symtab, consts []TypedName) {
+func numberConsts(s *Symtab, consts []TypedName) os.Error {
 	for i, _ := range consts {
 		c := &consts[i]
 		first := c.Name.numberConst(s)
 		cnum := c.Name.Num
 		for j, _ := range c.Type {
-			c.Type[j].numberType(s)
+			if found := c.Type[j].numberType(s); !found {
+				return undefType(&c.Type[j])
+			}
 			// If this is the 1st decl of this object
 			// then add it to the table of all objects
 			// of the given type
@@ -66,6 +64,7 @@ func numberConsts(s *Symtab, consts []TypedName) {
 			}
 		}
 	}
+	return nil
 }
 
 func (a *Action) AssignNums(s *Symtab) os.Error {
@@ -74,7 +73,9 @@ func (a *Action) AssignNums(s *Symtab) os.Error {
 		p := &a.Parameters[i]
 		f = p.Name.numberVar(s, f)
 		for j, _ := range p.Type {
-			p.Type[j].numberType(s)
+			if found := p.Type[j].numberType(s); !found {
+				return undefType(&p.Type[j])
+			}
 		}
 	}
 	if err := a.Precondition.AssignNums(s, f); err != nil {
@@ -140,7 +141,9 @@ func (e *ExprNot) AssignNums(s *Symtab, f *numFrame) os.Error {
 func (e *ExprQuant) AssignNums(s *Symtab, f *numFrame) os.Error {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
-		e.Variable.Type[i].numberType(s)
+		if found := e.Variable.Type[i].numberType(s); !found {
+			return undefType(&e.Variable.Type[i])
+		}
 	}
 	return e.Expr.AssignNums(s, f)
 }
@@ -175,7 +178,9 @@ func (e *EffectAnd) AssignNums(s *Symtab, f *numFrame) os.Error {
 func (e *EffectForall) AssignNums(s *Symtab, f *numFrame) os.Error {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
-		e.Variable.Type[i].numberType(s)
+		if found := e.Variable.Type[i].numberType(s); !found {
+			return undefType(&e.Variable.Type[i])
+		}
 	}
 	return e.Effect.AssignNums(s, f)
 }
@@ -261,4 +266,8 @@ func (f *numFrame) lookup(name string) (int, bool) {
 		return f.num, true
 	}
 	return f.up.lookup(name)
+}
+
+func undefType(n *Name) os.Error {
+	return fmt.Errorf("%s: Undefined type %s\n", n.Loc, n.Str)
 }

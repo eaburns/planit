@@ -148,6 +148,16 @@ func (p *Parser) parseTypesDef() (types []TypedName) {
 		types = p.parseTypedListString(tokId)
 		p.expect(tokClose)
 	}
+	object := false
+	for i, _ := range types {
+		if types[i].Name.Str == "object" {
+			object = true
+		}
+	}
+	if !object {
+		objname := MakeName("object", "<implicit>")
+		types = append(types, TypedName{Name: objname})
+	}
 	return
 }
 

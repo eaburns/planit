@@ -257,17 +257,17 @@ func (f *numFrame) lookup(name string) (int, bool) {
 }
 
 func undeclType(n *Name) {
-	log.Fatal("%s: Undeclared type %s\n", n.Loc, n.Str)
+	log.Fatalf("%s: Undeclared type %s\n", n.Loc, n.Str)
 }
 
 func undeclConst(n *Name) {
-	log.Fatal("%s: Undeclared constant %s\n", n.Loc, n.Str)
+	log.Fatalf("%s: Undeclared constant %s\n", n.Loc, n.Str)
 }
 
 func undeclPred(n *Name) {
-	log.Fatal("%s: Undeclared predicate %s\n", n.Loc, n.Str)
+	log.Fatalf("%s: Undeclared predicate %s\n", n.Loc, n.Str)
 }
 
 func undeclVar(n *Name) {
-	log.Fatal("%s: Unbound variable %s\n", n.Loc, n.Str)
+	log.Fatalf("%s: Unbound variable %s\n", n.Loc, n.Str)
 }

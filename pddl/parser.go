@@ -35,7 +35,7 @@ func (p *Parser) loc() Loc {
 }
 
 func (p *Parser) errorf(format string, args ...interface{}) {
-	log.Fatal("%s: %s", p.loc(), fmt.Sprintf(format, args...))
+	log.Fatalf("%s: %s", p.loc(), fmt.Sprintf(format, args...))
 }
 
 // peek at the nth token

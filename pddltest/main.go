@@ -34,18 +34,13 @@ func main() {
 		panic(err)
 	}
 	syms := lifted.NewSymtab()
-	err = dom.AssignNums(syms)
-	if err != nil {
-		panic(err)
-	}
+	dom.AssignNums(syms)
+
 	prob, err := problem()
 	if err != nil {
 		panic(err)
 	}
-	err = prob.AssignNums(syms)
-	if err != nil {
-		panic(err)
-	}
+	prob.AssignNums(syms)
 
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)

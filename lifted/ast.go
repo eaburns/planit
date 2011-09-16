@@ -1,9 +1,6 @@
 package lifted
 
-import (
-	"os"
-	"fmt"
-)
+import "fmt"
 
 type Domain struct {
 	Name         string
@@ -72,7 +69,7 @@ type Literal struct {
 }
 
 type Expr interface {
-	assignNums(*Symtab, *numFrame) os.Error
+	assignNums(*Symtab, *numFrame)
 }
 
 type ExprBinary struct {
@@ -98,7 +95,7 @@ type ExprExists ExprQuant
 type ExprLiteral Literal
 
 type Effect interface {
-	assignNums(*Symtab, *numFrame) os.Error
+	assignNums(*Symtab, *numFrame)
 }
 
 type EffectBinary struct {
@@ -169,7 +166,7 @@ const (
 )
 
 type InitEl interface {
-	assignNums(*Symtab, *numFrame) os.Error
+	assignNums(*Symtab, *numFrame)
 }
 
 type InitLiteral Literal

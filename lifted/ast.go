@@ -1,6 +1,9 @@
 package lifted
 
-import "os"
+import (
+	"os"
+	"fmt"
+)
 
 type Domain struct {
 	Name         string
@@ -14,11 +17,23 @@ type Domain struct {
 type Name struct {
 	Str string
 	Num int
-	Loc string
+	Loc Loc
 }
 
-func MakeName(s string, loc string) Name {
-	return Name{Str: s, Num: -1, Loc: loc}
+func MakeName(s string, l Loc) Name {
+	return Name{Str: s, Num: -1, Loc: l}
+}
+
+type Loc struct {
+	File string
+	Line int
+}
+
+func (l *Loc) String() string {
+	if l.Line < 0 {
+		return l.File
+	}
+	return fmt.Sprintf("%s:%d", l.File, l.Line)
 }
 
 type Action struct {

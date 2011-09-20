@@ -5,40 +5,57 @@ import (
 	"os"
 	"flag"
 	"io/ioutil"
+	"log"
+	"runtime/pprof"
 	"goplan/pddl"
 	"goplan/lifted"
 )
 
-var dpath *string = flag.String("d", "", "The PDDL domain file")
-var ppath *string = flag.String("p", "", "The PDDL problem file")
-var dump *bool  = flag.Bool("dump", false, "Dump ground planning problem")
+var dpath = flag.String("d", "", "The PDDL domain file")
+var ppath = flag.String("p", "", "The PDDL problem file")
+var dump = flag.Bool("dump", false, "Dump ground planning problem")
+var cpuprofile = flag.String("cpuprofile", "", "Write CPU profile to this file")
+var memprofile = flag.String("memprofile", "", "Write memory profile to this file")
 
 func main() {
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	dom, err := domain()
 	if err != nil {
 		panic(err)
 	}
 	syms := lifted.NewSymtab()
-	err = dom.AssignNums(syms)
-	if err != nil {
-		panic(err)
-	}
+	dom.AssignNums(syms)
 
 	prob, err := problem()
 	if err != nil {
 		panic(err)
 	}
-	err = prob.AssignNums(syms)
-	if err != nil {
-		panic(err)
+	prob.AssignNums(syms)
+
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+		return
 	}
 
 	nacts := len(dom.Actions)
-	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
-	if (*dump) {
-		fmt.Printf("%+v\n\n%+v", dom, prob)
+	//	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
+	if *dump {
+		fmt.Printf("%+v\n\n%+v\n", dom, prob)
 	}
 	fmt.Printf("%d actions\n", nacts)
 	fmt.Printf("%d grounded actions\n", len(dom.Actions))

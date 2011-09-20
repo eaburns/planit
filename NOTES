@@ -6,6 +6,15 @@
 
 * Don't ignore :functions
 
+* Implement a hash table and compare
+	its performance to the C++ one.
+
+* Implement A* for tiles and see if it
+	performs OK.
+
+* Take a look at log.Fatal instead of returning
+	errors and panic()ing.
+
 :adl
 	= :strips
 	+ :typing

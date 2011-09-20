@@ -1,100 +1,6 @@
 package pddl
 
-import (
-	"fmt"
-	. "goplan/lifted"
-)
-
-type Parser struct {
-	lex    *Lexer
-	peeks  [2]token
-	npeeks int
-}
-
-func (p *Parser) locString() string {
-	return fmt.Sprintf("%s:%d", p.lex.name, p.lex.lineno)
-}
-
-func (p *Parser) next() token {
-	if p.npeeks == 0 {
-		return p.lex.token()
-	}
-	t := p.peeks[0]
-	for i := 1; i < p.npeeks; i++ {
-		p.peeks[i-1] = p.peeks[i]
-	}
-	p.npeeks--
-	return t
-}
-
-func Parse(lex *Lexer) *Parser {
-	return &Parser{
-		lex: lex,
-	}
-}
-
-// peek at the nth token
-func (p *Parser) peekn(n int) token {
-	if n > len(p.peeks) {
-		panic("Too much peeking in the Parser")
-	}
-	for ; p.npeeks < n; p.npeeks++ {
-		p.peeks[p.npeeks] = p.lex.token()
-	}
-	return p.peeks[n-1]
-}
-
-func (p *Parser) peek() token {
-	return p.peekn(1)
-}
-
-func (p *Parser) junk(n int) {
-	for i := 0; i < n; i++ {
-		p.next()
-	}
-}
-
-func (p *Parser) accept(typ tokenType) (t token, ok bool) {
-	if p.peek().typ == typ {
-		t = p.next()
-		ok = true
-	}
-	return
-}
-
-func (p *Parser) acceptNamedList(name string) bool {
-	if p.peek().typ != tokOpen || p.peekn(2).txt != name {
-		return false
-	}
-	p.junk(2)
-	return true
-}
-
-func (p *Parser) errorf(format string, args ...interface{}) {
-	panic(fmt.Errorf("%s: %s", p.locString(),  fmt.Sprintf(format, args...)))
-}
-
-func (p *Parser) expect(typ tokenType) token {
-	t := p.peek()
-	if t.typ != typ {
-		p.errorf("expected %v, got %v", typ, t)
-	}
-	return p.next()
-}
-
-func (p *Parser) expectId(s string) token {
-	t := p.peek()
-	typ := tokId
-	if s[0] == ':' {
-		typ = tokCid
-	} else if s[0] == '?' {
-		typ = tokQid
-	}
-	if t.typ != typ || t.txt != s {
-		p.errorf("expected identifier [\"%s\"], got %v", s, t)
-	}
-	return p.next()
-}
+import . "goplan/lifted"
 
 func (p *Parser) ParseDomain() *Domain {
 	p.expect(tokOpen)
@@ -148,6 +54,16 @@ func (p *Parser) parseTypesDef() (types []TypedName) {
 		types = p.parseTypedListString(tokId)
 		p.expect(tokClose)
 	}
+	object := false
+	for i, _ := range types {
+		if types[i].Name.Str == "object" {
+			object = true
+		}
+	}
+	if !object {
+		objname := MakeName("object", Loc{"<implicit>", -1})
+		types = append(types, TypedName{Name: objname})
+	}
 	return
 }
 
@@ -166,8 +82,6 @@ func (p *Parser) parsePredsDef() (Predicates []Predicate) {
 			Predicates = append(Predicates, p.parseAtomicFormSkele())
 		}
 		p.expect(tokClose)
-	} else {
-		fmt.Printf("No predicates\n")
 	}
 	return
 }
@@ -175,7 +89,7 @@ func (p *Parser) parsePredsDef() (Predicates []Predicate) {
 func (p *Parser) parseAtomicFormSkele() Predicate {
 	p.expect(tokOpen)
 	pred := Predicate{
-		Name:       p.expect(tokId).txt,
+		Name:       p.name(p.expect(tokId).txt),
 		Parameters: p.parseTypedListString(tokQid),
 	}
 	p.expect(tokClose)
@@ -246,7 +160,7 @@ func (p *Parser) parseExpr() (res Expr) {
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
 		res = &ExprOr{
-			Left: &ExprNot{Expr: p.parseExpr()},
+			Left:  &ExprNot{Expr: p.parseExpr()},
 			Right: p.parseExpr(),
 		}
 		p.expect(tokClose)
@@ -268,7 +182,7 @@ func (p *Parser) parseLiteral() *Literal {
 	p.expect(tokOpen)
 	res := &Literal{
 		Positive:   pos,
-		Name:       p.expect(tokId).txt,
+		Name:       p.name(p.expect(tokId).txt),
 		Parameters: p.parseTerms(),
 	}
 	if !pos {
@@ -283,16 +197,14 @@ func (p *Parser) parseTerms() (lst []Term) {
 		if t, ok := p.accept(tokId); ok {
 			lst = append(lst, Term{
 				Kind: TermConstant,
-				Name: t.txt,
-				Loc: p.locString(),
+				Name: p.name(t.txt),
 			})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
 			lst = append(lst, Term{
 				Kind: TermVariable,
-				Name: t.txt,
-				Loc: p.locString(),
+				Name: p.name(t.txt),
 			})
 			continue
 		}
@@ -530,7 +442,7 @@ func (p *Parser) parseInit() (els []InitEl) {
 
 func (p *Parser) parseInitEl() InitEl {
 	if p.acceptNamedList("=") {
-		eq := InitEq{
+		eq := &InitEq{
 			Lval: p.parseFhead(),
 			Rval: p.expect(tokNum).txt,
 		}
@@ -568,24 +480,27 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 		}
 		typ := p.parseType()
 		for _, n := range names {
-			lst = append(lst, TypedName{Name: n, Type: typ})
+			name := p.name(n)
+			lst = append(lst, TypedName{Name: name, Type: typ})
 		}
 	}
 	return lst
 }
 
-func (p *Parser) parseType() []string {
+func (p *Parser) parseType() (typ []Name) {
 	if _, ok := p.accept(tokMinus); !ok {
-		return []string{"object"}
+		return []Name{p.name("object")}
 	}
 	if _, ok := p.accept(tokOpen); ok {
 		p.expectId("either")
-		lst := p.parseStringPlus(tokId)
+		for _, s := range p.parseStringPlus(tokId) {
+			typ = append(typ, p.name(s))
+		}
 		p.expect(tokClose)
-		return lst
+		return typ
 	}
 	t := p.expect(tokId)
-	return []string{t.txt}
+	return []Name{p.name(t.txt)}
 }
 
 func (p *Parser) parseStringPlus(typ tokenType) []string {
@@ -599,4 +514,8 @@ func (p *Parser) parseStrings(typ tokenType) (lst []string) {
 		lst = append(lst, t.txt)
 	}
 	return lst
+}
+
+func (p *Parser) name(txt string) Name {
+	return MakeName(txt, p.loc())
 }

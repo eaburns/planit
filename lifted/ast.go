@@ -1,6 +1,6 @@
 package lifted
 
-import "os"
+import "fmt"
 
 type Domain struct {
 	Name         string
@@ -11,6 +11,28 @@ type Domain struct {
 	Actions      []Action
 }
 
+type Name struct {
+	Str string
+	Num int
+	Loc Loc
+}
+
+func MakeName(s string, l Loc) Name {
+	return Name{Str: s, Num: -1, Loc: l}
+}
+
+type Loc struct {
+	File string
+	Line int
+}
+
+func (l *Loc) String() string {
+	if l.Line < 0 {
+		return l.File
+	}
+	return fmt.Sprintf("%s:%d", l.File, l.Line)
+}
+
 type Action struct {
 	Name         string
 	Parameters   []TypedName
@@ -19,14 +41,12 @@ type Action struct {
 }
 
 type TypedName struct {
-	Name string
-	Num int
-	Type []string
+	Name Name
+	Type []Name
 }
 
 type Predicate struct {
-	Name       string
-	Num int
+	Name       Name
 	Parameters []TypedName
 }
 
@@ -39,21 +59,17 @@ const (
 
 type Term struct {
 	Kind TermKind
-	Name string
-	Num int
-	Loc  string
+	Name Name
 }
 
 type Literal struct {
 	Positive   bool
-	Name       string
-	Num	int
+	Name       Name
 	Parameters []Term
 }
 
 type Expr interface {
-	AssignNums(*Symtab, *numFrame) os.Error
-	ExpandQuants(*expandFrame) Expr
+	assignNums(*Symtab, *numFrame)
 }
 
 type ExprBinary struct {
@@ -79,8 +95,7 @@ type ExprExists ExprQuant
 type ExprLiteral Literal
 
 type Effect interface {
-	AssignNums(*Symtab, *numFrame) os.Error
-	ExpandQuants(*expandFrame) Effect
+	assignNums(*Symtab, *numFrame)
 }
 
 type EffectBinary struct {
@@ -150,7 +165,9 @@ const (
 	MetricMinCost
 )
 
-type InitEl interface{}
+type InitEl interface {
+	assignNums(*Symtab, *numFrame)
+}
 
 type InitLiteral Literal
 

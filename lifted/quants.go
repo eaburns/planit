@@ -1,9 +1,35 @@
 package lifted
 
-import "github.com/willf/bitset"
+import (
+	"github.com/willf/bitset"
+	"log"
+)
 
 func (l *Literal) expandQuants(s *Symtab, f *expFrame) *Literal {
-	return nil
+	parms := make([]Term, len(l.Parameters))
+	copy(parms, l.Parameters)
+
+	for i, _ := range parms {
+		if parms[i].Kind == TermConstant {
+			continue
+		}
+		vl, ok := f.lookup(parms[i].Name.Num)
+		if !ok {
+			// Previous pass should have ensured
+			// that this is already bound.
+			log.Fatalf("%s: Unbound variable: %s", parms[i].Name.Loc,
+				parms[i].Name.Str)
+		}
+		parms[i].Kind = TermConstant
+		parms[i].Name.Num = vl
+		parms[i].Name.Str = s.constNames[vl]
+	}
+
+	return &Literal{
+		Positive: l.Positive,
+		Name: l.Name,
+		Parameters: parms,
+	}
 }
 
 func (e ExprTrue) expandQuants(*Symtab, *expFrame) Expr {

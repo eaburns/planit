@@ -70,6 +70,7 @@ type Literal struct {
 
 type Expr interface {
 	assignNums(*Symtab, *numFrame)
+	expandQuants(*Symtab, *expFrame) Expr
 }
 
 type ExprBinary struct {

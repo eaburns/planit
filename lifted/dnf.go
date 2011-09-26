@@ -7,15 +7,47 @@ func (TrueNode) dnf() Formula { return TrueNode(1) }
 func (FalseNode) dnf() Formula { return FalseNode(1) }
 
 func (n *AndNode) dnf() Formula {
-	return nil
+	var disj *OrNode
+	if l, ok := n.Left.dnf().(*OrNode); ok {
+		disj = l
+	} else if r, ok := n.Right.dnf().(*OrNode); ok {
+		disj = r
+	}
+
+	if disj == nil {
+		return n
+	}
+
+	left := &AndNode{
+		BinaryNode{Left: n.Right, Right: disj.Left},
+	}
+	right := &AndNode{
+		BinaryNode{Left: n.Right, Right: disj.Right},
+	}
+	return &OrNode{
+		BinaryNode{Left: left.dnf(), Right: right.dnf()},
+	}
 }
 
 func (n *OrNode) dnf() Formula {
-	return nil
+	n.Left = n.Left.dnf()
+	n.Right = n.Right.dnf()
+	return n
 }
 
 func (n *NotNode) dnf() Formula {
-	return Negate(n.Formula.dnf())
+	switch f := n.Formula.dnf().(type) {
+	case *OrNode:
+		m := AndNode{
+			BinaryNode{Left: Negate(f.Left), Right: Negate(f.Right)},
+		}
+		return m.dnf()
+	case *AndNode:
+		return &OrNode{
+			BinaryNode{Left: Negate(f.Left), Right: Negate(f.Right)},
+		}
+	}
+	return n
 }
 
 func (n *ForallNode) dnf() Formula {

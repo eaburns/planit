@@ -26,7 +26,7 @@ func (n *AndNode) dnf() Formula {
 
 	left := Conjunct(other, disj.Left)
 	right := Conjunct(other, disj.Right)
-	return Disjunct(left.dnf(), right.dnf())
+	return Disjunct(left.dnf(), right.dnf()).dnf()
 }
 
 func (n *OrNode) dnf() Formula {

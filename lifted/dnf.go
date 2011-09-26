@@ -47,7 +47,7 @@ func (n *NotNode) dnf() Formula {
 			BinaryNode{Left: Negate(f.Left), Right: Negate(f.Right)},
 		}
 	}
-	return n
+	return Negate(n.Formula)
 }
 
 func (n *ForallNode) dnf() Formula {

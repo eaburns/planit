@@ -33,12 +33,16 @@ func Disjunct(l Formula, r Formula) Formula {
 }
 
 func Negate(e Formula) Formula {
-	switch neg := e.(type) {
+	switch n := e.(type) {
+	case TrueNode:
+		return FalseNode(0)
+	case FalseNode:
+		return TrueNode(1)
 	case *NotNode:
-		return neg.Formula
+		return n.Formula
 	case *LiteralNode:
-		neg.Positive = !neg.Positive
-		return neg
+		n.Positive = !n.Positive
+		return n
 	}
 	return &NotNode{UnaryNode{Formula: e}}
 }

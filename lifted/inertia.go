@@ -1,7 +1,7 @@
 package lifted
 
 func (d *Domain) FindInertia(s *Symtab) {
-	for i, _ := range d.Actions {
+	for i := range d.Actions {
 		d.Actions[i].Effect.findInertia(s)
 	}
 }

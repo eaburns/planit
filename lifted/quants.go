@@ -4,7 +4,7 @@ import "github.com/willf/bitset"
 
 func (d *Domain) ExpandQuants(s *Symtab) {
 	acts := make([]Action, 0, len(d.Actions))
-	for i, _ := range d.Actions {
+	for i := range d.Actions {
 		a := &d.Actions[i]
 		a.Precondition = a.Precondition.expandQuants(s, nil)
 		a.Effect = a.Effect.expandQuants(s, nil)
@@ -22,7 +22,7 @@ func (a *Action) expandParms(s *Symtab, f *expFrame, ps []TypedName) (acts []Act
 	saved := a.Parameters[pnum]
 	seen := bitset.New(uint(len(s.constNames)))
 
-	for i, _ := range saved.Type {
+	for i := range saved.Type {
 		tnum := saved.Type[i].Num
 		for _, obj := range s.typeObjs[tnum] {
 			if seen.Test(uint(obj)) {
@@ -66,7 +66,7 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	parms := make([]Term, len(l.Parameters))
 	copy(parms, l.Parameters)
 
-	for i, _ := range parms {
+	for i := range parms {
 		if parms[i].Kind == TermConstant {
 			continue
 		}
@@ -127,8 +127,8 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
 	conj := Formula(TrueNode(1))
-	for i, _ := range e.Variable.Type {
-		for obj := range s.typeObjs[e.Variable.Type[i].Num] {
+	for i := range e.Variable.Type {
+		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}
@@ -146,8 +146,8 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
 	disj := Formula(FalseNode(0))
-	for i, _ := range e.Variable.Type {
-		for obj := range s.typeObjs[e.Variable.Type[i].Num] {
+	for i := range e.Variable.Type {
+		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}

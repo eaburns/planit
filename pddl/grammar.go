@@ -55,7 +55,7 @@ func (p *Parser) parseTypesDef() (types []TypedName) {
 		p.expect(tokClose)
 	}
 	object := false
-	for i, _ := range types {
+	for i := range types {
 		if types[i].Name.Str == "object" {
 			object = true
 		}

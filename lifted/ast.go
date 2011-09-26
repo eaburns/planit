@@ -15,8 +15,8 @@ type Formula interface {
 	assignNums(*Symtab, *numFrame)
 	findInertia(*Symtab)
 	expandQuants(*Symtab, *expFrame) Formula
-//	dnf() Formula
-//	propositionalize(*Symtab) []int
+	dnf() Formula
+//	props(*Symtab) []int
 }
 
 type Name struct {

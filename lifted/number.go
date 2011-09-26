@@ -7,14 +7,14 @@ import "log"
 func (d *Domain) AssignNums(s *Symtab) {
 	d.numberTypes(s)
 	s.typeObjs = make([][]int, len(s.typeNames))
-	for i, _ := range d.Constants {
+	for i := range d.Constants {
 		d.Constants[i].numberConst(s)
 	}
-	for i, _ := range d.Predicates {
+	for i := range d.Predicates {
 		d.Predicates[i].assignNums(s)
 	}
 	s.predInertia = make([]byte, len(s.predNames))
-	for i, _ := range s.predInertia {
+	for i := range s.predInertia {
 		s.predInertia[i] = posInertia | negInertia
 	}
 	for _, a := range d.Actions {
@@ -23,7 +23,7 @@ func (d *Domain) AssignNums(s *Symtab) {
 }
 
 func (p *Problem) AssignNums(s *Symtab) {
-	for i, _ := range p.Objects {
+	for i := range p.Objects {
 		p.Objects[i].numberConst(s)
 	}
 	for _, init := range p.Init {
@@ -33,12 +33,12 @@ func (p *Problem) AssignNums(s *Symtab) {
 }
 
 func (d *Domain) numberTypes(s *Symtab) {
-	for i, _ := range d.Types {
+	for i := range d.Types {
 		d.Types[i].Name.numberType(s)
 	}
-	for i, _ := range d.Types {
+	for i := range d.Types {
 		t := d.Types[i]
-		for j, _ := range t.Type {
+		for j := range t.Type {
 			if found := t.Type[j].numberType(s); !found {
 				undeclType(&t.Type[j])
 			}
@@ -48,9 +48,9 @@ func (d *Domain) numberTypes(s *Symtab) {
 
 func (p *Predicate) assignNums(s *Symtab) {
 	p.Name.numberPred(s)
-	for i, _ := range p.Parameters {
+	for i := range p.Parameters {
 		parm := p.Parameters[i]
-		for j, _ := range parm.Type {
+		for j := range parm.Type {
 			if found := parm.Type[j].numberType(s); !found {
 				undeclType(&parm.Type[j])
 			}
@@ -61,7 +61,7 @@ func (p *Predicate) assignNums(s *Symtab) {
 func (c *TypedName) numberConst(s *Symtab) {
 	first := c.Name.numberConst(s)
 	cnum := c.Name.Num
-	for i, _ := range c.Type {
+	for i := range c.Type {
 		if found := c.Type[i].numberType(s); !found {
 			undeclType(&c.Type[i])
 		}
@@ -77,10 +77,10 @@ func (c *TypedName) numberConst(s *Symtab) {
 
 func (a *Action) assignNums(s *Symtab) {
 	var f *numFrame
-	for i, _ := range a.Parameters {
+	for i := range a.Parameters {
 		p := &a.Parameters[i]
 		f = p.Name.numberVar(s, f)
-		for j, _ := range p.Type {
+		for j := range p.Type {
 			if found := p.Type[j].numberType(s); !found {
 				undeclType(&p.Type[j])
 			}
@@ -124,7 +124,7 @@ func (FalseNode) assignNums(*Symtab, *numFrame) { }
 
 func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	f = e.Variable.Name.numberVar(s, f)
-	for i, _ := range e.Variable.Type {
+	for i := range e.Variable.Type {
 		if found := e.Variable.Type[i].numberType(s); !found {
 			undeclType(&e.Variable.Type[i])
 		}

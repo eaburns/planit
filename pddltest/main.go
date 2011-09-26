@@ -35,6 +35,7 @@ func main() {
 	}
 	syms := lifted.NewSymtab()
 	dom.AssignNums(syms)
+	dom.FindInertia(syms)
 
 	prob, err := problem()
 	if err != nil {

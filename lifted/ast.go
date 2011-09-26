@@ -13,6 +13,7 @@ type Domain struct {
 
 type Formula interface {
 	assignNums(*Symtab, *numFrame)
+	findInertia(*Symtab)
 	expandQuants(*Symtab, *expFrame) Formula
 //	dnf() Formula
 //	propositionalize(*Symtab) []int
@@ -95,7 +96,6 @@ type OrNode  struct { BinaryNode }
 type NotNode struct { UnaryNode }
 type ForallNode struct { QuantNode }
 type ExistsNode struct  { QuantNode }
-type EffectLiteralNode struct { LiteralNode }
 
 type WhenNode struct {
 	Condition Formula

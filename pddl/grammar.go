@@ -355,7 +355,7 @@ func (p *Parser) parsePeffect() Formula {
 	if _, ok := AssignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
 		return p.parseAssign()
 	}
-	return &EffectLiteralNode{ *p.parseLiteral() }
+	return p.parseLiteral()
 }
 
 func (p *Parser) parseAssign() Formula {

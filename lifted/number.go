@@ -132,16 +132,6 @@ func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	e.Formula.assignNums(s, f)
 }
 
-func (e *EffectLiteralNode) assignNums(s *Symtab, f *numFrame) {
-	e.LiteralNode.assignNums(s, f)
-	switch e.Positive {
-	case e.Positive:
-		s.predInertia[e.Name.Num] &^= posInertia
-	case !e.Positive:
-		s.predInertia[e.Name.Num] &^= negInertia
-	}
-}
-
 func (e *WhenNode) assignNums(s *Symtab, f *numFrame) {
 	e.Condition.assignNums(s, f)
 	e.Formula.assignNums(s, f)

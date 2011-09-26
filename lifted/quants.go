@@ -1,9 +1,66 @@
 package lifted
 
-import (
-	"github.com/willf/bitset"
-	"log"
-)
+import "github.com/willf/bitset"
+
+func (d *Domain) ExpandQuants(s *Symtab) {
+	acts := make([]Action, 0, len(d.Actions))
+	for i, _ := range d.Actions {
+		a := &d.Actions[i]
+		a.Precondition = a.Precondition.expandQuants(s, nil)
+		a.Effect = a.Effect.expandQuants(s, nil)
+		acts = append(acts, a.expandParms(s, nil, a.Parameters)...)
+	}
+	d.Actions = acts
+}
+
+func (a *Action) expandParms(s *Symtab, f *expFrame, ps []TypedName) (acts []Action) {
+	if len(ps) == 0 {
+		return a.groundedParms(s, f)
+	}
+
+	pnum := len(a.Parameters) - len(ps)
+	saved := a.Parameters[pnum]
+	seen := bitset.New(uint(len(s.constNames)))
+
+	for i, _ := range saved.Type {
+		tnum := saved.Type[i].Num
+		for _, obj := range s.typeObjs[tnum] {
+			if seen.Test(uint(obj)) {
+				continue
+			}
+			a.Parameters[pnum].Name.Num = obj
+			a.Parameters[pnum].Name.Str = s.constNames[obj]
+			g := f.push(saved.Name.Num, obj)
+			acts = append(acts, a.expandParms(s, g, ps[1:])...)
+		}
+	}
+
+	a.Parameters[pnum] = saved
+	return
+}
+
+// Return a ground instance of the given action
+// which has all of its parameters replaced with
+// constants
+func (a *Action) groundedParms(s *Symtab, f *expFrame) (acts []Action) {
+	prec := a.Precondition.expandQuants(s, f)
+	if _, ok := prec.(FalseNode); ok {
+		return acts
+	}
+	eff := a.Effect.expandQuants(s, f)
+	if _, ok := eff.(TrueNode); ok {
+		return acts
+	}
+	act := Action{
+		Name:         a.Name,
+		Parameters:   make([]TypedName, len(a.Parameters)),
+		Precondition: prec,
+		Effect:       eff,
+	}
+	copy(act.Parameters, a.Parameters)
+	acts = append(acts, act)
+	return []Action{act}
+}
 
 func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	parms := make([]Term, len(l.Parameters))
@@ -15,10 +72,8 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 		}
 		vl, ok := f.lookup(parms[i].Name.Num)
 		if !ok {
-			// Previous pass should have ensured
-			// that this is already bound.
-			log.Fatalf("%s: Unbound variable: %s", parms[i].Name.Loc,
-				parms[i].Name.Str)
+			// Must be replaced in another pass
+			continue
 		}
 		parms[i].Kind = TermConstant
 		parms[i].Name.Num = vl
@@ -26,8 +81,8 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	}
 
 	return &LiteralNode{
-		Positive: l.Positive,
-		Name: l.Name,
+		Positive:   l.Positive,
+		Name:       l.Name,
 		Parameters: parms,
 	}
 }
@@ -58,7 +113,7 @@ func (e *OrNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 		res = TrueNode(1)
 	case FalseNode:
 		res = e.Right.expandQuants(s, f)
-	default:	
+	default:
 		res = Disjunct(l, e.Right.expandQuants(s, f))
 	}
 	return
@@ -117,8 +172,8 @@ func (e *AssignNode) expandQuants(*Symtab, *expFrame) Formula {
 }
 
 type expFrame struct {
-	vr, vl	int
-	up	*expFrame
+	vr, vl int
+	up     *expFrame
 }
 
 func (f *expFrame) lookup(vr int) (int, bool) {
@@ -132,5 +187,5 @@ func (f *expFrame) lookup(vr int) (int, bool) {
 }
 
 func (f *expFrame) push(vr int, vl int) *expFrame {
-	return &expFrame { vr: vr, vl: vl, up: f }
+	return &expFrame{vr: vr, vl: vl, up: f}
 }

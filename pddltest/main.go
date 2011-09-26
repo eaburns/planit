@@ -43,6 +43,8 @@ func main() {
 	}
 	prob.AssignNums(syms)
 
+	dom.ExpandQuants(syms)
+
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {

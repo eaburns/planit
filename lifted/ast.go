@@ -34,7 +34,7 @@ type Loc struct {
 	Line int
 }
 
-func (l *Loc) String() string {
+func (l Loc) String() string {
 	if l.Line < 0 {
 		return l.File
 	}

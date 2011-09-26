@@ -296,7 +296,7 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Formula(NoEffectNode(0))
+	e := Formula(TrueNode(1))
 	for i := len(conj) - 1; i >= 0; i-- {
 		e = Conjunct(conj[i], e)
 	}

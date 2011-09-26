@@ -2,16 +2,12 @@ package lifted
 
 func Conjunct(l Formula, r Formula) Formula {
 	switch l.(type) {
-	case NoEffectNode:
-		return r
 	case TrueNode:
 		return r
 	case FalseNode:
 		return FalseNode(0)
 	}
 	switch r.(type) {
-	case NoEffectNode:
-		return l
 	case TrueNode:
 		return l
 	case FalseNode:

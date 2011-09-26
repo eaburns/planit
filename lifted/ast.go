@@ -90,7 +90,6 @@ type QuantNode struct {
 
 type TrueNode int
 type FalseNode int
-type NoEffectNode int
 type AndNode struct { BinaryNode }
 type OrNode  struct { BinaryNode }
 type NotNode struct { UnaryNode }

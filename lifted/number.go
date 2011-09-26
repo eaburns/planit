@@ -142,8 +142,6 @@ func (e *EffectLiteralNode) assignNums(s *Symtab, f *numFrame) {
 	}
 }
 
-func (NoEffectNode) assignNums(*Symtab, *numFrame) { }
-
 func (e *WhenNode) assignNums(s *Symtab, f *numFrame) {
 	e.Condition.assignNums(s, f)
 	e.Formula.assignNums(s, f)

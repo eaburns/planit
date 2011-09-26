@@ -129,10 +129,6 @@ func (e *ExistsNode) String() string {
 	return fmt.Sprintf("ExistsNode[{%v}", e.QuantNode)
 }
 
-func (NoEffectNode) String() string {
-	return "NoEffectNode"
-}
-
 func (eff *WhenNode) String() string {
 	return fmt.Sprintf("WhenNode{Condition:%v, }", eff.Condition,
 		eff.UnaryNode)

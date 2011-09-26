@@ -42,8 +42,6 @@ func (e FalseNode) expandQuants(*Symtab, *expFrame) Formula {
 
 func (e *AndNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	switch l := e.Left.expandQuants(s, f).(type) {
-	case NoEffectNode:
-		res = e.Right.expandQuants(s, f)
 	case TrueNode:
 		res = e.Right.expandQuants(s, f)
 	case FalseNode:
@@ -106,10 +104,6 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 		}
 	}
 	return disj
-}
-
-func (NoEffectNode) expandQuants(*Symtab, *expFrame) Formula {
-	return NoEffectNode(0)
 }
 
 func (e *WhenNode) expandQuants(*Symtab, *expFrame) Formula {

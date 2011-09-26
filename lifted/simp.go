@@ -1,57 +1,48 @@
 package lifted
 
-func ExprConj(l Expr, r Expr) Expr {
+func Conjunct(l Formula, r Formula) Formula {
 	switch l.(type) {
-	case ExprTrue:
+	case NoEffectNode:
 		return r
-	case ExprFalse:
-		return ExprFalse(0)
+	case TrueNode:
+		return r
+	case FalseNode:
+		return FalseNode(0)
 	}
 	switch r.(type) {
-	case ExprTrue:
+	case NoEffectNode:
 		return l
-	case ExprFalse:
-		return ExprFalse(0)
+	case TrueNode:
+		return l
+	case FalseNode:
+		return FalseNode(0)
 	}
-	return &ExprAnd{Left: l, Right: r}
+	return &AndNode{BinaryNode{Left: l, Right: r}}
 }
 
-func ExprDisj(l Expr, r Expr) Expr {
+func Disjunct(l Formula, r Formula) Formula {
 	switch l.(type) {
-	case ExprTrue:
-		return ExprTrue(1)
-	case ExprFalse:
-		return r
-	}
-	switch r.(type) {
-	case ExprTrue:
-		return ExprTrue(1)
-	case ExprFalse:
-		return l
-	}
-	return &ExprOr{Left: l, Right: r}
-}
-
-func ExprNeg(e Expr) Expr {
-	switch e.(type) {
-	case *ExprNot:
-		return e.(*ExprNot).Expr
-	case *ExprLiteral:
-		l := e.(*ExprLiteral)
-		l.Positive = !l.Positive
-		return l
-	}
-	return &ExprNot{Expr: e}
-}
-
-func EffectConj(l Effect, r Effect) Effect {
-	switch l.(type) {
-	case EffectNone:
+	case TrueNode:
+		return TrueNode(1)
+	case FalseNode:
 		return r
 	}
 	switch r.(type) {
-	case EffectNone:
+	case TrueNode:
+		return TrueNode(1)
+	case FalseNode:
 		return l
 	}
-	return &EffectAnd{Left: l, Right: r}
+	return &OrNode{BinaryNode{Left: l, Right: r}}
+}
+
+func Negate(e Formula) Formula {
+	switch neg := e.(type) {
+	case *NotNode:
+		return neg.Formula
+	case *LiteralNode:
+		neg.Positive = !neg.Positive
+		return neg
+	}
+	return &NotNode{UnaryNode{Formula: e}}
 }

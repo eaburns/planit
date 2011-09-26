@@ -131,8 +131,8 @@ func (p *Parser) parseActParms() []TypedName {
 	return res
 }
 
-func (p *Parser) parsePreExpr() (res Expr) {
-	parseNested := func(p *Parser) Expr { return p.parsePreExpr() }
+func (p *Parser) parsePreExpr() (res Formula) {
+	parseNested := func(p *Parser) Formula { return p.parsePreExpr() }
 	switch {
 	case p.acceptNamedList("and"):
 		res = p.parseAndExpr(parseNested)
@@ -144,24 +144,26 @@ func (p *Parser) parsePreExpr() (res Expr) {
 	return
 }
 
-func (p *Parser) parsePrefExpr() Expr {
+func (p *Parser) parsePrefExpr() Formula {
 	return p.parseExpr()
 }
 
-func (p *Parser) parseExpr() (res Expr) {
-	parseNested := func(p *Parser) Expr { return p.parseExpr() }
+func (p *Parser) parseExpr() (res Formula) {
+	parseNested := func(p *Parser) Formula { return p.parseExpr() }
 	switch {
 	case p.acceptNamedList("and"):
 		res = p.parseAndExpr(parseNested)
 	case p.acceptNamedList("or"):
 		res = p.parseOrExpr(parseNested)
 	case p.acceptNamedList("not"):
-		res = &ExprNot{Expr: p.parseExpr()}
+		res = &NotNode{UnaryNode{Formula: p.parseExpr()}}
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
-		res = &ExprOr{
-			Left:  &ExprNot{Expr: p.parseExpr()},
-			Right: p.parseExpr(),
+		res = &OrNode{
+			BinaryNode{
+				Left:  &NotNode{UnaryNode{Formula: p.parseExpr()}},
+				Right: p.parseExpr(),
+			},
 		}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
@@ -169,18 +171,18 @@ func (p *Parser) parseExpr() (res Expr) {
 	case p.acceptNamedList("forall"):
 		res = p.parseForallExpr(parseNested)
 	default:
-		res = (*ExprLiteral)(p.parseLiteral())
+		res = p.parseLiteral()
 	}
 	return
 }
 
-func (p *Parser) parseLiteral() *Literal {
+func (p *Parser) parseLiteral() *LiteralNode {
 	pos := true
 	if p.acceptNamedList("not") {
 		pos = false
 	}
 	p.expect(tokOpen)
-	res := &Literal{
+	res := &LiteralNode{
 		Positive:   pos,
 		Name:       p.name(p.expect(tokId).txt),
 		Parameters: p.parseTerms(),
@@ -213,75 +215,75 @@ func (p *Parser) parseTerms() (lst []Term) {
 	return
 }
 
-func (p *Parser) parseAndExpr(nested func(*Parser) Expr) Expr {
-	conj := make([]Expr, 0)
+func (p *Parser) parseAndExpr(nested func(*Parser) Formula) Formula {
+	conj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Expr(ExprTrue(1))
+	e := Formula(TrueNode(1))
 	for i := len(conj) - 1; i >= 0; i-- {
-		e = ExprConj(conj[i], e)
+		e = Conjunct(conj[i], e)
 	}
 	p.expect(tokClose)
 	return e
 }
 
-func (p *Parser) parseOrExpr(nested func(*Parser) Expr) Expr {
-	disj := make([]Expr, 0)
+func (p *Parser) parseOrExpr(nested func(*Parser) Formula) Formula {
+	disj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
 	}
-	e := Expr(ExprFalse(1))
+	e := Formula(FalseNode(0))
 	for i := len(disj) - 1; i >= 0; i-- {
-		e = ExprConj(disj[i], e)
+		e = Disjunct(disj[i], e)
 	}
 	p.expect(tokClose)
 	return e
 }
 
-func (p *Parser) parseForallExpr(nested func(*Parser) Expr) Expr {
+func (p *Parser) parseForallExpr(nested func(*Parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
 
-	res := &ExprForall{}
+	res := &ForallNode{}
 	bottom := res
 	for i, vr := range vrs {
 		bottom.Variable = vr
 		if i < len(vrs)-1 {
-			bottom.Expr = &ExprForall{}
-			bottom = bottom.Expr.(*ExprForall)
+			bottom.Formula = &ForallNode{}
+			bottom = bottom.Formula.(*ForallNode)
 		}
 	}
 
-	bottom.Expr = nested(p)
+	bottom.Formula = nested(p)
 	p.expect(tokClose)
 	return res
 }
 
-func (p *Parser) parseExistsExpr(nested func(*Parser) Expr) Expr {
+func (p *Parser) parseExistsExpr(nested func(*Parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
 
-	res := &ExprExists{}
+	res := &ExistsNode{}
 	bottom := res
 	for i, vr := range vrs {
 		bottom.Variable = vr
 		if i < len(vrs)-1 {
-			bottom.Expr = &ExprExists{}
-			bottom = bottom.Expr.(*ExprExists)
+			bottom.Formula = &ExistsNode{}
+			bottom = bottom.Formula.(*ExistsNode)
 		}
 	}
 
-	bottom.Expr = nested(p)
+	bottom.Formula = nested(p)
 	p.expect(tokClose)
 	return res
 }
 
-func (p *Parser) parseEffect() Effect {
+func (p *Parser) parseEffect() Formula {
 	if p.acceptNamedList("and") {
-		parseNested := func(p *Parser) Effect {
+		parseNested := func(p *Parser) Formula {
 			return p.parseCeffect()
 		}
 		return p.parseAndEffect(parseNested)
@@ -289,28 +291,28 @@ func (p *Parser) parseEffect() Effect {
 	return p.parseCeffect()
 }
 
-func (p *Parser) parseAndEffect(nested func(*Parser) Effect) Effect {
-	conj := make([]Effect, 0)
+func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
+	conj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Effect(EffectNone(0))
+	e := Formula(NoEffectNode(0))
 	for i := len(conj) - 1; i >= 0; i-- {
-		e = EffectConj(conj[i], e)
+		e = Conjunct(conj[i], e)
 	}
 	p.expect(tokClose)
 	return e
 }
 
-func (p *Parser) parseCeffect() (res Effect) {
+func (p *Parser) parseCeffect() (res Formula) {
 	switch {
 	case p.acceptNamedList("forall"):
-		parseNested := func(p *Parser) Effect {
+		parseNested := func(p *Parser) Formula {
 			return p.parseEffect()
 		}
 		res = p.parseForallEffect(parseNested)
 	case p.acceptNamedList("when"):
-		parseNested := func(p *Parser) Effect {
+		parseNested := func(p *Parser) Formula {
 			return p.parseCondEffect()
 		}
 		res = p.parseWhen(parseNested)
@@ -320,45 +322,45 @@ func (p *Parser) parseCeffect() (res Effect) {
 	return
 }
 
-func (p *Parser) parseForallEffect(nested func(*Parser) Effect) Effect {
+func (p *Parser) parseForallEffect(nested func(*Parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
 
-	res := &EffectForall{}
+	res := &ForallNode{}
 	bottom := res
 	for i, vr := range vrs {
 		bottom.Variable = vr
 		if i < len(vrs)-1 {
-			bottom.Effect = &EffectForall{}
-			bottom = bottom.Effect.(*EffectForall)
+			bottom.Formula = &ForallNode{}
+			bottom = bottom.Formula.(*ForallNode)
 		}
 	}
 
-	bottom.Effect = nested(p)
+	bottom.Formula = nested(p)
 	p.expect(tokClose)
 	return res
 }
 
-func (p *Parser) parseWhen(nested func(*Parser) Effect) Effect {
-	res := &EffectWhen{
+func (p *Parser) parseWhen(nested func(*Parser) Formula) Formula {
+	res := &WhenNode{
 		Condition: p.parseExpr(),
 	}
-	res.Effect = nested(p)
+	res.Formula = nested(p)
 	p.expect(tokClose)
 	return res
 }
 
-func (p *Parser) parsePeffect() Effect {
+func (p *Parser) parsePeffect() Formula {
 	if _, ok := AssignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
 		return p.parseAssign()
 	}
-	return (*EffectLiteral)(p.parseLiteral())
+	return &EffectLiteralNode{ *p.parseLiteral() }
 }
 
-func (p *Parser) parseAssign() Effect {
+func (p *Parser) parseAssign() Formula {
 	p.expect(tokOpen)
-	res := &EffectAssign{
+	res := &AssignNode{
 		Op:   AssignOps[p.expect(tokId).txt],
 		Lval: p.parseFhead(),
 		Rval: p.parseFexp(),
@@ -367,9 +369,9 @@ func (p *Parser) parseAssign() Effect {
 	return res
 }
 
-func (p *Parser) parseCondEffect() Effect {
+func (p *Parser) parseCondEffect() Formula {
 	if p.acceptNamedList("and") {
-		parseNested := func(p *Parser) Effect {
+		parseNested := func(p *Parser) Formula {
 			return p.parsePeffect()
 		}
 		return p.parseAndEffect(parseNested)
@@ -430,7 +432,7 @@ func (p *Parser) parseObjsDecl() (objs []TypedName) {
 	return
 }
 
-func (p *Parser) parseInit() (els []InitEl) {
+func (p *Parser) parseInit() (els []Formula) {
 	p.expect(tokOpen)
 	p.expectId(":init")
 	for p.peek().typ == tokOpen {
@@ -440,19 +442,20 @@ func (p *Parser) parseInit() (els []InitEl) {
 	return
 }
 
-func (p *Parser) parseInitEl() InitEl {
+func (p *Parser) parseInitEl() Formula {
 	if p.acceptNamedList("=") {
-		eq := &InitEq{
+		eq := &AssignNode{
+			Op: OpAssign,
 			Lval: p.parseFhead(),
-			Rval: p.expect(tokNum).txt,
+			Rval: Fexp(p.expect(tokNum).txt),
 		}
 		p.expect(tokClose)
 		return eq
 	}
-	return (*InitLiteral)(p.parseLiteral())
+	return p.parseLiteral()
 }
 
-func (p *Parser) parseGoal() Expr {
+func (p *Parser) parseGoal() Formula {
 	p.expect(tokOpen)
 	p.expectId(":goal")
 	g := p.parsePreExpr()

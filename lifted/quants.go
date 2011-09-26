@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func (l *Literal) expandQuants(s *Symtab, f *expFrame) *Literal {
+func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	parms := make([]Term, len(l.Parameters))
 	copy(parms, l.Parameters)
 
@@ -25,89 +25,101 @@ func (l *Literal) expandQuants(s *Symtab, f *expFrame) *Literal {
 		parms[i].Name.Str = s.constNames[vl]
 	}
 
-	return &Literal{
+	return &LiteralNode{
 		Positive: l.Positive,
 		Name: l.Name,
 		Parameters: parms,
 	}
 }
 
-func (e ExprTrue) expandQuants(*Symtab, *expFrame) Expr {
+func (e TrueNode) expandQuants(*Symtab, *expFrame) Formula {
 	return e
 }
 
-func (e ExprFalse) expandQuants(*Symtab, *expFrame) Expr {
+func (e FalseNode) expandQuants(*Symtab, *expFrame) Formula {
 	return e
 }
 
-func (e *ExprAnd) expandQuants(s *Symtab, f *expFrame) (res Expr) {
+func (e *AndNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	switch l := e.Left.expandQuants(s, f).(type) {
-	case ExprTrue:
+	case NoEffectNode:
 		res = e.Right.expandQuants(s, f)
-	case ExprFalse:
-		res = ExprFalse(0)
+	case TrueNode:
+		res = e.Right.expandQuants(s, f)
+	case FalseNode:
+		res = FalseNode(0)
 	default:
-		res = ExprConj(l, e.Right.expandQuants(s, f))
+		res = Conjunct(l, e.Right.expandQuants(s, f))
 	}
 	return
 }
 
-func (e *ExprOr) expandQuants(s *Symtab, f *expFrame) (res Expr) {
+func (e *OrNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	switch l := e.Left.expandQuants(s, f).(type) {
-	case ExprTrue:
-		res = ExprTrue(1)
-	case ExprFalse:
+	case TrueNode:
+		res = TrueNode(1)
+	case FalseNode:
 		res = e.Right.expandQuants(s, f)
 	default:	
-		res = ExprDisj(l, e.Right.expandQuants(s, f))
+		res = Disjunct(l, e.Right.expandQuants(s, f))
 	}
 	return
 }
 
-func (e *ExprNot) expandQuants(s *Symtab, f *expFrame) Expr {
-	return ExprNeg(e.Expr.expandQuants(s, f))
+func (e *NotNode) expandQuants(s *Symtab, f *expFrame) Formula {
+	return Negate(e.Formula.expandQuants(s, f))
 }
 
-func (e *ExprForall) expandQuants(s *Symtab, f *expFrame) Expr {
+func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
-	conj := Expr(ExprTrue(1))
+	conj := Formula(TrueNode(1))
 	for i, _ := range e.Variable.Type {
 		for obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}
 			frame := f.push(vr, obj)
-			conj = ExprConj(conj, e.Expr.expandQuants(s, frame))
-			if _, ok := conj.(ExprFalse); ok {
-				return ExprFalse(0)
+			conj = Conjunct(conj, e.Formula.expandQuants(s, frame))
+			if _, ok := conj.(FalseNode); ok {
+				return FalseNode(0)
 			}
 		}
 	}
 	return conj
 }
 
-func (e *ExprExists) expandQuants(s *Symtab, f *expFrame) Expr {
+func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
-	disj := Expr(ExprFalse(0))
+	disj := Formula(FalseNode(0))
 	for i, _ := range e.Variable.Type {
 		for obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}
 			frame := f.push(vr, obj)
-			disj = ExprDisj(disj, e.Expr.expandQuants(s, frame))
-			if _, ok := disj.(ExprTrue); ok {
-				return ExprTrue(1)
+			disj = Disjunct(disj, e.Formula.expandQuants(s, frame))
+			if _, ok := disj.(TrueNode); ok {
+				return TrueNode(1)
 			}
 		}
 	}
 	return disj
 }
 
-func (e *ExprLiteral) expandQuants(s *Symtab, f *expFrame) Expr {
-	return (*ExprLiteral)((*Literal)(e).expandQuants(s, f))
+func (NoEffectNode) expandQuants(*Symtab, *expFrame) Formula {
+	return NoEffectNode(0)
+}
+
+func (e *WhenNode) expandQuants(*Symtab, *expFrame) Formula {
+	return nil
+}
+
+func (e *AssignNode) expandQuants(*Symtab, *expFrame) Formula {
+	// For now there is nothing to substitute because the
+	// assignment can only be to total-cost
+	return e
 }
 
 type expFrame struct {

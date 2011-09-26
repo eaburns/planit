@@ -84,87 +84,63 @@ func (n Name) String() string {
 	return fmt.Sprintf("{%s, %d}", n.Str, n.Num)
 }
 
-func (lit *Literal) String() string {
+func (lit *LiteralNode) String() string {
 	return fmt.Sprintf("Literal{Positive:%t, Name:%v, Parameters:%v}",
 		lit.Positive, lit.Name, lit.Parameters)
 }
 
-func (e *ExprBinary) String() string {
+func (e *BinaryNode) String() string {
 	return fmt.Sprintf("Left:%v, Right:%v", e.Left, e.Right)
 }
 
-func (e *ExprUnary) String() string {
-	return fmt.Sprintf("Expr:%v", e.Expr)
+func (e *UnaryNode) String() string {
+	return fmt.Sprintf("Formula:%v", e.Formula)
 }
 
-func (e *ExprQuant) String() string {
-	return fmt.Sprintf("Variable:%v, %v", e.Variable, e.ExprUnary)
+func (e *QuantNode) String() string {
+	return fmt.Sprintf("Variable:%v, %v", e.Variable, e.UnaryNode)
 }
 
-func (ExprTrue) String() string {
+func (TrueNode) String() string {
 	return "ExprTrue"
 }
 
-func (ExprFalse) String() string {
+func (FalseNode) String() string {
 	return "ExprFalse"
 }
 
-func (e *ExprAnd) String() string {
-	return fmt.Sprintf("ExprAnd{%v}", (*ExprBinary)(e))
+func (e *AndNode) String() string {
+	return fmt.Sprintf("AndNode{%v}", e.BinaryNode)
 }
 
-func (e *ExprOr) String() string {
-	return fmt.Sprintf("ExprOr{%v}", (*ExprBinary)(e))
+func (e *OrNode) String() string {
+	return fmt.Sprintf("OrNode{%v}", e.BinaryNode)
 }
 
-func (e *ExprNot) String() string {
-	return fmt.Sprintf("ExprNot{%v}", (*ExprUnary)(e))
+func (e *NotNode) String() string {
+	return fmt.Sprintf("NotNode{%v}", e.UnaryNode)
 }
 
-func (e *ExprForall) String() string {
-	return fmt.Sprintf("ExprForall{%v}", (*ExprQuant)(e))
+func (e *ForallNode) String() string {
+	return fmt.Sprintf("ForallNode{%v}", e.QuantNode)
 }
 
-func (e *ExprExists) String() string {
-	return fmt.Sprintf("ExprExists[{%v}", (*ExprQuant)(e))
+func (e *ExistsNode) String() string {
+	return fmt.Sprintf("ExistsNode[{%v}", e.QuantNode)
 }
 
-func (e *ExprLiteral) String() string {
-	return fmt.Sprintf("%v", (*Literal)(e))
+func (NoEffectNode) String() string {
+	return "NoEffectNode"
 }
 
-func (eff *EffectBinary) String() string {
-	return fmt.Sprintf("Left:%v, Right:%v", eff.Left, eff.Right)
+func (eff *WhenNode) String() string {
+	return fmt.Sprintf("WhenNode{Condition:%v, }", eff.Condition,
+		eff.UnaryNode)
 }
 
-func (eff *EffectUnary) String() string {
-	return fmt.Sprintf("Effect:%v", eff.Effect)
-}
-
-func (EffectNone) String() string {
-	return "effNone"
-}
-
-func (eff *EffectAnd) String() string {
-	return fmt.Sprintf("EffAnd{%v}", (*EffectBinary)(eff))
-}
-
-func (eff *EffectForall) String() string {
-	return fmt.Sprintf("EffForall{Variable:%v,%v}", eff.Variable, eff.EffectUnary)
-}
-
-func (eff *EffectWhen) String() string {
-	return fmt.Sprintf("EffWhen{Condition:%v, }", eff.Condition,
-		eff.EffectUnary)
-}
-
-func (eff *EffectAssign) String() string {
-	return fmt.Sprintf("EffAssign{Op:%v, Lval:%v, Rval:%v}",
+func (eff *AssignNode) String() string {
+	return fmt.Sprintf("AssignNode{Op:%v, Lval:%v, Rval:%v}",
 		eff.Op, eff.Lval, eff.Rval)
-}
-
-func (e *EffectLiteral) String() string {
-	return fmt.Sprintf("%v", (*Literal)(e))
 }
 
 var assignOpNames = map[AssignOp]string{
@@ -173,16 +149,4 @@ var assignOpNames = map[AssignOp]string{
 	OpScaleDown: "OpScaleDown",
 	OpIncrease:  "OpIncrease",
 	OpDecrease:  "OpDecrease",
-}
-
-func (o AssignOp) String() string {
-	return assignOpNames[o]
-}
-
-func (i *InitLiteral) String() string {
-	return fmt.Sprintf("%v", (*Literal)(i))
-}
-
-func (i *InitEq) String() string {
-	return fmt.Sprintf("InitEq{Lval:%v, Rval:%v}", i.Lval, i.Rval)
 }

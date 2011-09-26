@@ -11,6 +11,13 @@ type Domain struct {
 	Actions      []Action
 }
 
+type Formula interface {
+	assignNums(*Symtab, *numFrame)
+	expandQuants(*Symtab, *expFrame) Formula
+//	dnf() Formula
+//	propositionalize(*Symtab) []int
+}
+
 type Name struct {
 	Str string
 	Num int
@@ -36,8 +43,8 @@ func (l *Loc) String() string {
 type Action struct {
 	Name         string
 	Parameters   []TypedName
-	Precondition Expr
-	Effect       Effect
+	Precondition Formula
+	Effect       Formula
 }
 
 type TypedName struct {
@@ -62,63 +69,41 @@ type Term struct {
 	Name Name
 }
 
-type Literal struct {
+type LiteralNode struct {
 	Positive   bool
 	Name       Name
 	Parameters []Term
 }
 
-type Expr interface {
-	assignNums(*Symtab, *numFrame)
-	expandQuants(*Symtab, *expFrame) Expr
+type BinaryNode struct {
+	Left, Right Formula
 }
 
-type ExprBinary struct {
-	Left, Right Expr
+type UnaryNode struct {
+	Formula Formula
 }
 
-type ExprUnary struct {
-	Expr Expr
-}
-
-type ExprQuant struct {
+type QuantNode struct {
 	Variable TypedName
-	ExprUnary
+	UnaryNode
 }
 
-type ExprTrue int
-type ExprFalse int
-type ExprAnd ExprBinary
-type ExprOr ExprBinary
-type ExprNot ExprUnary
-type ExprForall ExprQuant
-type ExprExists ExprQuant
-type ExprLiteral Literal
+type TrueNode int
+type FalseNode int
+type NoEffectNode int
+type AndNode struct { BinaryNode }
+type OrNode  struct { BinaryNode }
+type NotNode struct { UnaryNode }
+type ForallNode struct { QuantNode }
+type ExistsNode struct  { QuantNode }
+type EffectLiteralNode struct { LiteralNode }
 
-type Effect interface {
-	assignNums(*Symtab, *numFrame)
-}
-
-type EffectBinary struct {
-	Left, Right Effect
+type WhenNode struct {
+	Condition Formula
+	UnaryNode
 }
 
-type EffectUnary struct {
-	Effect Effect
-}
-
-type EffectNone int
-type EffectAnd EffectBinary
-type EffectForall struct {
-	Variable TypedName
-	EffectUnary
-}
-type EffectWhen struct {
-	Condition Expr
-	EffectUnary
-}
-type EffectLiteral Literal
-type EffectAssign struct {
+type AssignNode struct {
 	Op   AssignOp
 	Lval Fhead
 	Rval Fexp
@@ -135,7 +120,7 @@ const (
 )
 
 var AssignOps = map[string]AssignOp{
-	//	"assign": OpAssign,
+	"assign": OpAssign,
 	//	"scale-up": OpScaleUp,
 	//	"scale-down": OpScaleDown,
 	//	"decrease": OpDecrease,
@@ -154,8 +139,8 @@ type Problem struct {
 	Domain       string
 	Requirements []string
 	Objects      []TypedName
-	Init         []InitEl
-	Goal         Expr
+	Init         []Formula
+	Goal         Formula
 	Metric       Metric
 }
 
@@ -165,14 +150,3 @@ const (
 	MetricMakespan Metric = iota
 	MetricMinCost
 )
-
-type InitEl interface {
-	assignNums(*Symtab, *numFrame)
-}
-
-type InitLiteral Literal
-
-type InitEq struct {
-	Lval Fhead
-	Rval string
-}

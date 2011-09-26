@@ -90,7 +90,7 @@ func (a *Action) assignNums(s *Symtab) {
 	a.Effect.assignNums(s, f)
 }
 
-func (l *Literal) assignNums(s *Symtab, f *numFrame) {
+func (l *LiteralNode) assignNums(s *Symtab, f *numFrame) {
 	for i, t := range l.Parameters {
 		name := &l.Parameters[i].Name
 		switch t.Kind {
@@ -109,92 +109,47 @@ func (l *Literal) assignNums(s *Symtab, f *numFrame) {
 	}
 }
 
-func (e *ExprBinary) assignNums(s *Symtab, f *numFrame) {
+func (e *BinaryNode) assignNums(s *Symtab, f *numFrame) {
 	e.Left.assignNums(s, f)
 	e.Right.assignNums(s, f)
 }
 
-func (ExprTrue) assignNums(*Symtab, *numFrame) { }
-
-func (ExprFalse) assignNums(*Symtab, *numFrame) { }
-
-func (e *ExprAnd) assignNums(s *Symtab, f *numFrame) {
-	(*ExprBinary)(e).assignNums(s, f)
+func (e *UnaryNode) assignNums(s *Symtab, f *numFrame) {
+	e.Formula.assignNums(s, f)
 }
 
-func (e *ExprOr) assignNums(s *Symtab, f *numFrame) {
-	(*ExprBinary)(e).assignNums(s, f)
-}
+func (TrueNode) assignNums(*Symtab, *numFrame) { }
 
-func (e *ExprNot) assignNums(s *Symtab, f *numFrame) {
-	e.Expr.assignNums(s, f)
-}
+func (FalseNode) assignNums(*Symtab, *numFrame) { }
 
-func (e *ExprQuant) assignNums(s *Symtab, f *numFrame) {
+func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	f = e.Variable.Name.numberVar(s, f)
 	for i, _ := range e.Variable.Type {
 		if found := e.Variable.Type[i].numberType(s); !found {
 			undeclType(&e.Variable.Type[i])
 		}
 	}
-	e.Expr.assignNums(s, f)
+	e.Formula.assignNums(s, f)
 }
 
-func (e *ExprForall) assignNums(s *Symtab, f *numFrame) {
-	(*ExprQuant)(e).assignNums(s, f)
-}
-
-func (e *ExprExists) assignNums(s *Symtab, f *numFrame) {
-	(*ExprQuant)(e).assignNums(s, f)
-}
-
-func (e *ExprLiteral) assignNums(s *Symtab, f *numFrame) {
-	(*Literal)(e).assignNums(s, f)
-}
-
-func (e *EffectUnary) assignNums(s *Symtab, f *numFrame) {
-	e.Effect.assignNums(s, f)
-}
-
-func (EffectNone) assignNums(*Symtab, *numFrame) { }
-
-func (e *EffectAnd) assignNums(s *Symtab, f *numFrame) {
-	e.Left.assignNums(s, f)
-	e.Right.assignNums(s, f)
-}
-
-func (e *EffectForall) assignNums(s *Symtab, f *numFrame) {
-	f = e.Variable.Name.numberVar(s, f)
-	for i, _ := range e.Variable.Type {
-		if found := e.Variable.Type[i].numberType(s); !found {
-			undeclType(&e.Variable.Type[i])
-		}
-	}
-	e.Effect.assignNums(s, f)
-}
-
-func (e *EffectWhen) assignNums(s *Symtab, f *numFrame) {
-	e.Condition.assignNums(s, f)
-	e.Effect.assignNums(s, f)
-}
-
-func (e *EffectLiteral) assignNums(s *Symtab, f *numFrame) {
-	(*Literal)(e).assignNums(s, f)
+func (e *EffectLiteralNode) assignNums(s *Symtab, f *numFrame) {
+	e.LiteralNode.assignNums(s, f)
 	switch e.Positive {
-	case true:
+	case e.Positive:
 		s.predInertia[e.Name.Num] &^= posInertia
-	case false:
+	case !e.Positive:
 		s.predInertia[e.Name.Num] &^= negInertia
 	}
 }
 
-func (e *EffectAssign) assignNums(*Symtab, *numFrame) { }
+func (NoEffectNode) assignNums(*Symtab, *numFrame) { }
 
-func (i *InitLiteral) assignNums(s *Symtab, f *numFrame) {
-	(*Literal)(i).assignNums(s, f)
+func (e *WhenNode) assignNums(s *Symtab, f *numFrame) {
+	e.Condition.assignNums(s, f)
+	e.Formula.assignNums(s, f)
 }
 
-func (i *InitEq) assignNums(s *Symtab, f *numFrame) { }
+func (e *AssignNode) assignNums(*Symtab, *numFrame) { }
 
 func (name *Name) numberType(s *Symtab) bool {
 	if n, ok := s.typeNums[name.Str]; ok {

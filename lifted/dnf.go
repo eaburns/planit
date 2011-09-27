@@ -38,14 +38,9 @@ func (n *OrNode) dnf() Formula {
 func (n *NotNode) dnf() Formula {
 	switch f := n.Formula.dnf().(type) {
 	case *OrNode:
-		m := AndNode{
-			BinaryNode{Left: Negate(f.Left), Right: Negate(f.Right)},
-		}
-		return m.dnf()
+		return Conjunct(Negate(f.Left), Negate(f.Right)).dnf()
 	case *AndNode:
-		return &OrNode{
-			BinaryNode{Left: Negate(f.Left), Right: Negate(f.Right)},
-		}
+		return Disjunct(Negate(f.Left), Negate(f.Right)).dnf()
 	}
 	return Negate(n.Formula)
 }

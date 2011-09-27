@@ -60,7 +60,7 @@ func (n *ExistsNode) dnf() Formula {
 
 func (n *WhenNode) dnf() Formula {
 	disj := Formula(FalseNode(0))
-	conds := collectDisjuncts(n.Condition.dnf())
+	conds := collectOrs(n.Condition.dnf())
 	if len(conds) == 1 {
 		return n
 	}
@@ -76,11 +76,11 @@ func (n *WhenNode) dnf() Formula {
 
 func (n *AssignNode) dnf() Formula { return n }
 
-func collectDisjuncts(f Formula) (fs []Formula) {
+func collectOrs(f Formula) (fs []Formula) {
 	switch n := f.(type) {
 	case *OrNode:
-		fs = append(fs, collectDisj(n.Left)...)
-		fs = append(fs, collectDisj(n.Right)...)
+		fs = append(fs, collectOrs(n.Left)...)
+		fs = append(fs, collectOrs(n.Right)...)
 	default:
 		fs = append(fs, n)
 	}

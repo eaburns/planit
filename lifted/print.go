@@ -6,14 +6,14 @@ import (
 )
 
 func (d *Domain) String() string {
-	buf := bytes.NewBuffer(make([]byte, 0, 100))
+	var buf bytes.Buffer
 
 	buf.WriteString("&Domain{")
-	fmt.Fprintf(buf, "Name:%s,\n", d.Name)
-	fmt.Fprintf(buf, "Requirements:%+v\n", d.Requirements)
-	fmt.Fprintf(buf, "Types:%v\n", d.Types)
-	fmt.Fprintf(buf, "Constants:%v\n", d.Constants)
-	fmt.Fprintf(buf, "Predicates:%+v\n", d.Predicates)
+	fmt.Fprintf(&buf, "Name:%s,\n", d.Name)
+	fmt.Fprintf(&buf, "Requirements:%+v\n", d.Requirements)
+	fmt.Fprintf(&buf, "Types:%v\n", d.Types)
+	fmt.Fprintf(&buf, "Constants:%v\n", d.Constants)
+	fmt.Fprintf(&buf, "Predicates:%+v\n", d.Predicates)
 
 	buf.WriteString("Actions:[\n")
 	for i, a := range d.Actions {
@@ -33,29 +33,29 @@ func (p Predicate) String() string {
 }
 
 func (a Action) String() string {
-	buf := bytes.NewBuffer(make([]byte, 0, 100))
+	var buf bytes.Buffer
 
 	buf.WriteString("Action{")
-	fmt.Fprintf(buf, "Name:%s", a.Name)
-	fmt.Fprintf(buf, "\nParameters:%+v", a.Parameters)
-	fmt.Fprintf(buf, "\nPrecondition:%+v", a.Precondition)
-	fmt.Fprintf(buf, "\nEffect:%+v", a.Effect)
+	fmt.Fprintf(&buf, "Name:%s", a.Name)
+	fmt.Fprintf(&buf, "\nParameters:%+v", a.Parameters)
+	fmt.Fprintf(&buf, "\nPrecondition:%+v", a.Precondition)
+	fmt.Fprintf(&buf, "\nEffect:%+v", a.Effect)
 	buf.WriteString("}")
 
 	return buf.String()
 }
 
 func (p *Problem) String() string {
-	buf := bytes.NewBuffer(make([]byte, 0, 100))
+	var buf bytes.Buffer
 
 	buf.WriteString("Problem{")
-	fmt.Fprintf(buf, "Name:%s\n", p.Name)
-	fmt.Fprintf(buf, "Domain:%s\n", p.Domain)
-	fmt.Fprintf(buf, "Requirements:%v\n", p.Requirements)
-	fmt.Fprintf(buf, "Objects:%v\n", p.Objects)
-	fmt.Fprintf(buf, "Init:%+v\n", p.Init)
-	fmt.Fprintf(buf, "Goal:%+v\n", p.Goal)
-	fmt.Fprintf(buf, "Metric:%+v\n", p.Metric)
+	fmt.Fprintf(&buf, "Name:%s\n", p.Name)
+	fmt.Fprintf(&buf, "Domain:%s\n", p.Domain)
+	fmt.Fprintf(&buf, "Requirements:%v\n", p.Requirements)
+	fmt.Fprintf(&buf, "Objects:%v\n", p.Objects)
+	fmt.Fprintf(&buf, "Init:%+v\n", p.Init)
+	fmt.Fprintf(&buf, "Goal:%+v\n", p.Goal)
+	fmt.Fprintf(&buf, "Metric:%+v\n", p.Metric)
 	buf.WriteByte('}')
 
 	return buf.String()

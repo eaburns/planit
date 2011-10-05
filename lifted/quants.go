@@ -161,8 +161,10 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	return disj
 }
 
-func (e *WhenNode) expandQuants(*Symtab, *expFrame) Formula {
-	return nil
+func (e *WhenNode) expandQuants(s *Symtab, f *expFrame) Formula {
+	e.Condition = e.Condition.expandQuants(s, f)
+	e.Formula = e.Formula.expandQuants(s, f)
+	return e
 }
 
 func (e *AssignNode) expandQuants(*Symtab, *expFrame) Formula {

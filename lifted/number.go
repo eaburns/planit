@@ -59,7 +59,7 @@ func (p *Predicate) assignNums(s *Symtab) {
 }
 
 func (c *TypedName) numberConst(s *Symtab) {
-	first := c.Name.numberConst(s)
+	seen := c.Name.numberConst(s)
 	cnum := c.Name.Num
 	for i := range c.Type {
 		if found := c.Type[i].numberType(s); !found {
@@ -68,7 +68,7 @@ func (c *TypedName) numberConst(s *Symtab) {
 		// If this is the 1st decl of this object
 		// then add it to the table of all objects
 		// of the given type
-		if !first {
+		if !seen {
 			tnum := c.Type[i].Num
 			s.typeObjs[tnum] = append(s.typeObjs[tnum], cnum)
 		}

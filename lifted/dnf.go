@@ -45,15 +45,13 @@ func (n *NotNode) dnf() Formula {
 	return Negate(n.Formula)
 }
 
-func (n *ForallNode) dnf() Formula {
-	panic("ForallNode in the tree when converting to DFN")
-}
-
-func (n *ExistsNode) dnf() Formula {
-	panic("ExistsNode in the tree when converting to DFN")
+func (n *QuantNode) dnf() Formula {
+	panic("QuantNode in the tree when converting to DFN")
 }
 
 func (n *WhenNode) dnf() Formula {
+	n.Formula = n.Formula.dnf()
+
 	disj := Formula(FalseNode{})
 	conds := collectOrs(n.Condition.dnf())
 	if len(conds) == 1 {

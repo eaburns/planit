@@ -1,6 +1,10 @@
 package lifted
 
 func (d *Domain) FindInertia(s *Symtab) {
+	s.predInertia = make([]byte, len(s.predNames))
+	for i := range s.predInertia {
+		s.predInertia[i] = posInertia | negInertia
+	}
 	for i := range d.Actions {
 		d.Actions[i].Effect.findInertia(s)
 	}

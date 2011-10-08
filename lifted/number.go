@@ -13,10 +13,6 @@ func (d *Domain) AssignNums(s *Symtab) {
 	for i := range d.Predicates {
 		d.Predicates[i].assignNums(s)
 	}
-	s.predInertia = make([]byte, len(s.predNames))
-	for i := range s.predInertia {
-		s.predInertia[i] = posInertia | negInertia
-	}
 	for _, a := range d.Actions {
 		a.assignNums(s)
 	}

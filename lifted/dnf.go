@@ -1,10 +1,12 @@
 package lifted
 
+func (n TrueNode) dnf() Formula { return n }
+
+func (n FalseNode) dnf() Formula { return n }
+
 func (n *LiteralNode) dnf() Formula { return n }
 
-func (TrueNode) dnf() Formula { return TrueNode{} }
-
-func (FalseNode) dnf() Formula { return FalseNode{} }
+func (n *AssignNode) dnf() Formula { return n }
 
 func (n *AndNode) dnf() Formula {
 	n.Left = n.Left.dnf()
@@ -67,7 +69,46 @@ func (n *WhenNode) dnf() Formula {
 	return disj
 }
 
-func (n *AssignNode) dnf() Formula { return n }
+func (TrueNode) ensureDnf() { return }
+
+func (FalseNode) ensureDnf() { return }
+
+func (*AssignNode) ensureDnf() { return }
+
+func (*LiteralNode) ensureDnf() { return }
+
+func (n *AndNode) ensureDnf() {
+	switch n.Left.(type) {
+	case *OrNode:
+		panic("An OrNode follows an AndNode in a 'DNF' formula")
+	default:
+		n.Left.ensureDnf()
+	}
+	switch n.Right.(type) {
+	case *OrNode:
+		panic("An OrNode follows an AndNode in a 'DNF' formula")
+	default:
+		n.Right.ensureDnf()
+	}
+}
+
+func (*NotNode) ensureDnf() {
+	panic("NotNode found in a 'DNF' formula")
+}
+
+func (n *QuantNode) ensureDnf() {
+	panic("QuantNode in the tree when converting to DFN")
+}
+
+func (n *OrNode) ensureDnf() {
+	n.Left.ensureDnf()
+	n.Right.ensureDnf()
+}
+
+func (n *WhenNode) ensureDnf() {
+	n.Condition.ensureDnf()
+	n.Formula.ensureDnf()
+}
 
 func collectOrs(f Formula) (fs []Formula) {
 	switch n := f.(type) {

@@ -16,7 +16,7 @@ type Formula interface {
 	findInertia(*Symtab)
 	expandQuants(*Symtab, *expFrame) Formula
 	dnf() Formula
-	//	props(*Symtab) []int
+	ensureDnf()	// Panic if not in DNF
 }
 
 type Name struct {

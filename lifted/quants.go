@@ -126,11 +126,14 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
 	conj := Formula(TrueNode{})
+
 	for i := range e.Variable.Type {
 		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}
+
+			seen.Set(uint(obj))
 			frame := f.push(vr, obj)
 			conj = Conjunct(conj, e.Formula.expandQuants(s, frame))
 			if _, ok := conj.(FalseNode); ok {
@@ -145,11 +148,14 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
 	disj := Formula(FalseNode{})
+
 	for i := range e.Variable.Type {
 		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}
+
+			seen.Set(uint(obj))
 			frame := f.push(vr, obj)
 			disj = Disjunct(disj, e.Formula.expandQuants(s, frame))
 			if _, ok := disj.(TrueNode); ok {

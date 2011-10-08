@@ -89,8 +89,8 @@ type QuantNode struct {
 	UnaryNode
 }
 
-type TrueNode int
-type FalseNode int
+type TrueNode struct { }
+type FalseNode struct { }
 type AndNode struct { BinaryNode }
 type OrNode  struct { BinaryNode }
 type NotNode struct { UnaryNode }

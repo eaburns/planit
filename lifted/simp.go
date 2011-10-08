@@ -5,13 +5,13 @@ func Conjunct(l Formula, r Formula) Formula {
 	case TrueNode:
 		return r
 	case FalseNode:
-		return FalseNode(0)
+		return FalseNode{}
 	}
 	switch r.(type) {
 	case TrueNode:
 		return l
 	case FalseNode:
-		return FalseNode(0)
+		return FalseNode{}
 	}
 	return &AndNode{BinaryNode{Left: l, Right: r}}
 }
@@ -19,13 +19,13 @@ func Conjunct(l Formula, r Formula) Formula {
 func Disjunct(l Formula, r Formula) Formula {
 	switch l.(type) {
 	case TrueNode:
-		return TrueNode(1)
+		return TrueNode{}
 	case FalseNode:
 		return r
 	}
 	switch r.(type) {
 	case TrueNode:
-		return TrueNode(1)
+		return TrueNode{}
 	case FalseNode:
 		return l
 	}
@@ -35,9 +35,9 @@ func Disjunct(l Formula, r Formula) Formula {
 func Negate(e Formula) Formula {
 	switch n := e.(type) {
 	case TrueNode:
-		return FalseNode(0)
+		return FalseNode{}
 	case FalseNode:
-		return TrueNode(1)
+		return TrueNode{}
 	case *NotNode:
 		return n.Formula
 	case *LiteralNode:

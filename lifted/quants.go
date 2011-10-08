@@ -100,7 +100,7 @@ func (e *AndNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	case TrueNode:
 		res = e.Right.expandQuants(s, f)
 	case FalseNode:
-		res = FalseNode(0)
+		res = FalseNode{}
 	default:
 		res = Conjunct(l, e.Right.expandQuants(s, f))
 	}
@@ -110,7 +110,7 @@ func (e *AndNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 func (e *OrNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	switch l := e.Left.expandQuants(s, f).(type) {
 	case TrueNode:
-		res = TrueNode(1)
+		res = TrueNode{}
 	case FalseNode:
 		res = e.Right.expandQuants(s, f)
 	default:
@@ -126,7 +126,7 @@ func (e *NotNode) expandQuants(s *Symtab, f *expFrame) Formula {
 func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
-	conj := Formula(TrueNode(1))
+	conj := Formula(TrueNode{})
 	for i := range e.Variable.Type {
 		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
@@ -135,7 +135,7 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 			frame := f.push(vr, obj)
 			conj = Conjunct(conj, e.Formula.expandQuants(s, frame))
 			if _, ok := conj.(FalseNode); ok {
-				return FalseNode(0)
+				return FalseNode{}
 			}
 		}
 	}
@@ -145,7 +145,7 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
-	disj := Formula(FalseNode(0))
+	disj := Formula(FalseNode{})
 	for i := range e.Variable.Type {
 		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
 			if seen.Test(uint(obj)) {
@@ -154,7 +154,7 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 			frame := f.push(vr, obj)
 			disj = Disjunct(disj, e.Formula.expandQuants(s, frame))
 			if _, ok := disj.(TrueNode); ok {
-				return TrueNode(1)
+				return TrueNode{}
 			}
 		}
 	}

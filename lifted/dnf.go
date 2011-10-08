@@ -2,9 +2,9 @@ package lifted
 
 func (n *LiteralNode) dnf() Formula { return n }
 
-func (TrueNode) dnf() Formula { return TrueNode(1) }
+func (TrueNode) dnf() Formula { return TrueNode{} }
 
-func (FalseNode) dnf() Formula { return FalseNode(1) }
+func (FalseNode) dnf() Formula { return FalseNode{} }
 
 func (n *AndNode) dnf() Formula {
 	n.Left = n.Left.dnf()
@@ -54,7 +54,7 @@ func (n *ExistsNode) dnf() Formula {
 }
 
 func (n *WhenNode) dnf() Formula {
-	disj := Formula(FalseNode(0))
+	disj := Formula(FalseNode{})
 	conds := collectOrs(n.Condition.dnf())
 	if len(conds) == 1 {
 		return n

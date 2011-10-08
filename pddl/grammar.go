@@ -220,7 +220,7 @@ func (p *Parser) parseAndExpr(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Formula(TrueNode(1))
+	e := Formula(TrueNode{})
 	for i := len(conj) - 1; i >= 0; i-- {
 		e = Conjunct(conj[i], e)
 	}
@@ -233,7 +233,7 @@ func (p *Parser) parseOrExpr(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
 	}
-	e := Formula(FalseNode(0))
+	e := Formula(FalseNode{})
 	for i := len(disj) - 1; i >= 0; i-- {
 		e = Disjunct(disj[i], e)
 	}
@@ -296,7 +296,7 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Formula(TrueNode(1))
+	e := Formula(TrueNode{})
 	for i := len(conj) - 1; i >= 0; i-- {
 		e = Conjunct(conj[i], e)
 	}

@@ -118,9 +118,9 @@ func (e *UnaryNode) assignNums(s *Symtab, f *numFrame) {
 	e.Formula.assignNums(s, f)
 }
 
-func (TrueNode) assignNums(*Symtab, *numFrame) { }
+func (TrueNode) assignNums(*Symtab, *numFrame) {}
 
-func (FalseNode) assignNums(*Symtab, *numFrame) { }
+func (FalseNode) assignNums(*Symtab, *numFrame) {}
 
 func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	f = e.Variable.Name.numberVar(s, f)
@@ -137,7 +137,7 @@ func (e *WhenNode) assignNums(s *Symtab, f *numFrame) {
 	e.Formula.assignNums(s, f)
 }
 
-func (e *AssignNode) assignNums(*Symtab, *numFrame) { }
+func (e *AssignNode) assignNums(*Symtab, *numFrame) {}
 
 func (name *Name) numberType(s *Symtab) bool {
 	if n, ok := s.typeNums[name.Str]; ok {

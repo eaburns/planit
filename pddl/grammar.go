@@ -445,7 +445,7 @@ func (p *Parser) parseInit() (els []Formula) {
 func (p *Parser) parseInitEl() Formula {
 	if p.acceptNamedList("=") {
 		eq := &AssignNode{
-			Op: OpAssign,
+			Op:   OpAssign,
 			Lval: p.parseFhead(),
 			Rval: Fexp(p.expect(tokNum).txt),
 		}

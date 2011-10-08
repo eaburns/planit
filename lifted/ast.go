@@ -16,7 +16,7 @@ type Formula interface {
 	findInertia(*Symtab)
 	expandQuants(*Symtab, *expFrame) Formula
 	dnf() Formula
-//	props(*Symtab) []int
+	//	props(*Symtab) []int
 }
 
 type Name struct {
@@ -89,13 +89,13 @@ type QuantNode struct {
 	UnaryNode
 }
 
-type TrueNode struct { }
-type FalseNode struct { }
-type AndNode struct { BinaryNode }
-type OrNode  struct { BinaryNode }
-type NotNode struct { UnaryNode }
-type ForallNode struct { QuantNode }
-type ExistsNode struct  { QuantNode }
+type TrueNode struct{}
+type FalseNode struct{}
+type AndNode struct{ BinaryNode }
+type OrNode struct{ BinaryNode }
+type NotNode struct{ UnaryNode }
+type ForallNode struct{ QuantNode }
+type ExistsNode struct{ QuantNode }
 
 type WhenNode struct {
 	Condition Formula

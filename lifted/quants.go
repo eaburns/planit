@@ -42,14 +42,14 @@ func (a *Action) expandParms(s *Symtab, f *expFrame, ps []TypedName) (acts []Act
 // Return a ground instance of the given action
 // which has all of its parameters replaced with
 // constants
-func (a *Action) groundedParms(s *Symtab, f *expFrame) (acts []Action) {
+func (a *Action) groundedParms(s *Symtab, f *expFrame) []Action {
 	prec := a.Precondition.expandQuants(s, f)
 	if _, ok := prec.(FalseNode); ok {
-		return acts
+		return make([]Action, 0)
 	}
 	eff := a.Effect.expandQuants(s, f)
 	if _, ok := eff.(TrueNode); ok {
-		return acts
+		return make([]Action, 0)
 	}
 	act := Action{
 		Name:         a.Name,
@@ -58,7 +58,6 @@ func (a *Action) groundedParms(s *Symtab, f *expFrame) (acts []Action) {
 		Effect:       eff,
 	}
 	copy(act.Parameters, a.Parameters)
-	acts = append(acts, act)
 	return []Action{act}
 }
 
@@ -162,9 +161,10 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 }
 
 func (e *WhenNode) expandQuants(s *Symtab, f *expFrame) Formula {
-	e.Condition = e.Condition.expandQuants(s, f)
-	e.Formula = e.Formula.expandQuants(s, f)
-	return e
+	return &WhenNode{
+		e.Condition.expandQuants(s, f),
+		UnaryNode{e.Formula.expandQuants(s, f)},
+	}
 }
 
 func (e *AssignNode) expandQuants(*Symtab, *expFrame) Formula {

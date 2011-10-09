@@ -86,7 +86,7 @@ func (n *AndNode) ensureDnf() {
 	}
 	switch n.Right.(type) {
 	case *OrNode:
-		panic("An OrNode follows an AndNode in a 'DNF' formula")
+		panic("OrNode found beneath an AndNode in a 'DNF' formula")
 	default:
 		n.Right.ensureDnf()
 	}
@@ -106,8 +106,18 @@ func (n *OrNode) ensureDnf() {
 }
 
 func (n *WhenNode) ensureDnf() {
-	n.Condition.ensureDnf()
-	n.Formula.ensureDnf()
+	switch n.Condition.(type) {
+	case *OrNode:
+		panic("OrNode found beneath a WhenNode in a 'DNF' formula")
+	default:
+		n.Condition.ensureDnf()
+	}
+	switch n.Formula.(type) {
+	case *OrNode:
+		panic("OrNode found beneath a WhenNode in a 'DNF' formula")
+	default:
+		n.Formula.ensureDnf()
+	}
 }
 
 func collectOrs(f Formula) (fs []Formula) {

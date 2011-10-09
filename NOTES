@@ -1,3 +1,5 @@
+* Recall t.pr() and T.pr().  Use this in the PDDL parser!
+
 * Check that we support all of a domain/problem's requirements
 
 * Verify that we handle all of the same requirements as FF

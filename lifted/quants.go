@@ -66,13 +66,9 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	copy(parms, l.Parameters)
 
 	for i := range parms {
-		switch term := parms[i].(type) {
-		case Constant:
-			continue
-		case Variable:
+		if term, ok := parms[i].(Variable); ok {
 			vl, ok := f.lookup(term.Name.Num)
-			if !ok {
-				// Must be replaced in another pass
+			if !ok {	// Must be replaced in another pass
 				continue
 			}
 			term.Name.Num = vl
@@ -176,8 +172,6 @@ func (e *WhenNode) expandQuants(s *Symtab, f *expFrame) Formula {
 }
 
 func (e *AssignNode) expandQuants(*Symtab, *expFrame) Formula {
-	// For now there is nothing to substitute because the
-	// assignment can only be to total-cost
 	return e
 }
 

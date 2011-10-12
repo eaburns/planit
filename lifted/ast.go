@@ -58,7 +58,7 @@ type Action struct {
 }
 
 type TypedName struct {
-	Name Name
+	Name  Name
 	Types []Name
 }
 
@@ -76,7 +76,7 @@ type Formula interface {
 	findInertia(*Symtab)
 	expandQuants(*Symtab, *expFrame) Formula
 	dnf() Formula
-	ensureDnf()	// Panic if not in DNF
+	ensureDnf() // Panic if not in DNF
 }
 
 type LiteralNode struct {
@@ -126,12 +126,11 @@ var AssignOps = map[string]AssignOp{
 	//	"scale-up": OpScaleUp,
 	//	"scale-down": OpScaleDown,
 	//	"decrease": OpDecrease,
-	// Just support increase for now for :Action-costs
 	"increase": OpIncrease,
 }
 
 type AssignNode struct {
 	Op   AssignOp
-	Lval string	// Just total-cost for now.
-	Rval string	// Just a number
+	Lval string // Just total-cost for now.
+	Rval string // Just a number
 }

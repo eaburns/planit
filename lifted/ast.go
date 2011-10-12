@@ -11,13 +11,22 @@ type Domain struct {
 	Actions      []Action
 }
 
-type Formula interface {
-	assignNums(*Symtab, *numFrame)
-	findInertia(*Symtab)
-	expandQuants(*Symtab, *expFrame) Formula
-	dnf() Formula
-	ensureDnf()	// Panic if not in DNF
+type Problem struct {
+	Name         string
+	Domain       string
+	Requirements []string
+	Objects      []TypedName
+	Init         []Formula
+	Goal         Formula
+	Metric       Metric
 }
+
+type Metric int
+
+const (
+	MetricMakespan Metric = iota
+	MetricMinCost
+)
 
 type Name struct {
 	Str string
@@ -49,8 +58,8 @@ type Action struct {
 }
 
 type TypedName struct {
-	Name Name
-	Type []Name
+	Name  Name
+	Types []Name
 }
 
 type Predicate struct {
@@ -58,23 +67,19 @@ type Predicate struct {
 	Parameters []TypedName
 }
 
-type TermKind int
+type Term interface{}
+type Variable struct{ Name }
+type Constant struct{ Name }
 
-const (
-	TermVariable TermKind = iota
-	TermConstant
-)
-
-type Term struct {
-	Kind TermKind
-	Name Name
+type Formula interface {
+	assignNums(*Symtab, *numFrame)
+	findInertia(*Symtab)
+	expandQuants(*Symtab, *expFrame) Formula
+	dnf() Formula
+	ensureDnf() // Panic if not in DNF
 }
 
-type LiteralNode struct {
-	Positive   bool
-	Name       Name
-	Parameters []Term
-}
+type LeafNode struct{}
 
 type BinaryNode struct {
 	Left, Right Formula
@@ -89,8 +94,24 @@ type QuantNode struct {
 	UnaryNode
 }
 
-type TrueNode struct{}
-type FalseNode struct{}
+var (
+	theTrueNode trueNode
+	theFalseNode falseNode
+)
+
+type trueNode struct{ LeafNode }
+func MakeTrue() Formula { return &theTrueNode }
+
+type falseNode struct{ LeafNode }
+func MakeFalse() Formula { return &theFalseNode }
+
+type LiteralNode struct {
+	Positive   bool
+	Name       Name
+	Parameters []Term
+	LeafNode
+}
+
 type AndNode struct{ BinaryNode }
 type OrNode struct{ BinaryNode }
 type NotNode struct{ UnaryNode }
@@ -100,12 +121,6 @@ type ExistsNode struct{ QuantNode }
 type WhenNode struct {
 	Condition Formula
 	UnaryNode
-}
-
-type AssignNode struct {
-	Op   AssignOp
-	Lval Fhead
-	Rval Fexp
 }
 
 type AssignOp int
@@ -123,29 +138,12 @@ var AssignOps = map[string]AssignOp{
 	//	"scale-up": OpScaleUp,
 	//	"scale-down": OpScaleDown,
 	//	"decrease": OpDecrease,
-	// Just support increase for now for :Action-costs
 	"increase": OpIncrease,
 }
 
-// Just total-cost for now
-type Fhead struct {
-	Name string
+type AssignNode struct {
+	Op   AssignOp
+	Lval string // Just total-cost for now.
+	Rval string // Just a number
+	LeafNode
 }
-type Fexp string // Just a number for now
-
-type Problem struct {
-	Name         string
-	Domain       string
-	Requirements []string
-	Objects      []TypedName
-	Init         []Formula
-	Goal         Formula
-	Metric       Metric
-}
-
-type Metric int
-
-const (
-	MetricMakespan Metric = iota
-	MetricMinCost
-)

@@ -61,22 +61,6 @@ func (p *Problem) String() string {
 	return buf.String()
 }
 
-func (k TermKind) String() string {
-	switch k {
-	case TermVariable:
-		return "TermVariable"
-	case TermConstant:
-		return "TermConstant"
-	}
-
-	return fmt.Sprintf("%d", int(k))
-}
-
-func (t Term) String() string {
-	return fmt.Sprintf("Term{Kind:%v, Name:%v}",
-		t.Kind, t.Name)
-}
-
 func (n Name) String() string {
 	if n.Num < 0 {
 		return fmt.Sprintf("{%s}", n.Str)
@@ -101,12 +85,12 @@ func (e *QuantNode) String() string {
 	return fmt.Sprintf("Variable:%v, %v", e.Variable, e.UnaryNode)
 }
 
-func (TrueNode) String() string {
-	return "ExprTrue"
+func (*trueNode) String() string {
+	return "trueNode"
 }
 
-func (FalseNode) String() string {
-	return "ExprFalse"
+func (*falseNode) String() string {
+	return "falseNode"
 }
 
 func (e *AndNode) String() string {

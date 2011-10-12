@@ -197,17 +197,11 @@ func (p *Parser) parseLiteral() *LiteralNode {
 func (p *Parser) parseTerms() (lst []Term) {
 	for {
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, Term{
-				Kind: TermConstant,
-				Name: p.name(t.txt),
-			})
+			lst = append(lst, Constant{p.name(t.txt)})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, Term{
-				Kind: TermVariable,
-				Name: p.name(t.txt),
-			})
+			lst = append(lst, Variable{p.name(t.txt)})
 			continue
 		}
 		break
@@ -220,7 +214,7 @@ func (p *Parser) parseAndExpr(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Formula(TrueNode{})
+	e := Formula(MakeTrue())
 	for i := len(conj) - 1; i >= 0; i-- {
 		e = Conjunct(conj[i], e)
 	}
@@ -233,7 +227,7 @@ func (p *Parser) parseOrExpr(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
 	}
-	e := Formula(FalseNode{})
+	e := Formula(MakeFalse())
 	for i := len(disj) - 1; i >= 0; i-- {
 		e = Disjunct(disj[i], e)
 	}
@@ -296,7 +290,7 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
 	}
-	e := Formula(TrueNode{})
+	e := Formula(MakeTrue())
 	for i := len(conj) - 1; i >= 0; i-- {
 		e = Conjunct(conj[i], e)
 	}
@@ -379,17 +373,17 @@ func (p *Parser) parseCondEffect() Formula {
 	return p.parsePeffect()
 }
 
-func (p *Parser) parseFhead() Fhead {
+func (p *Parser) parseFhead() string {
 	if _, ok := p.accept(tokOpen); !ok {
-		return Fhead{Name: p.expect(tokId).txt}
+		return p.expect(tokId).txt
 	}
 	name := p.expect(tokId).txt
 	p.expect(tokClose)
-	return Fhead{Name: name}
+	return name
 }
 
-func (p *Parser) parseFexp() Fexp {
-	return Fexp(p.expect(tokNum).txt)
+func (p *Parser) parseFexp() string {
+	return p.expect(tokNum).txt
 }
 
 func (p *Parser) ParseProblem() *Problem {
@@ -447,7 +441,7 @@ func (p *Parser) parseInitEl() Formula {
 		eq := &AssignNode{
 			Op:   OpAssign,
 			Lval: p.parseFhead(),
-			Rval: Fexp(p.expect(tokNum).txt),
+			Rval: p.expect(tokNum).txt,
 		}
 		p.expect(tokClose)
 		return eq
@@ -484,7 +478,7 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 		typ := p.parseType()
 		for _, n := range names {
 			name := p.name(n)
-			lst = append(lst, TypedName{Name: name, Type: typ})
+			lst = append(lst, TypedName{Name: name, Types: typ})
 		}
 	}
 	return lst

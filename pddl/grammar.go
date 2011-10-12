@@ -197,17 +197,11 @@ func (p *Parser) parseLiteral() *LiteralNode {
 func (p *Parser) parseTerms() (lst []Term) {
 	for {
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, Term{
-				Kind: TermConstant,
-				Name: p.name(t.txt),
-			})
+			lst = append(lst, Constant{p.name(t.txt)})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, Term{
-				Kind: TermVariable,
-				Name: p.name(t.txt),
-			})
+			lst = append(lst, Variable{p.name(t.txt)})
 			continue
 		}
 		break
@@ -379,17 +373,17 @@ func (p *Parser) parseCondEffect() Formula {
 	return p.parsePeffect()
 }
 
-func (p *Parser) parseFhead() Fhead {
+func (p *Parser) parseFhead() string {
 	if _, ok := p.accept(tokOpen); !ok {
-		return Fhead{Name: p.expect(tokId).txt}
+		return p.expect(tokId).txt
 	}
 	name := p.expect(tokId).txt
 	p.expect(tokClose)
-	return Fhead{Name: name}
+	return name
 }
 
-func (p *Parser) parseFexp() Fexp {
-	return Fexp(p.expect(tokNum).txt)
+func (p *Parser) parseFexp() string {
+	return p.expect(tokNum).txt
 }
 
 func (p *Parser) ParseProblem() *Problem {
@@ -447,7 +441,7 @@ func (p *Parser) parseInitEl() Formula {
 		eq := &AssignNode{
 			Op:   OpAssign,
 			Lval: p.parseFhead(),
-			Rval: Fexp(p.expect(tokNum).txt),
+			Rval: p.expect(tokNum).txt,
 		}
 		p.expect(tokClose)
 		return eq

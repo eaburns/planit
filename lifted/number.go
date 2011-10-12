@@ -87,16 +87,15 @@ func (a *Action) assignNums(s *Symtab) {
 }
 
 func (l *LiteralNode) assignNums(s *Symtab, f *numFrame) {
-	for i, t := range l.Parameters {
-		name := &l.Parameters[i].Name
-		switch t.Kind {
-		case TermVariable:
-			if fnxt := name.numberVar(s, f); fnxt != f {
-				undeclVar(name)
+	for i := range l.Parameters {
+		switch term := l.Parameters[i].(type) {
+		case Variable:
+			if fnxt := term.Name.numberVar(s, f); fnxt != f {
+				undeclVar(&term.Name)
 			}
-		case TermConstant:
-			if found := name.numberConst(s); !found {
-				undeclConst(name)
+		case Constant:
+			if found := term.Name.numberConst(s); !found {
+				undeclConst(&term.Name)
 			}
 		}
 	}

@@ -66,17 +66,19 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	copy(parms, l.Parameters)
 
 	for i := range parms {
-		if parms[i].Kind == TermConstant {
+		switch term := parms[i].(type) {
+		case Constant:
 			continue
+		case Variable:
+			vl, ok := f.lookup(term.Name.Num)
+			if !ok {
+				// Must be replaced in another pass
+				continue
+			}
+			term.Name.Num = vl
+			term.Name.Str = s.constNames[vl]
+			parms[i] = Constant{term.Name}
 		}
-		vl, ok := f.lookup(parms[i].Name.Num)
-		if !ok {
-			// Must be replaced in another pass
-			continue
-		}
-		parms[i].Kind = TermConstant
-		parms[i].Name.Num = vl
-		parms[i].Name.Str = s.constNames[vl]
 	}
 
 	return &LiteralNode{

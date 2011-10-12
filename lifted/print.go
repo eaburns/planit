@@ -61,22 +61,6 @@ func (p *Problem) String() string {
 	return buf.String()
 }
 
-func (k TermKind) String() string {
-	switch k {
-	case TermVariable:
-		return "TermVariable"
-	case TermConstant:
-		return "TermConstant"
-	}
-
-	return fmt.Sprintf("%d", int(k))
-}
-
-func (t Term) String() string {
-	return fmt.Sprintf("Term{Kind:%v, Name:%v}",
-		t.Kind, t.Name)
-}
-
 func (n Name) String() string {
 	if n.Num < 0 {
 		return fmt.Sprintf("{%s}", n.Str)

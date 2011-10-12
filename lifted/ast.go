@@ -11,13 +11,22 @@ type Domain struct {
 	Actions      []Action
 }
 
-type Formula interface {
-	assignNums(*Symtab, *numFrame)
-	findInertia(*Symtab)
-	expandQuants(*Symtab, *expFrame) Formula
-	dnf() Formula
-	ensureDnf()	// Panic if not in DNF
+type Problem struct {
+	Name         string
+	Domain       string
+	Requirements []string
+	Objects      []TypedName
+	Init         []Formula
+	Goal         Formula
+	Metric       Metric
 }
+
+type Metric int
+
+const (
+	MetricMakespan Metric = iota
+	MetricMinCost
+)
 
 type Name struct {
 	Str string
@@ -28,6 +37,8 @@ type Name struct {
 func MakeName(s string, l Loc) Name {
 	return Name{Str: s, Num: -1, Loc: l}
 }
+
+func (n Name) loc() Loc { return n.Loc }
 
 type Loc struct {
 	File string
@@ -58,16 +69,20 @@ type Predicate struct {
 	Parameters []TypedName
 }
 
-type TermKind int
+type Term interface{
+	loc() Loc
+}
 
-const (
-	TermVariable TermKind = iota
-	TermConstant
-)
+type Variable struct{ Name }
 
-type Term struct {
-	Kind TermKind
-	Name Name
+type Constant struct{ Name }
+
+type Formula interface {
+	assignNums(*Symtab, *numFrame)
+	findInertia(*Symtab)
+	expandQuants(*Symtab, *expFrame) Formula
+	dnf() Formula
+	ensureDnf()	// Panic if not in DNF
 }
 
 type LiteralNode struct {
@@ -102,12 +117,6 @@ type WhenNode struct {
 	UnaryNode
 }
 
-type AssignNode struct {
-	Op   AssignOp
-	Lval Fhead
-	Rval Fexp
-}
-
 type AssignOp int
 
 const (
@@ -127,25 +136,8 @@ var AssignOps = map[string]AssignOp{
 	"increase": OpIncrease,
 }
 
-// Just total-cost for now
-type Fhead struct {
-	Name string
+type AssignNode struct {
+	Op   AssignOp
+	Lval string	// Just total-cost for now.
+	Rval string	// Just a number
 }
-type Fexp string // Just a number for now
-
-type Problem struct {
-	Name         string
-	Domain       string
-	Requirements []string
-	Objects      []TypedName
-	Init         []Formula
-	Goal         Formula
-	Metric       Metric
-}
-
-type Metric int
-
-const (
-	MetricMakespan Metric = iota
-	MetricMinCost
-)

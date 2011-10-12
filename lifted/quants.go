@@ -22,8 +22,8 @@ func (a *Action) expandParms(s *Symtab, f *expFrame, ps []TypedName) (acts []Act
 	saved := a.Parameters[pnum]
 	seen := bitset.New(uint(len(s.constNames)))
 
-	for i := range saved.Type {
-		tnum := saved.Type[i].Num
+	for i := range saved.Types {
+		tnum := saved.Types[i].Num
 		for _, obj := range s.typeObjs[tnum] {
 			if seen.Test(uint(obj)) {
 				continue
@@ -125,8 +125,8 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	vr := e.Variable.Name.Num
 	conj := Formula(TrueNode{})
 
-	for i := range e.Variable.Type {
-		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
+	for i := range e.Variable.Types {
+		for _, obj := range s.typeObjs[e.Variable.Types[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}
@@ -147,8 +147,8 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	vr := e.Variable.Name.Num
 	disj := Formula(FalseNode{})
 
-	for i := range e.Variable.Type {
-		for _, obj := range s.typeObjs[e.Variable.Type[i].Num] {
+	for i := range e.Variable.Types {
+		for _, obj := range s.typeObjs[e.Variable.Types[i].Num] {
 			if seen.Test(uint(obj)) {
 				continue
 			}

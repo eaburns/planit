@@ -478,7 +478,7 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 		typ := p.parseType()
 		for _, n := range names {
 			name := p.name(n)
-			lst = append(lst, TypedName{Name: name, Type: typ})
+			lst = append(lst, TypedName{Name: name, Types: typ})
 		}
 	}
 	return lst

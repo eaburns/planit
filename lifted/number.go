@@ -34,9 +34,9 @@ func (d *Domain) numberTypes(s *Symtab) {
 	}
 	for i := range d.Types {
 		t := d.Types[i]
-		for j := range t.Type {
-			if found := t.Type[j].numberType(s); !found {
-				undeclType(&t.Type[j])
+		for j := range t.Types {
+			if found := t.Types[j].numberType(s); !found {
+				undeclType(&t.Types[j])
 			}
 		}
 	}
@@ -46,9 +46,9 @@ func (p *Predicate) assignNums(s *Symtab) {
 	p.Name.numberPred(s)
 	for i := range p.Parameters {
 		parm := p.Parameters[i]
-		for j := range parm.Type {
-			if found := parm.Type[j].numberType(s); !found {
-				undeclType(&parm.Type[j])
+		for j := range parm.Types {
+			if found := parm.Types[j].numberType(s); !found {
+				undeclType(&parm.Types[j])
 			}
 		}
 	}
@@ -57,15 +57,15 @@ func (p *Predicate) assignNums(s *Symtab) {
 func (c *TypedName) numberConst(s *Symtab) {
 	seen := c.Name.numberConst(s)
 	cnum := c.Name.Num
-	for i := range c.Type {
-		if found := c.Type[i].numberType(s); !found {
-			undeclType(&c.Type[i])
+	for i := range c.Types {
+		if found := c.Types[i].numberType(s); !found {
+			undeclType(&c.Types[i])
 		}
 		// If this is the 1st decl of this object
 		// then add it to the table of all objects
 		// of the given type
 		if !seen {
-			tnum := c.Type[i].Num
+			tnum := c.Types[i].Num
 			s.typeObjs[tnum] = append(s.typeObjs[tnum], cnum)
 		}
 	}
@@ -76,9 +76,9 @@ func (a *Action) assignNums(s *Symtab) {
 	for i := range a.Parameters {
 		p := &a.Parameters[i]
 		f = p.Name.numberVar(s, f)
-		for j := range p.Type {
-			if found := p.Type[j].numberType(s); !found {
-				undeclType(&p.Type[j])
+		for j := range p.Types {
+			if found := p.Types[j].numberType(s); !found {
+				undeclType(&p.Types[j])
 			}
 		}
 	}
@@ -119,9 +119,9 @@ func (FalseNode) assignNums(*Symtab, *numFrame) {}
 
 func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	f = e.Variable.Name.numberVar(s, f)
-	for i := range e.Variable.Type {
-		if found := e.Variable.Type[i].numberType(s); !found {
-			undeclType(&e.Variable.Type[i])
+	for i := range e.Variable.Types {
+		if found := e.Variable.Types[i].numberType(s); !found {
+			undeclType(&e.Variable.Types[i])
 		}
 	}
 	e.Formula.assignNums(s, f)

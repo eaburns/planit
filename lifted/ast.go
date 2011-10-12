@@ -38,8 +38,6 @@ func MakeName(s string, l Loc) Name {
 	return Name{Str: s, Num: -1, Loc: l}
 }
 
-func (n Name) loc() Loc { return n.Loc }
-
 type Loc struct {
 	File string
 	Line int
@@ -61,7 +59,7 @@ type Action struct {
 
 type TypedName struct {
 	Name Name
-	Type []Name
+	Types []Name
 }
 
 type Predicate struct {
@@ -69,12 +67,8 @@ type Predicate struct {
 	Parameters []TypedName
 }
 
-type Term interface{
-	loc() Loc
-}
-
+type Term interface{}
 type Variable struct{ Name }
-
 type Constant struct{ Name }
 
 type Formula interface {

@@ -44,11 +44,11 @@ func (a *Action) expandParms(s *Symtab, f *expFrame, ps []TypedName) (acts []Act
 // constants
 func (a *Action) groundedParms(s *Symtab, f *expFrame) []Action {
 	prec := a.Precondition.expandQuants(s, f)
-	if _, ok := prec.(FalseNode); ok {
+	if _, ok := prec.(*falseNode); ok {
 		return make([]Action, 0)
 	}
 	eff := a.Effect.expandQuants(s, f)
-	if _, ok := eff.(TrueNode); ok {
+	if _, ok := eff.(*trueNode); ok {
 		return make([]Action, 0)
 	}
 	act := Action{
@@ -84,20 +84,16 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	}
 }
 
-func (e TrueNode) expandQuants(*Symtab, *expFrame) Formula {
-	return e
-}
-
-func (e FalseNode) expandQuants(*Symtab, *expFrame) Formula {
-	return e
+func (n *LeafNode) expandQuants(*Symtab, *expFrame) Formula {
+	return n
 }
 
 func (e *AndNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	switch l := e.Left.expandQuants(s, f).(type) {
-	case TrueNode:
+	case *trueNode:
 		res = e.Right.expandQuants(s, f)
-	case FalseNode:
-		res = FalseNode{}
+	case *falseNode:
+		res = MakeFalse()
 	default:
 		res = Conjunct(l, e.Right.expandQuants(s, f))
 	}
@@ -106,9 +102,9 @@ func (e *AndNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 
 func (e *OrNode) expandQuants(s *Symtab, f *expFrame) (res Formula) {
 	switch l := e.Left.expandQuants(s, f).(type) {
-	case TrueNode:
-		res = TrueNode{}
-	case FalseNode:
+	case *trueNode:
+		res = MakeTrue()
+	case *falseNode:
 		res = e.Right.expandQuants(s, f)
 	default:
 		res = Disjunct(l, e.Right.expandQuants(s, f))
@@ -123,7 +119,7 @@ func (e *NotNode) expandQuants(s *Symtab, f *expFrame) Formula {
 func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
-	conj := Formula(TrueNode{})
+	conj := Formula(MakeTrue())
 
 	for i := range e.Variable.Types {
 		for _, obj := range s.typeObjs[e.Variable.Types[i].Num] {
@@ -134,8 +130,8 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 			seen.Set(uint(obj))
 			frame := f.push(vr, obj)
 			conj = Conjunct(conj, e.Formula.expandQuants(s, frame))
-			if _, ok := conj.(FalseNode); ok {
-				return FalseNode{}
+			if _, ok := conj.(*falseNode); ok {
+				return MakeFalse()
 			}
 		}
 	}
@@ -145,7 +141,7 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
 	vr := e.Variable.Name.Num
-	disj := Formula(FalseNode{})
+	disj := Formula(MakeFalse())
 
 	for i := range e.Variable.Types {
 		for _, obj := range s.typeObjs[e.Variable.Types[i].Num] {
@@ -156,8 +152,8 @@ func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 			seen.Set(uint(obj))
 			frame := f.push(vr, obj)
 			disj = Disjunct(disj, e.Formula.expandQuants(s, frame))
-			if _, ok := disj.(TrueNode); ok {
-				return TrueNode{}
+			if _, ok := disj.(*trueNode); ok {
+				return MakeTrue()
 			}
 		}
 	}

@@ -19,9 +19,7 @@ func (e *LiteralNode) findInertia(s *Symtab) {
 	}
 }
 
-func (TrueNode) findInertia(*Symtab) {}
-
-func (FalseNode) findInertia(*Symtab) {}
+func (*LeafNode) findInertia(*Symtab) {}
 
 func (f *BinaryNode) findInertia(s *Symtab) {
 	f.Left.findInertia(s)
@@ -31,5 +29,3 @@ func (f *BinaryNode) findInertia(s *Symtab) {
 func (f *UnaryNode) findInertia(s *Symtab) {
 	f.Formula.findInertia(s)
 }
-
-func (*AssignNode) findInertia(*Symtab) {}

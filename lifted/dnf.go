@@ -1,12 +1,6 @@
 package lifted
 
-func (n TrueNode) dnf() Formula { return n }
-
-func (n FalseNode) dnf() Formula { return n }
-
-func (n *LiteralNode) dnf() Formula { return n }
-
-func (n *AssignNode) dnf() Formula { return n }
+func (n *LeafNode) dnf() Formula { return n }
 
 func (n *AndNode) dnf() Formula {
 	n.Left = n.Left.dnf()
@@ -54,7 +48,7 @@ func (n *QuantNode) dnf() Formula {
 func (n *WhenNode) dnf() Formula {
 	n.Formula = n.Formula.dnf()
 
-	disj := Formula(FalseNode{})
+	disj := Formula(MakeFalse())
 	conds := collectOrs(n.Condition.dnf())
 	if len(conds) == 1 {
 		return n
@@ -69,13 +63,7 @@ func (n *WhenNode) dnf() Formula {
 	return disj
 }
 
-func (TrueNode) ensureDnf() { return }
-
-func (FalseNode) ensureDnf() { return }
-
-func (*AssignNode) ensureDnf() { return }
-
-func (*LiteralNode) ensureDnf() { return }
+func (*LeafNode) ensureDnf() { return }
 
 func (n *AndNode) ensureDnf() {
 	switch n.Left.(type) {

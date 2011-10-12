@@ -79,11 +79,7 @@ type Formula interface {
 	ensureDnf() // Panic if not in DNF
 }
 
-type LiteralNode struct {
-	Positive   bool
-	Name       Name
-	Parameters []Term
-}
+type LeafNode struct{}
 
 type BinaryNode struct {
 	Left, Right Formula
@@ -98,8 +94,24 @@ type QuantNode struct {
 	UnaryNode
 }
 
-type TrueNode struct{}
-type FalseNode struct{}
+var (
+	theTrueNode trueNode
+	theFalseNode falseNode
+)
+
+type trueNode struct{ LeafNode }
+func MakeTrue() Formula { return &theTrueNode }
+
+type falseNode struct{ LeafNode }
+func MakeFalse() Formula { return &theFalseNode }
+
+type LiteralNode struct {
+	Positive   bool
+	Name       Name
+	Parameters []Term
+	LeafNode
+}
+
 type AndNode struct{ BinaryNode }
 type OrNode struct{ BinaryNode }
 type NotNode struct{ UnaryNode }
@@ -133,4 +145,5 @@ type AssignNode struct {
 	Op   AssignOp
 	Lval string // Just total-cost for now.
 	Rval string // Just a number
+	LeafNode
 }

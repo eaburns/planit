@@ -132,12 +132,11 @@ func (p *Parser) parseActParms() []TypedName {
 }
 
 func (p *Parser) parsePreExpr() (res Formula) {
-	parseNested := func(p *Parser) Formula { return p.parsePreExpr() }
 	switch {
 	case p.acceptNamedList("and"):
-		res = p.parseAndExpr(parseNested)
+		res = p.parseAndExpr((*Parser).parsePreExpr)
 	case p.acceptNamedList("forall"):
-		res = p.parseForallExpr(parseNested)
+		res = p.parseForallExpr((*Parser).parsePreExpr)
 	default:
 		res = p.parsePrefExpr()
 	}
@@ -149,12 +148,11 @@ func (p *Parser) parsePrefExpr() Formula {
 }
 
 func (p *Parser) parseExpr() (res Formula) {
-	parseNested := func(p *Parser) Formula { return p.parseExpr() }
 	switch {
 	case p.acceptNamedList("and"):
-		res = p.parseAndExpr(parseNested)
+		res = p.parseAndExpr((*Parser).parseExpr)
 	case p.acceptNamedList("or"):
-		res = p.parseOrExpr(parseNested)
+		res = p.parseOrExpr((*Parser).parseExpr)
 	case p.acceptNamedList("not"):
 		res = &NotNode{UnaryNode{Formula: p.parseExpr()}}
 		p.expect(tokClose)
@@ -167,9 +165,9 @@ func (p *Parser) parseExpr() (res Formula) {
 		}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
-		res = p.parseExistsExpr(parseNested)
+		res = p.parseExistsExpr((*Parser).parseExpr)
 	case p.acceptNamedList("forall"):
-		res = p.parseForallExpr(parseNested)
+		res = p.parseForallExpr((*Parser).parseExpr)
 	default:
 		res = p.parseLiteral()
 	}
@@ -277,10 +275,7 @@ func (p *Parser) parseExistsExpr(nested func(*Parser) Formula) Formula {
 
 func (p *Parser) parseEffect() Formula {
 	if p.acceptNamedList("and") {
-		parseNested := func(p *Parser) Formula {
-			return p.parseCeffect()
-		}
-		return p.parseAndEffect(parseNested)
+		return p.parseAndEffect((*Parser).parseCeffect)
 	}
 	return p.parseCeffect()
 }
@@ -301,15 +296,9 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
 func (p *Parser) parseCeffect() (res Formula) {
 	switch {
 	case p.acceptNamedList("forall"):
-		parseNested := func(p *Parser) Formula {
-			return p.parseEffect()
-		}
-		res = p.parseForallEffect(parseNested)
+		res = p.parseForallEffect((*Parser).parseEffect)
 	case p.acceptNamedList("when"):
-		parseNested := func(p *Parser) Formula {
-			return p.parseCondEffect()
-		}
-		res = p.parseWhen(parseNested)
+		res = p.parseWhen((*Parser).parseCondEffect)
 	default:
 		res = p.parsePeffect()
 	}
@@ -365,10 +354,7 @@ func (p *Parser) parseAssign() Formula {
 
 func (p *Parser) parseCondEffect() Formula {
 	if p.acceptNamedList("and") {
-		parseNested := func(p *Parser) Formula {
-			return p.parsePeffect()
-		}
-		return p.parseAndEffect(parseNested)
+		return p.parseAndEffect((*Parser).parsePeffect)
 	}
 	return p.parsePeffect()
 }

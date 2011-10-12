@@ -167,10 +167,6 @@ func (e *WhenNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	}
 }
 
-func (e *AssignNode) expandQuants(*Symtab, *expFrame) Formula {
-	return e
-}
-
 type expFrame struct {
 	vr, vl int
 	up     *expFrame

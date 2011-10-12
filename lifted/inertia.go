@@ -1,5 +1,16 @@
 package lifted
 
+func (*LeafNode) findInertia(*Symtab) {}
+
+func (f *UnaryNode) findInertia(s *Symtab) {
+	f.Formula.findInertia(s)
+}
+
+func (f *BinaryNode) findInertia(s *Symtab) {
+	f.Left.findInertia(s)
+	f.Right.findInertia(s)
+}
+
 func (d *Domain) FindInertia(s *Symtab) {
 	s.predInertia = make([]byte, len(s.predNames))
 	for i := range s.predInertia {
@@ -17,15 +28,4 @@ func (e *LiteralNode) findInertia(s *Symtab) {
 	case !e.Positive:
 		s.predInertia[e.Name.Num] &^= negInertia
 	}
-}
-
-func (*LeafNode) findInertia(*Symtab) {}
-
-func (f *BinaryNode) findInertia(s *Symtab) {
-	f.Left.findInertia(s)
-	f.Right.findInertia(s)
-}
-
-func (f *UnaryNode) findInertia(s *Symtab) {
-	f.Formula.findInertia(s)
 }

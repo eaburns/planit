@@ -104,16 +104,16 @@ func (l *LiteralNode) assignNums(s *Symtab, f *numFrame) {
 	}
 }
 
-func (e *BinaryNode) assignNums(s *Symtab, f *numFrame) {
-	e.Left.assignNums(s, f)
-	e.Right.assignNums(s, f)
-}
+func (*LeafNode) assignNums(*Symtab, *numFrame) {}
 
 func (e *UnaryNode) assignNums(s *Symtab, f *numFrame) {
 	e.Formula.assignNums(s, f)
 }
 
-func (*LeafNode) assignNums(*Symtab, *numFrame) {}
+func (e *BinaryNode) assignNums(s *Symtab, f *numFrame) {
+	e.Left.assignNums(s, f)
+	e.Right.assignNums(s, f)
+}
 
 func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	f = e.Variable.Name.numberVar(s, f)

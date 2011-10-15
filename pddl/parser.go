@@ -17,9 +17,7 @@ func (p *Parser) next() token {
 		return p.lex.token()
 	}
 	t := p.peeks[0]
-	for i := 1; i < p.npeeks; i++ {
-		p.peeks[i-1] = p.peeks[i]
-	}
+	copy(p.peeks[:], p.peeks[1:])
 	p.npeeks--
 	return t
 }

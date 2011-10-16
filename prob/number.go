@@ -30,7 +30,7 @@ func (p *Problem) AssignNums(s *Symtab) {
 
 func (d *Domain) numberTypes(s *Symtab) {
 	for i := range d.Types {
-		d.Types[i].Name.numberType(s)
+		d.Types[i].numberType(s)
 	}
 	for i := range d.Types {
 		t := d.Types[i]
@@ -43,7 +43,7 @@ func (d *Domain) numberTypes(s *Symtab) {
 }
 
 func (p *Predicate) assignNums(s *Symtab) {
-	p.Name.numberPred(s)
+	p.numberPred(s)
 	for i := range p.Parameters {
 		parm := p.Parameters[i]
 		for j := range parm.Types {
@@ -56,7 +56,7 @@ func (p *Predicate) assignNums(s *Symtab) {
 
 func (c *TypedName) numberConst(s *Symtab) {
 	seen := c.Name.numberConst(s)
-	cnum := c.Name.Num
+	cnum := c.Num
 	for i := range c.Types {
 		if found := c.Types[i].numberType(s); !found {
 			undeclType(&c.Types[i])
@@ -75,7 +75,7 @@ func (a *Action) assignNums(s *Symtab) {
 	var f *numFrame
 	for i := range a.Parameters {
 		p := &a.Parameters[i]
-		f = p.Name.numberVar(s, f)
+		f = p.numberVar(s, f)
 		for j := range p.Types {
 			if found := p.Types[j].numberType(s); !found {
 				undeclType(&p.Types[j])
@@ -90,16 +90,16 @@ func (l *LiteralNode) assignNums(s *Symtab, f *numFrame) {
 	for i := range l.Parameters {
 		switch term := l.Parameters[i].(type) {
 		case Variable:
-			if fnxt := term.Name.numberVar(s, f); fnxt != f {
+			if fnxt := term.numberVar(s, f); fnxt != f {
 				undeclVar(&term.Name)
 			}
 		case Constant:
-			if found := term.Name.numberConst(s); !found {
+			if found := term.numberConst(s); !found {
 				undeclConst(&term.Name)
 			}
 		}
 	}
-	if found := l.Name.numberPred(s); !found {
+	if found := l.numberPred(s); !found {
 		undeclPred(&l.Name)
 	}
 }
@@ -116,7 +116,7 @@ func (e *BinaryNode) assignNums(s *Symtab, f *numFrame) {
 }
 
 func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
-	f = e.Variable.Name.numberVar(s, f)
+	f = e.Variable.numberVar(s, f)
 	for i := range e.Variable.Types {
 		if found := e.Variable.Types[i].numberType(s); !found {
 			undeclType(&e.Variable.Types[i])

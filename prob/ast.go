@@ -58,12 +58,12 @@ type Action struct {
 }
 
 type TypedName struct {
-	Name  Name
+	Name
 	Types []Name
 }
 
 type Predicate struct {
-	Name       Name
+	Name
 	Parameters []TypedName
 }
 
@@ -106,8 +106,8 @@ type falseNode struct{ LeafNode }
 func MakeFalse() Formula { return &theFalseNode }
 
 type LiteralNode struct {
+	Name
 	Positive   bool
-	Name       Name
 	Parameters []Term
 	LeafNode
 }

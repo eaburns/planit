@@ -28,9 +28,9 @@ func (a *Action) expandParms(s *Symtab, f *expFrame, ps []TypedName) (acts []Act
 			if seen.Test(uint(obj)) {
 				continue
 			}
-			a.Parameters[pnum].Name.Num = obj
-			a.Parameters[pnum].Name.Str = s.constNames[obj]
-			g := f.push(saved.Name.Num, obj)
+			a.Parameters[pnum].Num = obj
+			a.Parameters[pnum].Str = s.constNames[obj]
+			g := f.push(saved.Num, obj)
 			acts = append(acts, a.expandParms(s, g, ps[1:])...)
 		}
 	}
@@ -67,19 +67,19 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 
 	for i := range parms {
 		if term, ok := parms[i].(Variable); ok {
-			vl, ok := f.lookup(term.Name.Num)
+			vl, ok := f.lookup(term.Num)
 			if !ok {	// Must be replaced in another pass
 				continue
 			}
-			term.Name.Num = vl
-			term.Name.Str = s.constNames[vl]
+			term.Num = vl
+			term.Str = s.constNames[vl]
 			parms[i] = Constant{term.Name}
 		}
 	}
 
 	return &LiteralNode{
-		Positive:   l.Positive,
 		Name:       l.Name,
+		Positive:   l.Positive,
 		Parameters: parms,
 	}
 }
@@ -118,7 +118,7 @@ func (e *NotNode) expandQuants(s *Symtab, f *expFrame) Formula {
 
 func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
-	vr := e.Variable.Name.Num
+	vr := e.Variable.Num
 	conj := Formula(MakeTrue())
 
 	for i := range e.Variable.Types {
@@ -140,7 +140,7 @@ func (e *ForallNode) expandQuants(s *Symtab, f *expFrame) Formula {
 
 func (e *ExistsNode) expandQuants(s *Symtab, f *expFrame) Formula {
 	seen := bitset.New(uint(len(s.constNames)))
-	vr := e.Variable.Name.Num
+	vr := e.Variable.Num
 	disj := Formula(MakeFalse())
 
 	for i := range e.Variable.Types {

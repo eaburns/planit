@@ -24,8 +24,8 @@ func (d *Domain) FindInertia(s *Symtab) {
 func (e *LiteralNode) findInertia(s *Symtab) {
 	switch e.Positive {
 	case e.Positive:
-		s.predInertia[e.Name.Num] &^= posInertia
+		s.predInertia[e.Num] &^= posInertia
 	case !e.Positive:
-		s.predInertia[e.Name.Num] &^= negInertia
+		s.predInertia[e.Num] &^= negInertia
 	}
 }

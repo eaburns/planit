@@ -21,8 +21,8 @@ const (
 	negInertia = 1 << 1
 )
 
-func newSymtab() *symtab {
-	return &symtab{
+func makeSymtab() symtab {
+	return symtab{
 		constNums: make(map[string]int),
 		predNums:  make(map[string]int),
 		typeNums:  make(map[string]int),

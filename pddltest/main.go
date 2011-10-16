@@ -42,7 +42,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%d actions\n", len(d.Actions))
 	if *dump {
 		fmt.Printf("%+v\n", d)
 	}
@@ -55,8 +54,7 @@ func main() {
 		fmt.Printf("%+v\n", p)
 	}
 
-	opers := prob.Ground(d, p)
-	fmt.Printf("%d grounded operators\n", len(opers))
+	var _ = prob.Ground(d, p)
 }
 
 func domain() (*prob.Domain, os.Error) {

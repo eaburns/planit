@@ -13,6 +13,8 @@ type symtab struct {
 	typeObjs  [][]int // Objects of the given type
 
 	varNames []string
+
+	lits literalTable
 }
 
 const (

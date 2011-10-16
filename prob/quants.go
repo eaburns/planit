@@ -63,23 +63,32 @@ func (l *Literal) expandQuants(s *symtab, f *expFrame) Formula {
 	parms := make([]Term, len(l.Parameters))
 	copy(parms, l.Parameters)
 
+	varFree := true
+
 	for i := range parms {
-		if term, ok := parms[i].(Variable); ok {
+		if term, ok := parms[i].(*Variable); ok {
 			vl, ok := f.lookup(term.Num)
 			if !ok { // Must be replaced in another pass
+				varFree = false
 				continue
 			}
 			term.Num = vl
 			term.Str = s.constNames[vl]
-			parms[i] = Constant{term.Name}
+			parms[i] = &Constant{term.Name}
 		}
 	}
 
-	return &Literal{
+	newLit := &Literal{
 		Predicate:  l.Predicate,
 		Positive:   l.Positive,
 		Parameters: parms,
 	}
+
+	if varFree {
+		return s.lits.intern(newLit)
+	}
+
+	return newLit
 }
 
 func (n TrueNode) expandQuants(*symtab, *expFrame) Formula {

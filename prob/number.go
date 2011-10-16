@@ -89,11 +89,11 @@ func (a *Action) assignNums(s *symtab) {
 func (l *Literal) assignNums(s *symtab, f *numFrame) {
 	for i := range l.Parameters {
 		switch term := l.Parameters[i].(type) {
-		case Variable:
+		case *Variable:
 			if fnxt := term.numberVar(s, f); fnxt != f {
 				undeclVar(&term.Name)
 			}
-		case Constant:
+		case *Constant:
 			if found := term.numberConst(s); !found {
 				undeclConst(&term.Name)
 			}

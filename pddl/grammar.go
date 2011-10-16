@@ -193,11 +193,11 @@ func (p *Parser) parseLiteral() *Literal {
 func (p *Parser) parseTerms() (lst []Term) {
 	for {
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, Constant{p.name(t.txt)})
+			lst = append(lst, &Constant{p.name(t.txt)})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, Variable{p.name(t.txt)})
+			lst = append(lst, &Variable{p.name(t.txt)})
 			continue
 		}
 		break

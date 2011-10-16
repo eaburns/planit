@@ -38,6 +38,10 @@ func MakeName(s string, l Loc) Name {
 	return Name{Str: s, Num: -1, Loc: l}
 }
 
+func (n *Name) Number() int {
+	return n.Num
+}
+
 type Loc struct {
 	File string
 	Line int
@@ -67,7 +71,10 @@ type Predicate struct {
 	Parameters []TypedName
 }
 
-type Term interface{}
+type Term interface{
+	Number() int
+}
+
 type Variable struct{ Name }
 type Constant struct{ Name }
 
@@ -100,6 +107,7 @@ type FalseNode struct{}
 
 type Literal struct {
 	Predicate  Name
+	Num int
 	Positive   bool
 	Parameters []Term
 	LeafNode

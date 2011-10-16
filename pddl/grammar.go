@@ -178,15 +178,13 @@ func (p *Parser) parseLiteral() *LiteralNode {
 	pos := true
 	if p.acceptNamedList("not") {
 		pos = false
+		defer p.expect(tokClose)
 	}
 	p.expect(tokOpen)
 	res := &LiteralNode{
 		Positive:   pos,
 		Name:       p.name(p.expect(tokId).txt),
 		Parameters: p.parseTerms(),
-	}
-	if !pos {
-		p.expect(tokClose)
 	}
 	p.expect(tokClose)
 	return res

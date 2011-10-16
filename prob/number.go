@@ -1,4 +1,4 @@
-package lifted
+package prob
 
 // Assign numbers to all things of type Name
 

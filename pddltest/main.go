@@ -8,7 +8,7 @@ import (
 	"log"
 	"runtime/pprof"
 	"goplan/pddl"
-	"goplan/lifted"
+	"goplan/prob"
 )
 
 var dpath = flag.String("d", "", "The PDDL domain file")
@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	syms := lifted.NewSymtab()
+	syms := prob.NewSymtab()
 	dom.AssignNums(syms)
 	dom.FindInertia(syms)
 
@@ -64,7 +64,7 @@ func main() {
 	fmt.Printf("%d grounded actions\n", len(dom.Actions))
 }
 
-func domain() (*lifted.Domain, os.Error) {
+func domain() (*prob.Domain, os.Error) {
 	file, err := os.Open(*dpath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open domain file %s: %s", *dpath, err)
@@ -77,7 +77,7 @@ func domain() (*lifted.Domain, os.Error) {
 	return p.ParseDomain(), nil
 }
 
-func problem() (*lifted.Problem, os.Error) {
+func problem() (*prob.Problem, os.Error) {
 	file, err := os.Open(*ppath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open problem file %s: %s", *dpath, err)

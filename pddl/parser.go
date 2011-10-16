@@ -3,7 +3,7 @@ package pddl
 import (
 	"fmt"
 	"log"
-	. "goplan/lifted"
+	. "goplan/prob"
 )
 
 type Parser struct {

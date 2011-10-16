@@ -1,4 +1,4 @@
-package lifted
+package prob
 
 func (*LeafNode) findInertia(*Symtab) {}
 

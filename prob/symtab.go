@@ -1,4 +1,4 @@
-package lifted
+package prob
 
 type Symtab struct {
 	constNums  map[string]int

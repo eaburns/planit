@@ -1,4 +1,4 @@
-package lifted
+package prob
 
 func Conjunct(l Formula, r Formula) Formula {
 	switch l.(type) {

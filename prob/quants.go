@@ -1,4 +1,4 @@
-package lifted
+package prob
 
 import "github.com/willf/bitset"
 

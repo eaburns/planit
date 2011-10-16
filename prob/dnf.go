@@ -1,4 +1,4 @@
-package lifted
+package prob
 
 func (n *LeafNode) dnf() Formula { return n }
 

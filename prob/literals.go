@@ -33,17 +33,9 @@ func (a *Literal) eq(b *Literal) bool {
 		return false
 	}
 	for i := range a.Parameters {
-		switch a := a.Parameters[i].(type) {
-		case *Constant:
-			if b, ok := b.Parameters[i].(*Constant); !ok || a.Num != b.Num {
-				return false
-			}
-		case *Variable:
-			if b, ok := b.Parameters[i].(*Variable); !ok || a.Num != b.Num {
-				return false
-			}
-		default:
-			panic("unexpected term type")
+		if a.Parameters[i].Variable != b.Parameters[i].Variable ||
+				a.Parameters[i].Num != b.Parameters[i].Num {
+			return false
 		}
 	}
 	return true

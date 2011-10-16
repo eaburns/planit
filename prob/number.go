@@ -88,15 +88,15 @@ func (a *Action) assignNums(s *symtab) {
 
 func (l *Literal) assignNums(s *symtab, f *numFrame) {
 	for i := range l.Parameters {
-		switch term := l.Parameters[i].(type) {
-		case *Variable:
-			if fnxt := term.numberVar(s, f); fnxt != f {
+		term := &l.Parameters[i]
+		if term.Variable {
+			if term.numberVar(s, f) != f {
 				undeclVar(&term.Name)
 			}
-		case *Constant:
-			if found := term.numberConst(s); !found {
-				undeclConst(&term.Name)
-			}
+			continue
+		}
+		if found := term.numberConst(s); !found {
+			undeclConst(&term.Name)
 		}
 	}
 	if found := l.Predicate.numberPred(s); !found {

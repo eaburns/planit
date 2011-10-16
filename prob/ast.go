@@ -71,12 +71,10 @@ type Predicate struct {
 	Parameters []TypedName
 }
 
-type Term interface{
-	Number() int
+type Term struct{
+	Name
+	Variable bool
 }
-
-type Variable struct{ Name }
-type Constant struct{ Name }
 
 type Formula interface {
 	assignNums(*symtab, *numFrame)

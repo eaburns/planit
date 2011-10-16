@@ -66,15 +66,15 @@ func (l *Literal) expandQuants(s *symtab, f *expFrame) Formula {
 	varFree := true
 
 	for i := range parms {
-		if term, ok := parms[i].(*Variable); ok {
-			vl, ok := f.lookup(term.Num)
+		if parms[i].Variable {
+			vl, ok := f.lookup(parms[i].Num)
 			if !ok { // Must be replaced in another pass
 				varFree = false
 				continue
 			}
-			term.Num = vl
-			term.Str = s.constNames[vl]
-			parms[i] = &Constant{term.Name}
+			parms[i].Num = vl
+			parms[i].Str = s.constNames[vl]
+			parms[i].Variable = false
 		}
 	}
 

@@ -8,7 +8,7 @@ const literalTabSz = 104729	// prime, should be large enough
 
 type literalTable struct{
 	hashVec [][]uint64
-	buckets [literalTabSz][]*Literal
+	interns [literalTabSz][]*Literal
 	byNum []*Literal
 }
 
@@ -16,15 +16,15 @@ func (tab *literalTable) intern(l *Literal) *Literal {
 	hash := tab.hash(l)
 	ind := hash % literalTabSz
 
-	for i := range tab.buckets[ind] {
-		if tab.buckets[ind][i].eq(l) {
-			return tab.buckets[ind][i]
+	for i := range tab.interns[ind] {
+		if tab.interns[ind][i].eq(l) {
+			return tab.interns[ind][i]
 		}
 	}
 
 	l.Num = len(tab.byNum)
 	tab.byNum = append(tab.byNum, l)
-	tab.buckets[ind] = append(tab.buckets[ind], l)
+	tab.interns[ind] = append(tab.interns[ind], l)
 	return l
 }
 

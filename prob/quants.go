@@ -61,7 +61,7 @@ func (a *Action) groundedParms(s *Symtab, f *expFrame) []Action {
 	return []Action{act}
 }
 
-func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
+func (l *Literal) expandQuants(s *Symtab, f *expFrame) Formula {
 	parms := make([]Term, len(l.Parameters))
 	copy(parms, l.Parameters)
 
@@ -77,7 +77,7 @@ func (l *LiteralNode) expandQuants(s *Symtab, f *expFrame) Formula {
 		}
 	}
 
-	return &LiteralNode{
+	return &Literal{
 		Name:       l.Name,
 		Positive:   l.Positive,
 		Parameters: parms,

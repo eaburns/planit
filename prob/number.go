@@ -86,7 +86,7 @@ func (a *Action) assignNums(s *Symtab) {
 	a.Effect.assignNums(s, f)
 }
 
-func (l *LiteralNode) assignNums(s *Symtab, f *numFrame) {
+func (l *Literal) assignNums(s *Symtab, f *numFrame) {
 	for i := range l.Parameters {
 		switch term := l.Parameters[i].(type) {
 		case Variable:

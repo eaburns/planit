@@ -21,7 +21,7 @@ func (d *Domain) FindInertia(s *Symtab) {
 	}
 }
 
-func (e *LiteralNode) findInertia(s *Symtab) {
+func (e *Literal) findInertia(s *Symtab) {
 	switch e.Positive {
 	case e.Positive:
 		s.predInertia[e.Num] &^= posInertia

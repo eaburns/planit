@@ -174,16 +174,16 @@ func (p *Parser) parseExpr() (res Formula) {
 	return
 }
 
-func (p *Parser) parseLiteral() *LiteralNode {
+func (p *Parser) parseLiteral() *Literal {
 	pos := true
 	if p.acceptNamedList("not") {
 		pos = false
 		defer p.expect(tokClose)
 	}
 	p.expect(tokOpen)
-	res := &LiteralNode{
-		Positive:   pos,
+	res := &Literal{
 		Name:       p.name(p.expect(tokId).txt),
+		Positive:   pos,
 		Parameters: p.parseTerms(),
 	}
 	p.expect(tokClose)

@@ -49,7 +49,7 @@ func (n *WhenNode) dnf() Formula {
 	n.Formula = n.Formula.dnf()
 
 	disj := Formula(MakeFalse())
-	conds := collectOrs(n.Condition.dnf())
+	conds := gatherOrs(n.Condition.dnf())
 	if len(conds) == 1 {
 		return n
 	}
@@ -61,6 +61,11 @@ func (n *WhenNode) dnf() Formula {
 		disj = Disjunct(disj, Formula(nd))
 	}
 	return disj
+}
+
+func (a *Action) ensureDnf() {
+	a.Precondition.ensureDnf()
+	a.Effect.ensureDnf()
 }
 
 func (*LeafNode) ensureDnf() { return }
@@ -100,11 +105,11 @@ func (n *WhenNode) ensureDnf() {
 	n.Formula.ensureDnf()
 }
 
-func collectOrs(f Formula) (fs []Formula) {
+func gatherOrs(f Formula) (fs []Formula) {
 	switch n := f.(type) {
 	case *OrNode:
-		fs = append(fs, collectOrs(n.Left)...)
-		fs = append(fs, collectOrs(n.Right)...)
+		fs = append(fs, gatherOrs(n.Left)...)
+		fs = append(fs, gatherOrs(n.Right)...)
 	default:
 		fs = append(fs, n)
 	}

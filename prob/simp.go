@@ -40,7 +40,7 @@ func Negate(e Formula) Formula {
 		return MakeTrue()
 	case *NotNode:
 		return n.Formula
-	case *LiteralNode:
+	case *Literal:
 		n.Positive = !n.Positive
 		return n
 	}

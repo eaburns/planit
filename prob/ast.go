@@ -105,7 +105,7 @@ func MakeTrue() Formula { return &theTrueNode }
 type falseNode struct{ LeafNode }
 func MakeFalse() Formula { return &theFalseNode }
 
-type LiteralNode struct {
+type Literal struct {
 	Name
 	Positive   bool
 	Parameters []Term

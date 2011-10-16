@@ -68,9 +68,9 @@ func (n Name) String() string {
 	return fmt.Sprintf("{%s, %d}", n.Str, n.Num)
 }
 
-func (lit *LiteralNode) String() string {
-	return fmt.Sprintf("Literal{Positive:%t, Name:%v, Parameters:%v}",
-		lit.Positive, lit.Name, lit.Parameters)
+func (lit *Literal) String() string {
+	return fmt.Sprintf("Literal{Name:%v, Positive:%t, Parameters:%v}",
+		lit.Name, lit.Positive, lit.Parameters)
 }
 
 func (e *BinaryNode) String() string {

@@ -66,18 +66,14 @@ func (n *WhenNode) dnf() Formula {
 func (*LeafNode) ensureDnf() { return }
 
 func (n *AndNode) ensureDnf() {
-	switch n.Left.(type) {
-	case *OrNode:
+	if _, ok := n.Left.(*OrNode); ok {
 		panic("An OrNode follows an AndNode in a 'DNF' formula")
-	default:
-		n.Left.ensureDnf()
 	}
-	switch n.Right.(type) {
-	case *OrNode:
+	n.Left.ensureDnf()
+	if _, ok := n.Right.(*OrNode); ok {
 		panic("OrNode found beneath an AndNode in a 'DNF' formula")
-	default:
-		n.Right.ensureDnf()
 	}
+	n.Right.ensureDnf()
 }
 
 func (*NotNode) ensureDnf() {
@@ -94,18 +90,14 @@ func (n *OrNode) ensureDnf() {
 }
 
 func (n *WhenNode) ensureDnf() {
-	switch n.Condition.(type) {
-	case *OrNode:
+	if _, ok := n.Condition.(*OrNode); ok {
 		panic("OrNode found beneath a WhenNode in a 'DNF' formula")
-	default:
-		n.Condition.ensureDnf()
 	}
-	switch n.Formula.(type) {
-	case *OrNode:
+	n.Condition.ensureDnf()
+	if _, ok := n.Formula.(*OrNode); ok {
 		panic("OrNode found beneath a WhenNode in a 'DNF' formula")
-	default:
-		n.Formula.ensureDnf()
 	}
+	n.Formula.ensureDnf()
 }
 
 func collectOrs(f Formula) (fs []Formula) {

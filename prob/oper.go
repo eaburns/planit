@@ -58,6 +58,9 @@ func gatherEffects(f Formula) (ueffs []Literal, ceffs []CondEffect) {
 		case *AndNode:
 			ueffs = append(ueffs, gatherLits(n)...)
 		case *Literal:
+			if n.Num < 0 {
+				panic("A Literal that was no assigned a number")
+			}
 			ueffs = append(ueffs, *n)
 		case *AssignNode:
 			// Ignore assignment for now
@@ -78,6 +81,9 @@ func gatherLits(f Formula) (lits []Literal) {
 		lits = append(lits, gatherLits(n.Left)...)
 		lits = append(lits, gatherLits(n.Right)...)
 	case *Literal:
+		if n.Num < 0 {
+			panic("A Literal that was no assigned a number")
+		}
 		lits = append(lits, *n)
 	case *AssignNode:
 		// Ignore an assignment

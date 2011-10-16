@@ -86,6 +86,8 @@ func (l *Literal) expandQuants(s *symtab, f *expFrame) Formula {
 
 	if varFree {
 		return s.lits.intern(newLit)
+	} else {
+		newLit.Num = -1
 	}
 
 	return newLit

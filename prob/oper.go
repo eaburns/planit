@@ -56,7 +56,7 @@ func gatherEffects(f Formula) (ueffs []Literal, ceffs []CondEffect) {
 		case *AssignNode:
 			// Ignore assignment for now
 		default:
-			panic("gatherEffects: not a WhenNode, AndNode or Literal")
+			panic("gatherEffects: unexpected node type")
 		}
 	}
 	return
@@ -72,7 +72,7 @@ func gatherLits(f Formula) (lits []Literal) {
 	case *AssignNode:
 		// Ignore an assignment
 	default:
-		panic("gatherLits: not an AndNode or Literal");
+		panic("gatherLits: unexpected node type");
 	}
 	return
 }

@@ -99,7 +99,7 @@ type TrueNode struct{}
 type FalseNode struct{}
 
 type Literal struct {
-	Name
+	Predicate  Name
 	Positive   bool
 	Parameters []Term
 	LeafNode

@@ -7,17 +7,17 @@ import (
 	"reflect"
 )
 
-type Oper struct{
-	Name string
-	Parms []Name
-	Cost float32
-	Precond []Literal
-	Effect []Literal
+type Oper struct {
+	Name     string
+	Parms    []Name
+	Cost     float32
+	Precond  []Literal
+	Effect   []Literal
 	CondEffs []CondEffect
 }
 
-type CondEffect struct{
-	Cond []Literal
+type CondEffect struct {
+	Cond   []Literal
 	Effect []Literal
 }
 
@@ -31,15 +31,15 @@ func (a *Action) operators() (ops []Oper) {
 	}
 
 	conds := gatherOrs(a.Precondition)
-	ueffs, ceffs := gatherEffects(a.Effect);
+	ueffs, ceffs := gatherEffects(a.Effect)
 
 	for i := range conds {
 		ops = append(ops, Oper{
-			Name: a.Name,
-			Parms: parms,
-			Cost: float32(1),	// For now
-			Precond: gatherLits(conds[i]),
-			Effect: ueffs,
+			Name:     a.Name,
+			Parms:    parms,
+			Cost:     float32(1), // For now
+			Precond:  gatherLits(conds[i]),
+			Effect:   ueffs,
 			CondEffs: ceffs,
 		})
 	}
@@ -52,7 +52,7 @@ func gatherEffects(f Formula) (ueffs []Literal, ceffs []CondEffect) {
 		switch n := eff.(type) {
 		case *WhenNode:
 			ceffs = append(ceffs, CondEffect{
-				Cond: gatherLits(n.Condition),
+				Cond:   gatherLits(n.Condition),
 				Effect: gatherLits(n.Formula),
 			})
 		case *AndNode:

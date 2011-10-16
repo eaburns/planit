@@ -66,7 +66,7 @@ func (l *Literal) expandQuants(s *symtab, f *expFrame) Formula {
 	for i := range parms {
 		if term, ok := parms[i].(Variable); ok {
 			vl, ok := f.lookup(term.Num)
-			if !ok {	// Must be replaced in another pass
+			if !ok { // Must be replaced in another pass
 				continue
 			}
 			term.Num = vl
@@ -76,7 +76,7 @@ func (l *Literal) expandQuants(s *symtab, f *expFrame) Formula {
 	}
 
 	return &Literal{
-		Name:       l.Name,
+		Predicate:  l.Predicate,
 		Positive:   l.Positive,
 		Parameters: parms,
 	}

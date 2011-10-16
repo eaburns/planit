@@ -4,9 +4,9 @@ type symtab struct {
 	constNums  map[string]int
 	constNames []string
 
-	predNums    map[string]int
-	predNames   []string
-	inertia []byte
+	predNums  map[string]int
+	predNames []string
+	inertia   []byte
 
 	typeNums  map[string]int
 	typeNames []string

@@ -182,7 +182,7 @@ func (p *Parser) parseLiteral() *Literal {
 	}
 	p.expect(tokOpen)
 	res := &Literal{
-		Name:       p.name(p.expect(tokId).txt),
+		Predicate:  p.name(p.expect(tokId).txt),
 		Positive:   pos,
 		Parameters: p.parseTerms(),
 	}

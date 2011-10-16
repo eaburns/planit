@@ -99,8 +99,8 @@ func (l *Literal) assignNums(s *symtab, f *numFrame) {
 			}
 		}
 	}
-	if found := l.numberPred(s); !found {
-		undeclPred(&l.Name)
+	if found := l.Predicate.numberPred(s); !found {
+		undeclPred(&l.Predicate)
 	}
 }
 

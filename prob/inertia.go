@@ -26,11 +26,11 @@ func (f *BinaryNode) findInertia(s *symtab) {
 	f.Right.findInertia(s)
 }
 
-func (e *Literal) findInertia(s *symtab) {
-	switch e.Positive {
-	case e.Positive:
-		s.inertia[e.Num] &^= posInertia
-	case !e.Positive:
-		s.inertia[e.Num] &^= negInertia
+func (l *Literal) findInertia(s *symtab) {
+	switch l.Positive {
+	case l.Positive:
+		s.inertia[l.Predicate.Num] &^= posInertia
+	case !l.Positive:
+		s.inertia[l.Predicate.Num] &^= negInertia
 	}
 }

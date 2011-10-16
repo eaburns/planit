@@ -2,6 +2,11 @@ package prob
 
 // Ground operators
 
+import (
+	"fmt"
+	"reflect"
+)
+
 type Oper struct{
 	Name string
 	Parms []Name
@@ -17,6 +22,7 @@ type CondEffect struct{
 }
 
 func (a *Action) operators() (ops []Oper) {
+	a.dnf()
 	a.ensureDnf()
 
 	parms := make([]Name, len(a.Parameters))
@@ -55,8 +61,12 @@ func gatherEffects(f Formula) (ueffs []Literal, ceffs []CondEffect) {
 			ueffs = append(ueffs, *n)
 		case *AssignNode:
 			// Ignore assignment for now
+		case TrueNode:
+			// Ignore
+		case FalseNode:
+			// Ignore
 		default:
-			panic("gatherEffects: unexpected node type")
+			panic(fmt.Sprintf("gatherEffects: unexpected node type: %v", f))
 		}
 	}
 	return
@@ -72,7 +82,8 @@ func gatherLits(f Formula) (lits []Literal) {
 	case *AssignNode:
 		// Ignore an assignment
 	default:
-		panic("gatherLits: unexpected node type");
+		tname := reflect.TypeOf(f).String()
+		panic(fmt.Sprintf("gatherLits: unexpected node type: %s", tname))
 	}
 	return
 }

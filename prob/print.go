@@ -85,12 +85,12 @@ func (e *QuantNode) String() string {
 	return fmt.Sprintf("Variable:%v, %v", e.Variable, e.UnaryNode)
 }
 
-func (*trueNode) String() string {
-	return "trueNode"
+func (TrueNode) String() string {
+	return "TrueNode"
 }
 
-func (*falseNode) String() string {
-	return "falseNode"
+func (FalseNode) String() string {
+	return "FalseNode"
 }
 
 func (e *AndNode) String() string {

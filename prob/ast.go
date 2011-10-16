@@ -72,9 +72,9 @@ type Variable struct{ Name }
 type Constant struct{ Name }
 
 type Formula interface {
-	assignNums(*Symtab, *numFrame)
-	findInertia(*Symtab)
-	expandQuants(*Symtab, *expFrame) Formula
+	assignNums(*symtab, *numFrame)
+	findInertia(*symtab)
+	expandQuants(*symtab, *expFrame) Formula
 	dnf() Formula
 	ensureDnf() // Panic if not in DNF
 }
@@ -94,16 +94,9 @@ type QuantNode struct {
 	UnaryNode
 }
 
-var (
-	theTrueNode trueNode
-	theFalseNode falseNode
-)
+type TrueNode struct{}
 
-type trueNode struct{ LeafNode }
-func MakeTrue() Formula { return &theTrueNode }
-
-type falseNode struct{ LeafNode }
-func MakeFalse() Formula { return &theFalseNode }
+type FalseNode struct{}
 
 type Literal struct {
 	Name

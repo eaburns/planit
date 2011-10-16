@@ -28,23 +28,6 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
-
-	dom, err := domain()
-	if err != nil {
-		panic(err)
-	}
-	syms := prob.NewSymtab()
-	dom.AssignNums(syms)
-	dom.FindInertia(syms)
-
-	prob, err := problem()
-	if err != nil {
-		panic(err)
-	}
-	prob.AssignNums(syms)
-
-	dom.ExpandQuants(syms)
-
 	if *memprofile != "" {
 		f, err := os.Create(*memprofile)
 		if err != nil {
@@ -55,13 +38,25 @@ func main() {
 		return
 	}
 
-	nacts := len(dom.Actions)
-	//	dom.ExpandQuants(append(dom.Constants, prob.Objects...))
-	if *dump {
-		fmt.Printf("%+v\n\n%+v\n", dom, prob)
+	d, err := domain()
+	if err != nil {
+		panic(err)
 	}
-	fmt.Printf("%d actions\n", nacts)
-	fmt.Printf("%d grounded actions\n", len(dom.Actions))
+	fmt.Printf("%d actions\n", len(d.Actions))
+	if *dump {
+		fmt.Printf("%+v\n", d)
+	}
+
+	p, err := problem()
+	if err != nil {
+		panic(err)
+	}
+	if *dump {
+		fmt.Printf("%+v\n", p)
+	}
+
+	opers := prob.Ground(d, p)
+	fmt.Printf("%d grounded operators\n", len(opers))
 }
 
 func domain() (*prob.Domain, os.Error) {

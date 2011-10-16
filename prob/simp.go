@@ -2,31 +2,31 @@ package prob
 
 func Conjunct(l Formula, r Formula) Formula {
 	switch l.(type) {
-	case *trueNode:
+	case TrueNode:
 		return r
-	case *falseNode:
-		return MakeFalse()
+	case FalseNode:
+		return FalseNode{}
 	}
 	switch r.(type) {
-	case *trueNode:
+	case TrueNode:
 		return l
-	case *falseNode:
-		return MakeFalse()
+	case FalseNode:
+		return FalseNode{}
 	}
 	return &AndNode{BinaryNode{Left: l, Right: r}}
 }
 
 func Disjunct(l Formula, r Formula) Formula {
 	switch l.(type) {
-	case *trueNode:
-		return MakeTrue()
-	case *falseNode:
+	case TrueNode:
+		return TrueNode{}
+	case FalseNode:
 		return r
 	}
 	switch r.(type) {
-	case *trueNode:
-		return MakeTrue()
-	case *falseNode:
+	case TrueNode:
+		return TrueNode{}
+	case FalseNode:
 		return l
 	}
 	return &OrNode{BinaryNode{Left: l, Right: r}}
@@ -34,10 +34,10 @@ func Disjunct(l Formula, r Formula) Formula {
 
 func Negate(e Formula) Formula {
 	switch n := e.(type) {
-	case *trueNode:
-		return MakeFalse()
-	case *falseNode:
-		return MakeTrue()
+	case TrueNode:
+		return FalseNode{}
+	case FalseNode:
+		return TrueNode{}
 	case *NotNode:
 		return n.Formula
 	case *Literal:

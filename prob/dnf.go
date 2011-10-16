@@ -1,6 +1,17 @@
 package prob
 
-func (n *LeafNode) dnf() Formula { return n }
+func (a *Action) dnf() {
+	a.Precondition = a.Precondition.dnf()
+	a.Effect = a.Effect.dnf()
+}
+
+func (n TrueNode) dnf() Formula { return n }
+
+func (n FalseNode) dnf() Formula { return n }
+
+func (l *Literal) dnf() Formula { return l }
+
+func (a *AssignNode) dnf() Formula { return a }
 
 func (n *AndNode) dnf() Formula {
 	n.Left = n.Left.dnf()
@@ -48,7 +59,7 @@ func (n *QuantNode) dnf() Formula {
 func (n *WhenNode) dnf() Formula {
 	n.Formula = n.Formula.dnf()
 
-	disj := Formula(MakeFalse())
+	disj := Formula(FalseNode{})
 	conds := gatherOrs(n.Condition.dnf())
 	if len(conds) == 1 {
 		return n
@@ -67,6 +78,10 @@ func (a *Action) ensureDnf() {
 	a.Precondition.ensureDnf()
 	a.Effect.ensureDnf()
 }
+
+func (TrueNode) ensureDnf() { return }
+
+func (FalseNode) ensureDnf() { return }
 
 func (*LeafNode) ensureDnf() { return }
 
@@ -111,7 +126,7 @@ func gatherOrs(f Formula) (fs []Formula) {
 		fs = append(fs, gatherOrs(n.Left)...)
 		fs = append(fs, gatherOrs(n.Right)...)
 	default:
-		fs = append(fs, n)
+		fs = append(fs, f)
 	}
 	return
 }

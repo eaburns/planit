@@ -1,12 +1,12 @@
 package prob
 
-type Symtab struct {
+type symtab struct {
 	constNums  map[string]int
 	constNames []string
 
 	predNums    map[string]int
 	predNames   []string
-	predInertia []byte // Inertia bit-flags
+	inertia []byte
 
 	typeNums  map[string]int
 	typeNames []string
@@ -21,8 +21,8 @@ const (
 	negInertia = 1 << 1
 )
 
-func NewSymtab() *Symtab {
-	return &Symtab{
+func newSymtab() *symtab {
+	return &symtab{
 		constNums: make(map[string]int),
 		predNums:  make(map[string]int),
 		typeNums:  make(map[string]int),

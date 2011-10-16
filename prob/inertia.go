@@ -1,31 +1,36 @@
 package prob
 
-func (*LeafNode) findInertia(*Symtab) {}
-
-func (f *UnaryNode) findInertia(s *Symtab) {
-	f.Formula.findInertia(s)
-}
-
-func (f *BinaryNode) findInertia(s *Symtab) {
-	f.Left.findInertia(s)
-	f.Right.findInertia(s)
-}
-
-func (d *Domain) FindInertia(s *Symtab) {
-	s.predInertia = make([]byte, len(s.predNames))
-	for i := range s.predInertia {
-		s.predInertia[i] = posInertia | negInertia
+func (d *Domain) findInertia(s *symtab) {
+	s.inertia = make([]byte, len(s.predNames))
+	for i := range s.inertia {
+		s.inertia[i] = posInertia | negInertia
 	}
 	for i := range d.Actions {
 		d.Actions[i].Effect.findInertia(s)
 	}
+	return
 }
 
-func (e *Literal) findInertia(s *Symtab) {
+func (TrueNode) findInertia(*symtab) {}
+
+func (FalseNode) findInertia(*symtab) {}
+
+func (*LeafNode) findInertia(*symtab) {}
+
+func (f *UnaryNode) findInertia(s *symtab) {
+	f.Formula.findInertia(s)
+}
+
+func (f *BinaryNode) findInertia(s *symtab) {
+	f.Left.findInertia(s)
+	f.Right.findInertia(s)
+}
+
+func (e *Literal) findInertia(s *symtab) {
 	switch e.Positive {
 	case e.Positive:
-		s.predInertia[e.Num] &^= posInertia
+		s.inertia[e.Num] &^= posInertia
 	case !e.Positive:
-		s.predInertia[e.Num] &^= negInertia
+		s.inertia[e.Num] &^= negInertia
 	}
 }

@@ -4,7 +4,7 @@ package prob
 
 import "log"
 
-func (d *Domain) AssignNums(s *Symtab) {
+func (d *Domain) assignNums(s *symtab) {
 	d.numberTypes(s)
 	s.typeObjs = make([][]int, len(s.typeNames))
 	for i := range d.Constants {
@@ -18,7 +18,7 @@ func (d *Domain) AssignNums(s *Symtab) {
 	}
 }
 
-func (p *Problem) AssignNums(s *Symtab) {
+func (p *Problem) assignNums(s *symtab) {
 	for i := range p.Objects {
 		p.Objects[i].numberConst(s)
 	}
@@ -28,7 +28,7 @@ func (p *Problem) AssignNums(s *Symtab) {
 	p.Goal.assignNums(s, nil)
 }
 
-func (d *Domain) numberTypes(s *Symtab) {
+func (d *Domain) numberTypes(s *symtab) {
 	for i := range d.Types {
 		d.Types[i].numberType(s)
 	}
@@ -42,7 +42,7 @@ func (d *Domain) numberTypes(s *Symtab) {
 	}
 }
 
-func (p *Predicate) assignNums(s *Symtab) {
+func (p *Predicate) assignNums(s *symtab) {
 	p.numberPred(s)
 	for i := range p.Parameters {
 		parm := p.Parameters[i]
@@ -54,7 +54,7 @@ func (p *Predicate) assignNums(s *Symtab) {
 	}
 }
 
-func (c *TypedName) numberConst(s *Symtab) {
+func (c *TypedName) numberConst(s *symtab) {
 	seen := c.Name.numberConst(s)
 	cnum := c.Num
 	for i := range c.Types {
@@ -71,7 +71,7 @@ func (c *TypedName) numberConst(s *Symtab) {
 	}
 }
 
-func (a *Action) assignNums(s *Symtab) {
+func (a *Action) assignNums(s *symtab) {
 	var f *numFrame
 	for i := range a.Parameters {
 		p := &a.Parameters[i]
@@ -86,7 +86,7 @@ func (a *Action) assignNums(s *Symtab) {
 	a.Effect.assignNums(s, f)
 }
 
-func (l *Literal) assignNums(s *Symtab, f *numFrame) {
+func (l *Literal) assignNums(s *symtab, f *numFrame) {
 	for i := range l.Parameters {
 		switch term := l.Parameters[i].(type) {
 		case Variable:
@@ -104,18 +104,22 @@ func (l *Literal) assignNums(s *Symtab, f *numFrame) {
 	}
 }
 
-func (*LeafNode) assignNums(*Symtab, *numFrame) {}
+func (TrueNode) assignNums(*symtab, *numFrame) {}
 
-func (e *UnaryNode) assignNums(s *Symtab, f *numFrame) {
+func (FalseNode) assignNums(*symtab, *numFrame) {}
+
+func (*LeafNode) assignNums(*symtab, *numFrame) {}
+
+func (e *UnaryNode) assignNums(s *symtab, f *numFrame) {
 	e.Formula.assignNums(s, f)
 }
 
-func (e *BinaryNode) assignNums(s *Symtab, f *numFrame) {
+func (e *BinaryNode) assignNums(s *symtab, f *numFrame) {
 	e.Left.assignNums(s, f)
 	e.Right.assignNums(s, f)
 }
 
-func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
+func (e *QuantNode) assignNums(s *symtab, f *numFrame) {
 	f = e.Variable.numberVar(s, f)
 	for i := range e.Variable.Types {
 		if found := e.Variable.Types[i].numberType(s); !found {
@@ -125,12 +129,12 @@ func (e *QuantNode) assignNums(s *Symtab, f *numFrame) {
 	e.Formula.assignNums(s, f)
 }
 
-func (e *WhenNode) assignNums(s *Symtab, f *numFrame) {
+func (e *WhenNode) assignNums(s *symtab, f *numFrame) {
 	e.Condition.assignNums(s, f)
 	e.Formula.assignNums(s, f)
 }
 
-func (name *Name) numberType(s *Symtab) bool {
+func (name *Name) numberType(s *symtab) bool {
 	if n, ok := s.typeNums[name.Str]; ok {
 		name.Num = n
 		return true
@@ -141,7 +145,7 @@ func (name *Name) numberType(s *Symtab) bool {
 	return false
 }
 
-func (name *Name) numberConst(s *Symtab) bool {
+func (name *Name) numberConst(s *symtab) bool {
 	if n, ok := s.constNums[name.Str]; ok {
 		name.Num = n
 		return true
@@ -152,7 +156,7 @@ func (name *Name) numberConst(s *Symtab) bool {
 	return false
 }
 
-func (name *Name) numberPred(s *Symtab) bool {
+func (name *Name) numberPred(s *symtab) bool {
 	if n, ok := s.predNums[name.Str]; ok {
 		name.Num = n
 		return true
@@ -163,7 +167,7 @@ func (name *Name) numberPred(s *Symtab) bool {
 	return false
 }
 
-func (name *Name) numberVar(s *Symtab, f *numFrame) *numFrame {
+func (name *Name) numberVar(s *symtab, f *numFrame) *numFrame {
 	if n, ok := f.lookup(name.Str); ok {
 		name.Num = n
 		return f

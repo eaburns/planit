@@ -1,6 +1,6 @@
 package prob
 
-func Ground(d *Domain, p *Problem) (ops []Oper) {
+func Ground(d *Domain, p *Problem) (ops []Operator) {
 	syms := newSymtab()
 	d.assignNums(syms)
 	p.assignNums(syms)

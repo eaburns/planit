@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-type Oper struct {
+type Operator struct {
 	Name     string
 	Parms    []Name
 	Cost     float32
@@ -21,7 +21,7 @@ type CondEffect struct {
 	Effect []Literal
 }
 
-func (a *Action) operators() (ops []Oper) {
+func (a *Action) operators() (ops []Operator) {
 	a.dnf()
 	a.ensureDnf()
 
@@ -34,7 +34,7 @@ func (a *Action) operators() (ops []Oper) {
 	ueffs, ceffs := gatherEffects(a.Effect)
 
 	for i := range conds {
-		ops = append(ops, Oper{
+		ops = append(ops, Operator{
 			Name:     a.Name,
 			Parms:    parms,
 			Cost:     float32(1), // For now

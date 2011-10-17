@@ -107,7 +107,7 @@ func (p *Parser) parseActionDef() Action {
 		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
 			p.junk(2)
 		} else {
-			act.Precondition = p.parsePreExpr()
+			act.Precondition = p.parsePreGd()
 		}
 	}
 	if p.peek().txt == ":effect" {
@@ -131,43 +131,43 @@ func (p *Parser) parseActParms() []TypedName {
 	return res
 }
 
-func (p *Parser) parsePreExpr() (res Formula) {
+func (p *Parser) parsePreGd() (res Formula) {
 	switch {
 	case p.acceptNamedList("and"):
-		res = p.parseAndExpr((*Parser).parsePreExpr)
+		res = p.parseAndGd((*Parser).parsePreGd)
 	case p.acceptNamedList("forall"):
-		res = p.parseForallExpr((*Parser).parsePreExpr)
+		res = p.parseForallGd((*Parser).parsePreGd)
 	default:
-		res = p.parsePrefExpr()
+		res = p.parsePrefGd()
 	}
 	return
 }
 
-func (p *Parser) parsePrefExpr() Formula {
-	return p.parseExpr()
+func (p *Parser) parsePrefGd() Formula {
+	return p.parseGd()
 }
 
-func (p *Parser) parseExpr() (res Formula) {
+func (p *Parser) parseGd() (res Formula) {
 	switch {
 	case p.acceptNamedList("and"):
-		res = p.parseAndExpr((*Parser).parseExpr)
+		res = p.parseAndGd((*Parser).parseGd)
 	case p.acceptNamedList("or"):
-		res = p.parseOrExpr((*Parser).parseExpr)
+		res = p.parseOrGd((*Parser).parseGd)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{Formula: p.parseExpr()}}
+		res = &NotNode{UnaryNode{Formula: p.parseGd()}}
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
 		res = &OrNode{
 			BinaryNode{
-				Left:  &NotNode{UnaryNode{Formula: p.parseExpr()}},
-				Right: p.parseExpr(),
+				Left:  &NotNode{UnaryNode{Formula: p.parseGd()}},
+				Right: p.parseGd(),
 			},
 		}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
-		res = p.parseExistsExpr((*Parser).parseExpr)
+		res = p.parseExistsGd((*Parser).parseGd)
 	case p.acceptNamedList("forall"):
-		res = p.parseForallExpr((*Parser).parseExpr)
+		res = p.parseForallGd((*Parser).parseGd)
 	default:
 		res = p.parseLiteral()
 	}
@@ -205,7 +205,7 @@ func (p *Parser) parseTerms() (lst []Term) {
 	return
 }
 
-func (p *Parser) parseAndExpr(nested func(*Parser) Formula) Formula {
+func (p *Parser) parseAndGd(nested func(*Parser) Formula) Formula {
 	conj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
@@ -218,7 +218,7 @@ func (p *Parser) parseAndExpr(nested func(*Parser) Formula) Formula {
 	return e
 }
 
-func (p *Parser) parseOrExpr(nested func(*Parser) Formula) Formula {
+func (p *Parser) parseOrGd(nested func(*Parser) Formula) Formula {
 	disj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
@@ -231,7 +231,7 @@ func (p *Parser) parseOrExpr(nested func(*Parser) Formula) Formula {
 	return e
 }
 
-func (p *Parser) parseForallExpr(nested func(*Parser) Formula) Formula {
+func (p *Parser) parseForallGd(nested func(*Parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
@@ -251,7 +251,7 @@ func (p *Parser) parseForallExpr(nested func(*Parser) Formula) Formula {
 	return res
 }
 
-func (p *Parser) parseExistsExpr(nested func(*Parser) Formula) Formula {
+func (p *Parser) parseExistsGd(nested func(*Parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
@@ -325,7 +325,7 @@ func (p *Parser) parseForallEffect(nested func(*Parser) Formula) Formula {
 
 func (p *Parser) parseWhen(nested func(*Parser) Formula) Formula {
 	res := &WhenNode{
-		Condition: p.parseExpr(),
+		Condition: p.parseGd(),
 	}
 	res.Formula = nested(p)
 	p.expect(tokClose)
@@ -436,7 +436,7 @@ func (p *Parser) parseInitEl() Formula {
 func (p *Parser) parseGoal() Formula {
 	p.expect(tokOpen)
 	p.expectId(":goal")
-	g := p.parsePreExpr()
+	g := p.parsePreGd()
 	p.expect(tokClose)
 	return g
 }

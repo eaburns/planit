@@ -2,10 +2,7 @@ package prob
 
 // Ground operators
 
-import (
-	"fmt"
-	"reflect"
-)
+import "fmt"
 
 type Operator struct {
 	Name     string
@@ -69,7 +66,7 @@ func gatherEffects(f Formula) (ueffs []Literal, ceffs []CondEffect) {
 		case FalseNode:
 			// Ignore
 		default:
-			panic(fmt.Sprintf("gatherEffects: unexpected node type: %v", f))
+			panic(fmt.Sprintf("gatherEffects: unexpected node type: %T", f))
 		}
 	}
 	return
@@ -88,8 +85,7 @@ func gatherLits(f Formula) (lits []Literal) {
 	case *AssignNode:
 		// Ignore an assignment
 	default:
-		tname := reflect.TypeOf(f).String()
-		panic(fmt.Sprintf("gatherLits: unexpected node type: %s", tname))
+		panic(fmt.Sprintf("gatherLits: unexpected node type: %T", f))
 	}
 	return
 }

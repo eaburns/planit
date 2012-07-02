@@ -37,20 +37,18 @@ func main() {
 		return
 	}
 
-	parser, err := pddl.NewParserFile(*dpath)
+	d, err := pddl.ParseDomain(*dpath)
 	if err != nil {
 		panic(err)
 	}
-	d := parser.ParseDomain()
 	if *dump {
 		fmt.Printf("%+v\n", d)
 	}
 
-	parser, err = pddl.NewParserFile(*ppath)
+	p, err := pddl.ParseProblem(*ppath)
 	if err != nil {
 		panic(err)
 	}
-	p := parser.ParseProblem()
 	if *dump {
 		fmt.Printf("%+v\n", p)
 	}

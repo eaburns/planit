@@ -2,7 +2,11 @@ package pddl
 
 import . "planit/prob"
 
-func (p *parser) ParseDomain() *Domain {
+func ParseDomain(path string) (*Domain, error) {
+	p, err := newParserFile(path)
+	if err != nil {
+		return nil, err
+	}
 	p.expect(tokOpen)
 	p.expectId("define")
 	d := &Domain{
@@ -28,7 +32,7 @@ func (p *parser) ParseDomain() *Domain {
 	}
 
 	p.expect(tokClose)
-	return d
+	return d, nil
 }
 
 func parseDomainName(p *parser) string {
@@ -370,7 +374,11 @@ func parseFexp(p *parser) string {
 	return p.expect(tokNum).text
 }
 
-func (p *parser) ParseProblem() *Problem {
+func ParseProblem(path string) (*Problem, error) {
+	p, err := newParserFile(path)
+	if err != nil {
+		return nil, err
+	}
 	p.expect(tokOpen)
 	p.expectId("define")
 	prob := &Problem{
@@ -383,7 +391,7 @@ func (p *parser) ParseProblem() *Problem {
 		Metric:       parseMetric(p),
 	}
 	p.expect(tokClose)
-	return prob
+	return prob, nil
 }
 
 func parseProbName(p *parser) string {

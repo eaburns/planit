@@ -26,9 +26,9 @@ func (p *parser) next() token {
 	return t
 }
 
-// NewParserFile returns a new parser that parses
+// newParserFile returns a new parser that parses
 // a PDDL file.
-func NewParserFile(path string) (*parser, error) {
+func newParserFile(path string) (*parser, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

@@ -71,7 +71,7 @@ type Predicate struct {
 	Parameters []TypedName
 }
 
-type Term struct{
+type Term struct {
 	Name
 	Variable bool
 }
@@ -105,7 +105,7 @@ type FalseNode struct{}
 
 type Literal struct {
 	Predicate  Name
-	Num int
+	Num        int
 	Positive   bool
 	Parameters []Term
 	LeafNode

@@ -2,8 +2,8 @@ package pddl
 
 import (
 	"fmt"
+	. "planit/prob"
 	"log"
-	. "goplan/prob"
 )
 
 type Parser struct {

@@ -1,10 +1,10 @@
 package pddl
 
 import (
-	"strings"
 	"fmt"
-	"utf8"
+	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 type tokenType int
@@ -38,7 +38,7 @@ var (
 		tokNum:   "number",
 	}
 
-	runeToks = map[int]tokenType{
+	runeToks = map[rune]tokenType{
 		'(': tokOpen,
 		')': tokClose,
 		'-': tokMinus,
@@ -57,7 +57,7 @@ type token struct {
 
 func (t token) String() string {
 
-	if _, ok := runeToks[int(t.typ)]; ok {
+	if _, ok := runeToks[rune(t.typ)]; ok {
 		return fmt.Sprintf("%v", t.typ)
 	}
 	if len(t.txt) > 10 {
@@ -83,17 +83,17 @@ func Lex(name, txt string) *Lexer {
 	}
 }
 
-func (l *Lexer) next() (rune int) {
+func (l *Lexer) next() (r rune) {
 	if l.pos >= len(l.txt) {
 		l.width = 0
 		return eof
 	}
-	rune, l.width = utf8.DecodeRuneInString(l.txt[l.pos:])
+	r, l.width = utf8.DecodeRuneInString(l.txt[l.pos:])
 	l.pos += l.width
-	if rune == '\n' {
+	if r == '\n' {
 		l.lineno++
 	}
-	return rune
+	return
 }
 
 func (l *Lexer) backup() {
@@ -103,7 +103,7 @@ func (l *Lexer) backup() {
 	l.pos -= l.width
 }
 
-func (l *Lexer) peek() int {
+func (l *Lexer) peek() rune {
 	r := l.next()
 	l.backup()
 	return r
@@ -153,13 +153,13 @@ func (l *Lexer) token() token {
 		case r == ';':
 			l.lexComment()
 			continue
-		case isAlpha(r):
+		case r == '_' || unicode.IsLetter(r):
 			return l.lexIdent(tokId)
 		case r == '?':
 			return l.lexIdent(tokQid)
 		case r == ':':
 			return l.lexIdent(tokCid)
-		case isNum(r):
+		case unicode.IsDigit(r):
 			return l.lexNum()
 		default:
 			return l.errorf("unexpected token in input: %c", r)
@@ -169,7 +169,9 @@ func (l *Lexer) token() token {
 }
 
 func (l *Lexer) lexIdent(t tokenType) token {
-	for isIdRune(l.next()) {
+	r := l.next()
+	for !unicode.IsSpace(r) && r != ')' {
+		r = l.next()
 	}
 	l.backup()
 	return l.makeToken(t)
@@ -190,16 +192,4 @@ func (l *Lexer) lexComment() {
 	for t := l.next(); t != '\n'; t = l.next() {
 	}
 	l.junk()
-}
-
-func isAlpha(r int) bool {
-	return r == '_' || unicode.IsLetter(r)
-}
-
-func isNum(r int) bool {
-	return unicode.IsDigit(r)
-}
-
-func isIdRune(r int) bool {
-	return !unicode.IsSpace(r) && r != ')'
 }

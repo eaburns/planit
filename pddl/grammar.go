@@ -1,6 +1,6 @@
 package pddl
 
-import . "goplan/prob"
+import . "planit/prob"
 
 func (p *Parser) ParseDomain() *Domain {
 	p.expect(tokOpen)

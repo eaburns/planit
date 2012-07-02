@@ -1,8 +1,8 @@
 package prob
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 )
 
 func (d *Domain) String() string {

@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"flag"
+	"fmt"
+	"planit/pddl"
+	"planit/prob"
 	"io/ioutil"
 	"log"
+	"os"
 	"runtime/pprof"
-	"goplan/pddl"
-	"goplan/prob"
 )
 
 var dpath = flag.String("d", "", "The PDDL domain file")
@@ -57,7 +57,7 @@ func main() {
 	var _ = prob.Ground(d, p)
 }
 
-func domain() (*prob.Domain, os.Error) {
+func domain() (*prob.Domain, error) {
 	file, err := os.Open(*dpath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open domain file %s: %s", *dpath, err)
@@ -70,14 +70,14 @@ func domain() (*prob.Domain, os.Error) {
 	return p.ParseDomain(), nil
 }
 
-func problem() (*prob.Problem, os.Error) {
+func problem() (*prob.Problem, error) {
 	file, err := os.Open(*ppath)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to open problem file %s: %s", *dpath, err)
+		return nil, fmt.Errorf("Failed to open problem file %s: %s", *ppath, err)
 	}
 	s, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read problem file %s: %s", *dpath, err)
+		return nil, fmt.Errorf("Failed to read problem file %s: %s", *ppath, err)
 	}
 	p := pddl.Parse(pddl.Lex(*ppath, string(s)))
 	return p.ParseProblem(), nil

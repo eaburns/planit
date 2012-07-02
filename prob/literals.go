@@ -2,14 +2,14 @@ package prob
 
 // A hash table for interning literals
 
-import "rand"
+import "math/rand"
 
-const literalTabSz = 104729	// prime, should be large enough
+const literalTabSz = 104729 // prime, should be large enough
 
-type literalTable struct{
+type literalTable struct {
 	hashVec [][]uint64
 	interns [literalTabSz][]*Literal
-	byNum []*Literal
+	byNum   []*Literal
 }
 
 func (tab *literalTable) intern(l *Literal) *Literal {
@@ -34,7 +34,7 @@ func (a *Literal) eq(b *Literal) bool {
 	}
 	for i := range a.Parameters {
 		if a.Parameters[i].Variable != b.Parameters[i].Variable ||
-				a.Parameters[i].Num != b.Parameters[i].Num {
+			a.Parameters[i].Num != b.Parameters[i].Num {
 			return false
 		}
 	}
@@ -51,7 +51,7 @@ func (tab *literalTable) hash(l *Literal) uint64 {
 	}
 
 	for i := range l.Parameters {
-		hash ^= tab.hvec(i + 2, l.Parameters[i].Number())
+		hash ^= tab.hvec(i+2, l.Parameters[i].Number())
 	}
 
 	return hash

@@ -2,7 +2,7 @@ package pddl
 
 import . "planit/prob"
 
-func (p *Parser) ParseDomain() *Domain {
+func (p *parser) ParseDomain() *Domain {
 	p.expect(tokOpen)
 	p.expectId("define")
 	d := &Domain{
@@ -31,25 +31,25 @@ func (p *Parser) ParseDomain() *Domain {
 	return d
 }
 
-func (p *Parser) parseDomainName() string {
+func (p *parser) parseDomainName() string {
 	p.expect(tokOpen)
 	p.expectId("domain")
 	n := p.expect(tokId)
 	p.expect(tokClose)
-	return n.txt
+	return n.text
 }
 
-func (p *Parser) parseReqsDef() (reqs []string) {
+func (p *parser) parseReqsDef() (reqs []string) {
 	if p.acceptNamedList(":requirements") {
 		for t, ok := p.accept(tokCid); ok; t, ok = p.accept(tokCid) {
-			reqs = append(reqs, t.txt)
+			reqs = append(reqs, t.text)
 		}
 		p.expect(tokClose)
 	}
 	return
 }
 
-func (p *Parser) parseTypesDef() (types []TypedName) {
+func (p *parser) parseTypesDef() (types []TypedName) {
 	if p.acceptNamedList(":types") {
 		types = p.parseTypedListString(tokId)
 		p.expect(tokClose)
@@ -67,7 +67,7 @@ func (p *Parser) parseTypesDef() (types []TypedName) {
 	return
 }
 
-func (p *Parser) parseConstsDef() (consts []TypedName) {
+func (p *parser) parseConstsDef() (consts []TypedName) {
 	if p.acceptNamedList(":constants") {
 		consts = p.parseTypedListString(tokId)
 		p.expect(tokClose)
@@ -75,7 +75,7 @@ func (p *Parser) parseConstsDef() (consts []TypedName) {
 	return
 }
 
-func (p *Parser) parsePredsDef() (Predicates []Predicate) {
+func (p *parser) parsePredsDef() (Predicates []Predicate) {
 	if p.acceptNamedList(":predicates") {
 		Predicates = append(Predicates, p.parseAtomicFormSkele())
 		for p.peek().typ == tokOpen {
@@ -86,23 +86,23 @@ func (p *Parser) parsePredsDef() (Predicates []Predicate) {
 	return
 }
 
-func (p *Parser) parseAtomicFormSkele() Predicate {
+func (p *parser) parseAtomicFormSkele() Predicate {
 	p.expect(tokOpen)
 	pred := Predicate{
-		Name:       p.name(p.expect(tokId).txt),
+		Name:       p.name(p.expect(tokId).text),
 		Parameters: p.parseTypedListString(tokQid),
 	}
 	p.expect(tokClose)
 	return pred
 }
 
-func (p *Parser) parseActionDef() Action {
+func (p *parser) parseActionDef() Action {
 	p.expect(tokOpen)
 	p.expectId(":action")
 
-	act := Action{Name: p.expect(tokId).txt, Parameters: p.parseActParms()}
+	act := Action{Name: p.expect(tokId).text, Parameters: p.parseActParms()}
 
-	if p.peek().txt == ":precondition" {
+	if p.peek().text == ":precondition" {
 		p.junk(1)
 		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
 			p.junk(2)
@@ -110,7 +110,7 @@ func (p *Parser) parseActionDef() Action {
 			act.Precondition = p.parsePreGd()
 		}
 	}
-	if p.peek().txt == ":effect" {
+	if p.peek().text == ":effect" {
 		p.junk(1)
 		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
 			p.junk(2)
@@ -123,7 +123,7 @@ func (p *Parser) parseActionDef() Action {
 	return act
 }
 
-func (p *Parser) parseActParms() []TypedName {
+func (p *parser) parseActParms() []TypedName {
 	p.expectId(":parameters")
 	p.expect(tokOpen)
 	res := p.parseTypedListString(tokQid)
@@ -131,28 +131,28 @@ func (p *Parser) parseActParms() []TypedName {
 	return res
 }
 
-func (p *Parser) parsePreGd() (res Formula) {
+func (p *parser) parsePreGd() (res Formula) {
 	switch {
 	case p.acceptNamedList("and"):
-		res = p.parseAndGd((*Parser).parsePreGd)
+		res = p.parseAndGd((*parser).parsePreGd)
 	case p.acceptNamedList("forall"):
-		res = p.parseForallGd((*Parser).parsePreGd)
+		res = p.parseForallGd((*parser).parsePreGd)
 	default:
 		res = p.parsePrefGd()
 	}
 	return
 }
 
-func (p *Parser) parsePrefGd() Formula {
+func (p *parser) parsePrefGd() Formula {
 	return p.parseGd()
 }
 
-func (p *Parser) parseGd() (res Formula) {
+func (p *parser) parseGd() (res Formula) {
 	switch {
 	case p.acceptNamedList("and"):
-		res = p.parseAndGd((*Parser).parseGd)
+		res = p.parseAndGd((*parser).parseGd)
 	case p.acceptNamedList("or"):
-		res = p.parseOrGd((*Parser).parseGd)
+		res = p.parseOrGd((*parser).parseGd)
 	case p.acceptNamedList("not"):
 		res = &NotNode{UnaryNode{Formula: p.parseGd()}}
 		p.expect(tokClose)
@@ -165,16 +165,16 @@ func (p *Parser) parseGd() (res Formula) {
 		}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
-		res = p.parseExistsGd((*Parser).parseGd)
+		res = p.parseExistsGd((*parser).parseGd)
 	case p.acceptNamedList("forall"):
-		res = p.parseForallGd((*Parser).parseGd)
+		res = p.parseForallGd((*parser).parseGd)
 	default:
 		res = p.parseLiteral()
 	}
 	return
 }
 
-func (p *Parser) parseLiteral() *Literal {
+func (p *parser) parseLiteral() *Literal {
 	pos := true
 	if p.acceptNamedList("not") {
 		pos = false
@@ -182,7 +182,7 @@ func (p *Parser) parseLiteral() *Literal {
 	}
 	p.expect(tokOpen)
 	res := &Literal{
-		Predicate:  p.name(p.expect(tokId).txt),
+		Predicate:  p.name(p.expect(tokId).text),
 		Positive:   pos,
 		Parameters: p.parseTerms(),
 	}
@@ -190,14 +190,14 @@ func (p *Parser) parseLiteral() *Literal {
 	return res
 }
 
-func (p *Parser) parseTerms() (lst []Term) {
+func (p *parser) parseTerms() (lst []Term) {
 	for {
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, Term{Name: p.name(t.txt)})
+			lst = append(lst, Term{Name: p.name(t.text)})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, Term{Name: p.name(t.txt), Variable: true})
+			lst = append(lst, Term{Name: p.name(t.text), Variable: true})
 			continue
 		}
 		break
@@ -205,7 +205,7 @@ func (p *Parser) parseTerms() (lst []Term) {
 	return
 }
 
-func (p *Parser) parseAndGd(nested func(*Parser) Formula) Formula {
+func (p *parser) parseAndGd(nested func(*parser) Formula) Formula {
 	conj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
@@ -218,7 +218,7 @@ func (p *Parser) parseAndGd(nested func(*Parser) Formula) Formula {
 	return e
 }
 
-func (p *Parser) parseOrGd(nested func(*Parser) Formula) Formula {
+func (p *parser) parseOrGd(nested func(*parser) Formula) Formula {
 	disj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		disj = append(disj, nested(p))
@@ -231,7 +231,7 @@ func (p *Parser) parseOrGd(nested func(*Parser) Formula) Formula {
 	return e
 }
 
-func (p *Parser) parseForallGd(nested func(*Parser) Formula) Formula {
+func (p *parser) parseForallGd(nested func(*parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
@@ -251,7 +251,7 @@ func (p *Parser) parseForallGd(nested func(*Parser) Formula) Formula {
 	return res
 }
 
-func (p *Parser) parseExistsGd(nested func(*Parser) Formula) Formula {
+func (p *parser) parseExistsGd(nested func(*parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
@@ -271,14 +271,14 @@ func (p *Parser) parseExistsGd(nested func(*Parser) Formula) Formula {
 	return res
 }
 
-func (p *Parser) parseEffect() Formula {
+func (p *parser) parseEffect() Formula {
 	if p.acceptNamedList("and") {
-		return p.parseAndEffect((*Parser).parseCeffect)
+		return p.parseAndEffect((*parser).parseCeffect)
 	}
 	return p.parseCeffect()
 }
 
-func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
+func (p *parser) parseAndEffect(nested func(*parser) Formula) Formula {
 	conj := make([]Formula, 0)
 	for p.peek().typ == tokOpen {
 		conj = append(conj, nested(p))
@@ -291,19 +291,19 @@ func (p *Parser) parseAndEffect(nested func(*Parser) Formula) Formula {
 	return e
 }
 
-func (p *Parser) parseCeffect() (res Formula) {
+func (p *parser) parseCeffect() (res Formula) {
 	switch {
 	case p.acceptNamedList("forall"):
-		res = p.parseForallEffect((*Parser).parseEffect)
+		res = p.parseForallEffect((*parser).parseEffect)
 	case p.acceptNamedList("when"):
-		res = p.parseWhen((*Parser).parseCondEffect)
+		res = p.parseWhen((*parser).parseCondEffect)
 	default:
 		res = p.parsePeffect()
 	}
 	return
 }
 
-func (p *Parser) parseForallEffect(nested func(*Parser) Formula) Formula {
+func (p *parser) parseForallEffect(nested func(*parser) Formula) Formula {
 	p.expect(tokOpen)
 	vrs := p.parseTypedListString(tokQid)
 	p.expect(tokClose)
@@ -323,7 +323,7 @@ func (p *Parser) parseForallEffect(nested func(*Parser) Formula) Formula {
 	return res
 }
 
-func (p *Parser) parseWhen(nested func(*Parser) Formula) Formula {
+func (p *parser) parseWhen(nested func(*parser) Formula) Formula {
 	res := &WhenNode{
 		Condition: p.parseGd(),
 	}
@@ -332,17 +332,17 @@ func (p *Parser) parseWhen(nested func(*Parser) Formula) Formula {
 	return res
 }
 
-func (p *Parser) parsePeffect() Formula {
-	if _, ok := AssignOps[p.peekn(2).txt]; ok && p.peek().typ == tokOpen {
+func (p *parser) parsePeffect() Formula {
+	if _, ok := AssignOps[p.peekn(2).text]; ok && p.peek().typ == tokOpen {
 		return p.parseAssign()
 	}
 	return p.parseLiteral()
 }
 
-func (p *Parser) parseAssign() Formula {
+func (p *parser) parseAssign() Formula {
 	p.expect(tokOpen)
 	res := &AssignNode{
-		Op:   AssignOps[p.expect(tokId).txt],
+		Op:   AssignOps[p.expect(tokId).text],
 		Lval: p.parseFhead(),
 		Rval: p.parseFexp(),
 	}
@@ -350,27 +350,27 @@ func (p *Parser) parseAssign() Formula {
 	return res
 }
 
-func (p *Parser) parseCondEffect() Formula {
+func (p *parser) parseCondEffect() Formula {
 	if p.acceptNamedList("and") {
-		return p.parseAndEffect((*Parser).parsePeffect)
+		return p.parseAndEffect((*parser).parsePeffect)
 	}
 	return p.parsePeffect()
 }
 
-func (p *Parser) parseFhead() string {
+func (p *parser) parseFhead() string {
 	if _, ok := p.accept(tokOpen); !ok {
-		return p.expect(tokId).txt
+		return p.expect(tokId).text
 	}
-	name := p.expect(tokId).txt
+	name := p.expect(tokId).text
 	p.expect(tokClose)
 	return name
 }
 
-func (p *Parser) parseFexp() string {
-	return p.expect(tokNum).txt
+func (p *parser) parseFexp() string {
+	return p.expect(tokNum).text
 }
 
-func (p *Parser) ParseProblem() *Problem {
+func (p *parser) ParseProblem() *Problem {
 	p.expect(tokOpen)
 	p.expectId("define")
 	prob := &Problem{
@@ -386,23 +386,23 @@ func (p *Parser) ParseProblem() *Problem {
 	return prob
 }
 
-func (p *Parser) parseProbName() string {
+func (p *parser) parseProbName() string {
 	p.expect(tokOpen)
 	p.expectId("problem")
-	name := p.expect(tokId).txt
+	name := p.expect(tokId).text
 	p.expect(tokClose)
 	return name
 }
 
-func (p *Parser) parseProbDomain() string {
+func (p *parser) parseProbDomain() string {
 	p.expect(tokOpen)
 	p.expectId(":domain")
-	name := p.expect(tokId).txt
+	name := p.expect(tokId).text
 	p.expect(tokClose)
 	return name
 }
 
-func (p *Parser) parseObjsDecl() (objs []TypedName) {
+func (p *parser) parseObjsDecl() (objs []TypedName) {
 	if p.acceptNamedList(":objects") {
 		objs = p.parseTypedListString(tokId)
 		p.expect(tokClose)
@@ -410,7 +410,7 @@ func (p *Parser) parseObjsDecl() (objs []TypedName) {
 	return
 }
 
-func (p *Parser) parseInit() (els []Formula) {
+func (p *parser) parseInit() (els []Formula) {
 	p.expect(tokOpen)
 	p.expectId(":init")
 	for p.peek().typ == tokOpen {
@@ -420,12 +420,12 @@ func (p *Parser) parseInit() (els []Formula) {
 	return
 }
 
-func (p *Parser) parseInitEl() Formula {
+func (p *parser) parseInitEl() Formula {
 	if p.acceptNamedList("=") {
 		eq := &AssignNode{
 			Op:   OpAssign,
 			Lval: p.parseFhead(),
-			Rval: p.expect(tokNum).txt,
+			Rval: p.expect(tokNum).text,
 		}
 		p.expect(tokClose)
 		return eq
@@ -433,7 +433,7 @@ func (p *Parser) parseInitEl() Formula {
 	return p.parseLiteral()
 }
 
-func (p *Parser) parseGoal() Formula {
+func (p *parser) parseGoal() Formula {
 	p.expect(tokOpen)
 	p.expectId(":goal")
 	g := p.parsePreGd()
@@ -441,7 +441,7 @@ func (p *Parser) parseGoal() Formula {
 	return g
 }
 
-func (p *Parser) parseMetric() (m Metric) {
+func (p *parser) parseMetric() (m Metric) {
 	if p.acceptNamedList(":metric") {
 		m = MetricMinCost
 		p.expectId("minimize")
@@ -453,7 +453,7 @@ func (p *Parser) parseMetric() (m Metric) {
 	return
 }
 
-func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
+func (p *parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 	for {
 		names := p.parseStrings(typ)
 		if len(names) == 0 {
@@ -468,7 +468,7 @@ func (p *Parser) parseTypedListString(typ tokenType) (lst []TypedName) {
 	return lst
 }
 
-func (p *Parser) parseType() (typ []Name) {
+func (p *parser) parseType() (typ []Name) {
 	if _, ok := p.accept(tokMinus); !ok {
 		return []Name{p.name("object")}
 	}
@@ -481,22 +481,22 @@ func (p *Parser) parseType() (typ []Name) {
 		return typ
 	}
 	t := p.expect(tokId)
-	return []Name{p.name(t.txt)}
+	return []Name{p.name(t.text)}
 }
 
-func (p *Parser) parseStringPlus(typ tokenType) []string {
-	lst := []string{p.expect(typ).txt}
+func (p *parser) parseStringPlus(typ tokenType) []string {
+	lst := []string{p.expect(typ).text}
 	lst = append(lst, p.parseStrings(typ)...)
 	return lst
 }
 
-func (p *Parser) parseStrings(typ tokenType) (lst []string) {
+func (p *parser) parseStrings(typ tokenType) (lst []string) {
 	for t, ok := p.accept(typ); ok; t, ok = p.accept(typ) {
-		lst = append(lst, t.txt)
+		lst = append(lst, t.text)
 	}
 	return lst
 }
 
-func (p *Parser) name(txt string) Name {
-	return MakeName(txt, p.loc())
+func (p *parser) name(text string) Name {
+	return MakeName(text, p.loc())
 }

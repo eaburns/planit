@@ -4,15 +4,19 @@ import (
 	"fmt"
 	. "planit/prob"
 	"log"
+	"os"
+	"io/ioutil"
 )
 
-type Parser struct {
-	lex    *Lexer
+// A parser parses PDDL.
+type parser struct {
+	lex    *lexer
 	peeks  [2]token
 	npeeks int
 }
 
-func (p *Parser) next() token {
+// next returns the next lexical token from the parser.
+func (p *parser) next() token {
 	if p.npeeks == 0 {
 		return p.lex.token()
 	}
@@ -22,24 +26,32 @@ func (p *Parser) next() token {
 	return t
 }
 
-func Parse(lex *Lexer) *Parser {
-	return &Parser{
-		lex: lex,
+// NewParserFile returns a new parser that parses
+// a PDDL file.
+func NewParserFile(path string) (*parser, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
 	}
+	text, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	return &parser{ lex: newLexer(path, string(text)) }, nil
 }
 
-func (p *Parser) loc() Loc {
+func (p *parser) loc() Loc {
 	return Loc{p.lex.name, p.lex.lineno}
 }
 
-func (p *Parser) errorf(format string, args ...interface{}) {
+func (p *parser) errorf(format string, args ...interface{}) {
 	log.Panicf("%s: %s", p.loc(), fmt.Sprintf(format, args...))
 }
 
 // peek at the nth token
-func (p *Parser) peekn(n int) token {
+func (p *parser) peekn(n int) token {
 	if n > len(p.peeks) {
-		panic("Too much peeking in the Parser")
+		panic("Too much peeking in the parser")
 	}
 	for ; p.npeeks < n; p.npeeks++ {
 		p.peeks[p.npeeks] = p.lex.token()
@@ -47,17 +59,17 @@ func (p *Parser) peekn(n int) token {
 	return p.peeks[n-1]
 }
 
-func (p *Parser) peek() token {
+func (p *parser) peek() token {
 	return p.peekn(1)
 }
 
-func (p *Parser) junk(n int) {
+func (p *parser) junk(n int) {
 	for i := 0; i < n; i++ {
 		p.next()
 	}
 }
 
-func (p *Parser) accept(typ tokenType) (t token, ok bool) {
+func (p *parser) accept(typ tokenType) (t token, ok bool) {
 	if p.peek().typ == typ {
 		t = p.next()
 		ok = true
@@ -65,15 +77,15 @@ func (p *Parser) accept(typ tokenType) (t token, ok bool) {
 	return
 }
 
-func (p *Parser) acceptNamedList(name string) bool {
-	if p.peek().typ != tokOpen || p.peekn(2).txt != name {
+func (p *parser) acceptNamedList(name string) bool {
+	if p.peek().typ != tokOpen || p.peekn(2).text != name {
 		return false
 	}
 	p.junk(2)
 	return true
 }
 
-func (p *Parser) expect(typ tokenType) token {
+func (p *parser) expect(typ tokenType) token {
 	t := p.peek()
 	if t.typ != typ {
 		p.errorf("expected %v, got %v", typ, t)
@@ -81,7 +93,7 @@ func (p *Parser) expect(typ tokenType) token {
 	return p.next()
 }
 
-func (p *Parser) expectId(s string) token {
+func (p *parser) expectId(s string) token {
 	t := p.peek()
 	typ := tokId
 	if s[0] == ':' {
@@ -89,7 +101,7 @@ func (p *Parser) expectId(s string) token {
 	} else if s[0] == '?' {
 		typ = tokQid
 	}
-	if t.typ != typ || t.txt != s {
+	if t.typ != typ || t.text != s {
 		p.errorf("expected identifier [\"%s\"], got %v", s, t)
 	}
 	return p.next()

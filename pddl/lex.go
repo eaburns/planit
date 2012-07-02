@@ -7,10 +7,11 @@ import (
 	"unicode/utf8"
 )
 
-type tokenType int
-
 const eof = -1
 const whiteSpace = " \t\n\r"
+
+// tokenType is the type tag for a scanned token.
+type tokenType int
 
 const (
 	tokEof   tokenType = eof
@@ -50,45 +51,50 @@ func (t tokenType) String() string {
 	return tokenTypeNames[t]
 }
 
+// token is a scanned token from a PDDL input.
 type token struct {
 	typ tokenType
-	txt string
+	text string
 }
 
 func (t token) String() string {
-
 	if _, ok := runeToks[rune(t.typ)]; ok {
 		return fmt.Sprintf("%v", t.typ)
 	}
-	if len(t.txt) > 10 {
-		return fmt.Sprintf("%v [%10q...]", t.typ, t.txt)
+	if len(t.text) > 10 {
+		return fmt.Sprintf("%v [%10q...]", t.typ, t.text)
 	}
-	return fmt.Sprintf("%v [%q]", t.typ, t.txt)
+	return fmt.Sprintf("%v [%q]", t.typ, t.text)
 }
 
-type Lexer struct {
+// A lexer holds information and performs lexical
+// analysis of a PDDL input.
+type lexer struct {
 	name   string
-	txt    string
+	text    string
 	start  int
 	pos    int
 	lineno int
 	width  int
 }
 
-func Lex(name, txt string) *Lexer {
-	return &Lexer{
+// newLexer returns a new lexer that returns tokens
+// for the given PDDL string.
+func newLexer(name, text string) *lexer {
+	return &lexer{
 		name:   name,
-		txt:    txt,
+		text:    text,
 		lineno: 1,
 	}
 }
 
-func (l *Lexer) next() (r rune) {
-	if l.pos >= len(l.txt) {
+// next consumes and returns the next rune.
+func (l *lexer) next() (r rune) {
+	if l.pos >= len(l.text) {
 		l.width = 0
 		return eof
 	}
-	r, l.width = utf8.DecodeRuneInString(l.txt[l.pos:])
+	r, l.width = utf8.DecodeRuneInString(l.text[l.pos:])
 	l.pos += l.width
 	if r == '\n' {
 		l.lineno++
@@ -96,24 +102,32 @@ func (l *Lexer) next() (r rune) {
 	return
 }
 
-func (l *Lexer) backup() {
-	if strings.HasPrefix(l.txt[l.pos-l.width:l.pos], "\n") {
+// backup returns the last rune that was scanned so that
+// it will be returned by the next call to next().  backup
+// can only be called once per call to next.
+func (l *lexer) backup() {
+	if strings.HasPrefix(l.text[l.pos-l.width:l.pos], "\n") {
 		l.lineno--
 	}
 	l.pos -= l.width
 }
 
-func (l *Lexer) peek() rune {
+// peek returns the next rune without consuming it.
+func (l *lexer) peek() rune {
 	r := l.next()
 	l.backup()
 	return r
 }
 
-func (l *Lexer) junk() {
+// junk consumes the next rune.
+func (l *lexer) junk() {
 	l.start = l.pos
 }
 
-func (l *Lexer) accept(s string) bool {
+// accept returns true if the next rune is any of the
+// runes in the given string.  If accept returns true
+// then the rune is consumed.
+func (l *lexer) accept(s string) bool {
 	if strings.IndexRune(s, l.next()) >= 0 {
 		return true
 	}
@@ -121,24 +135,34 @@ func (l *Lexer) accept(s string) bool {
 	return false
 }
 
-func (l *Lexer) acceptRun(s string) (any bool) {
+// acceptRun returns true if the next rune is any of
+// the runse in the given string.  If acceptRun returns
+// true then all of the next consecutive runes in the
+// input that match a rune in the string are consumed.
+func (l *lexer) acceptRun(s string) (any bool) {
 	for acc := l.accept(s); acc; acc = l.accept(s) {
 		any = true
 	}
 	return
 }
 
-func (l *Lexer) makeToken(t tokenType) token {
-	tok := token{txt: l.txt[l.start:l.pos], typ: t}
+// makeToken returns a token with the given type
+// where the text is that between the start and current
+// positions of the lexer.
+func (l *lexer) makeToken(t tokenType) token {
+	tok := token{text: l.text[l.start:l.pos], typ: t}
 	l.start = l.pos
 	return tok
 }
 
-func (l *Lexer) errorf(format string, args ...interface{}) token {
-	return token{typ: tokErr, txt: fmt.Sprintf(format, args...)}
+// errorf returns a token of type tokErr with the text
+// given by the format.
+func (l *lexer) errorf(format string, args ...interface{}) token {
+	return token{typ: tokErr, text: fmt.Sprintf(format, args...)}
 }
 
-func (l *Lexer) token() token {
+// token returns the next token scanned from the PDDL.
+func (l *lexer) token() token {
 	for {
 		r := l.next()
 		if typ, ok := runeToks[r]; ok {
@@ -168,7 +192,7 @@ func (l *Lexer) token() token {
 	panic("Unreachable")
 }
 
-func (l *Lexer) lexIdent(t tokenType) token {
+func (l *lexer) lexIdent(t tokenType) token {
 	r := l.next()
 	for !unicode.IsSpace(r) && r != ')' {
 		r = l.next()
@@ -177,7 +201,7 @@ func (l *Lexer) lexIdent(t tokenType) token {
 	return l.makeToken(t)
 }
 
-func (l *Lexer) lexNum() token {
+func (l *lexer) lexNum() token {
 	digits := "0123456789"
 	l.acceptRun(digits)
 	l.accept(".")
@@ -188,7 +212,7 @@ func (l *Lexer) lexNum() token {
 	return l.makeToken(tokNum)
 }
 
-func (l *Lexer) lexComment() {
+func (l *lexer) lexComment() {
 	for t := l.next(); t != '\n'; t = l.next() {
 	}
 	l.junk()

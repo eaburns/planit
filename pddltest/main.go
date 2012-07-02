@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"planit/pddl"
 	"planit/prob"
-	"io/ioutil"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -38,47 +37,23 @@ func main() {
 		return
 	}
 
-	d, err := domain()
+	parser, err := pddl.NewParserFile(*dpath)
 	if err != nil {
 		panic(err)
 	}
+	d := parser.ParseDomain()
 	if *dump {
 		fmt.Printf("%+v\n", d)
 	}
 
-	p, err := problem()
+	parser, err = pddl.NewParserFile(*ppath)
 	if err != nil {
 		panic(err)
 	}
+	p := parser.ParseProblem()
 	if *dump {
 		fmt.Printf("%+v\n", p)
 	}
 
 	var _ = prob.Ground(d, p)
-}
-
-func domain() (*prob.Domain, error) {
-	file, err := os.Open(*dpath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to open domain file %s: %s", *dpath, err)
-	}
-	s, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read domain file %s: %s", *dpath, err)
-	}
-	p := pddl.Parse(pddl.Lex(*dpath, string(s)))
-	return p.ParseDomain(), nil
-}
-
-func problem() (*prob.Problem, error) {
-	file, err := os.Open(*ppath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to open problem file %s: %s", *ppath, err)
-	}
-	s, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read problem file %s: %s", *ppath, err)
-	}
-	p := pddl.Parse(pddl.Lex(*ppath, string(s)))
-	return p.ParseProblem(), nil
 }

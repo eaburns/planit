@@ -15,17 +15,6 @@ type parser struct {
 	npeeks int
 }
 
-// next returns the next lexical token from the parser.
-func (p *parser) next() token {
-	if p.npeeks == 0 {
-		return p.lex.token()
-	}
-	t := p.peeks[0]
-	copy(p.peeks[:], p.peeks[1:])
-	p.npeeks--
-	return t
-}
-
 // newParserFile returns a new parser that parses
 // a PDDL file.
 func newParserFile(path string) (*parser, error) {
@@ -38,6 +27,17 @@ func newParserFile(path string) (*parser, error) {
 		return nil, err
 	}
 	return &parser{lex: newLexer(path, string(text))}, nil
+}
+
+// next returns the next lexical token from the parser.
+func (p *parser) next() token {
+	if p.npeeks == 0 {
+		return p.lex.token()
+	}
+	t := p.peeks[0]
+	copy(p.peeks[:], p.peeks[1:])
+	p.npeeks--
+	return t
 }
 
 func (p *parser) loc() Loc {

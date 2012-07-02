@@ -53,7 +53,7 @@ func (t tokenType) String() string {
 
 // token is a scanned token from a PDDL input.
 type token struct {
-	typ tokenType
+	typ  tokenType
 	text string
 }
 
@@ -71,7 +71,7 @@ func (t token) String() string {
 // analysis of a PDDL input.
 type lexer struct {
 	name   string
-	text    string
+	text   string
 	start  int
 	pos    int
 	lineno int
@@ -83,7 +83,7 @@ type lexer struct {
 func newLexer(name, text string) *lexer {
 	return &lexer{
 		name:   name,
-		text:    text,
+		text:   text,
 		lineno: 1,
 	}
 }

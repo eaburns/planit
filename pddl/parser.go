@@ -2,10 +2,10 @@ package pddl
 
 import (
 	"fmt"
-	. "planit/prob"
+	"io/ioutil"
 	"log"
 	"os"
-	"io/ioutil"
+	. "planit/prob"
 )
 
 // A parser parses PDDL.
@@ -37,7 +37,7 @@ func NewParserFile(path string) (*parser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &parser{ lex: newLexer(path, string(text)) }, nil
+	return &parser{lex: newLexer(path, string(text))}, nil
 }
 
 func (p *parser) loc() Loc {

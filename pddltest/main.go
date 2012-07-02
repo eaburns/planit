@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"planit/pddl"
-	"planit/prob"
 	"log"
 	"os"
+	"planit/pddl"
+	"planit/prob"
 	"runtime/pprof"
 )
 

@@ -1,21 +1,34 @@
 package pddl
 
-import . "planit/prob"
+import (
+	. "planit/prob"
+)
 
-func ParseDomain(path string) (*Domain, error) {
+// ParseDomain returns a *Domain parsed from
+// a PDDL file, or an error if the parse fails.
+func ParseDomain(path string) (d *Domain, err error) {
 	p, err := newParserFile(path)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			err, ok = r.(parseError)
+			if !ok {
+				panic(r)
+			}
+		}
+	}()
 	p.expect(tokOpen)
 	p.expectId("define")
-	d := &Domain{
-		Name:         parseDomainName(p),
-		Requirements: parseReqsDef(p),
-		Types:        parseTypesDef(p),
-		Constants:    parseConstsDef(p),
-		Predicates:   parsePredsDef(p),
-	}
+	d = new(Domain)
+	d.Name = parseDomainName(p)
+	d.Requirements = parseReqsDef(p)
+	d.Types = parseTypesDef(p)
+	d.Constants = parseConstsDef(p)
+	d.Predicates = parsePredsDef(p)
+
 	// Ignore :functions for now
 	if p.acceptNamedList(":functions") {
 		for nesting := 1; nesting > 0; {
@@ -374,22 +387,31 @@ func parseFexp(p *parser) string {
 	return p.expect(tokNum).text
 }
 
-func ParseProblem(path string) (*Problem, error) {
+func ParseProblem(path string) (prob *Problem, err error) {
 	p, err := newParserFile(path)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			err, ok = r.(parseError)
+			if !ok {
+				panic(r)
+			}
+		}
+	}()
 	p.expect(tokOpen)
 	p.expectId("define")
-	prob := &Problem{
-		Name:         parseProbName(p),
-		Domain:       parseProbDomain(p),
-		Requirements: parseReqsDef(p),
-		Objects:      parseObjsDecl(p),
-		Init:         parseInit(p),
-		Goal:         parseGoal(p),
-		Metric:       parseMetric(p),
-	}
+	prob = new(Problem)
+	prob.Name = parseProbName(p)
+	prob.Domain = parseProbDomain(p)
+	prob.Requirements = parseReqsDef(p)
+	prob.Objects = parseObjsDecl(p)
+	prob.Init = parseInit(p)
+	prob.Goal = parseGoal(p)
+	prob.Metric = parseMetric(p)
+
 	p.expect(tokClose)
 	return prob, nil
 }

@@ -3,7 +3,6 @@ package pddl
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	. "planit/prob"
 )
@@ -44,8 +43,14 @@ func (p *parser) loc() Loc {
 	return Loc{p.lex.name, p.lex.lineno}
 }
 
+type parseError string
+
+func (e parseError) Error() string {
+	return string(e)
+}
+
 func (p *parser) errorf(format string, args ...interface{}) {
-	log.Panicf("%s: %s", p.loc(), fmt.Sprintf(format, args...))
+	panic(parseError(fmt.Sprintf("%s: %s", p.loc(), fmt.Sprintf(format, args...))))
 }
 
 // peek at the nth token

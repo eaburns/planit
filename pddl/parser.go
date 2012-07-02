@@ -43,6 +43,8 @@ func (p *parser) loc() Loc {
 	return Loc{p.lex.name, p.lex.lineno}
 }
 
+// parseErrors are panicked by the parser
+// when a parser error is encountered.
 type parseError string
 
 func (e parseError) Error() string {

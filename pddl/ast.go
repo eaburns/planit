@@ -80,6 +80,9 @@ type Term struct {
 }
 
 type Formula interface{
+	// print prints the formula as valid PDDL
+	// to an io.Writed, prefixed with a string
+	// for indentation purposes.
 	print(io.Writer, string)
 }
 

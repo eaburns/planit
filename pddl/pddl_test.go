@@ -41,7 +41,6 @@ func TestParseProblem(t *testing.T) {
 	}
 }
 
-
 func TestPrintProblem(t *testing.T) {
 	file, err := os.Open(testProblemFile)
 	if err != nil {

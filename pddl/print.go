@@ -38,7 +38,7 @@ func PrintDomain(w io.Writer, d *Domain) {
 	}
 
 	for _, act := range d.Actions {
-		fmt.Fprintf(w, "%s(:action %s\n", indent+indent, act.Name)
+		fmt.Fprintf(w, "%s(:action %s\n", indent, act.Name)
 		fmt.Fprintf(w, "%s:parameters (", indent+indent+indent)
 		printTypedNames(w, "", act.Parameters)
 		fmt.Fprint(w, ")")

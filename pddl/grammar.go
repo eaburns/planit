@@ -1,9 +1,5 @@
 package pddl
 
-import (
-	. "planit/prob"
-)
-
 // ParseDomain returns a *Domain parsed from
 // a PDDL file, or an error if the parse fails.
 func ParseDomain(path string) (d *Domain, err error) {

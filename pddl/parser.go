@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	. "planit/prob"
 )
 
 // A parser parses PDDL.

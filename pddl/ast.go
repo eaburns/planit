@@ -1,4 +1,4 @@
-package prob
+package pddl
 
 import "fmt"
 
@@ -76,13 +76,7 @@ type Term struct {
 	Variable bool
 }
 
-type Formula interface {
-	assignNums(*symtab, *numFrame)
-	findInertia(*symtab)
-	expandQuants(*symtab, *expFrame) Formula
-	dnf() Formula
-	ensureDnf() // Panic if not in DNF
-}
+type Formula interface {}
 
 type LeafNode struct{}
 
@@ -146,4 +140,51 @@ type AssignNode struct {
 	Lval string // Just total-cost for now.
 	Rval string // Just a number
 	LeafNode
+}
+
+func Conjunct(l Formula, r Formula) Formula {
+	switch l.(type) {
+	case TrueNode:
+		return r
+	case FalseNode:
+		return FalseNode{}
+	}
+	switch r.(type) {
+	case TrueNode:
+		return l
+	case FalseNode:
+		return FalseNode{}
+	}
+	return &AndNode{BinaryNode{Left: l, Right: r}}
+}
+
+func Disjunct(l Formula, r Formula) Formula {
+	switch l.(type) {
+	case TrueNode:
+		return TrueNode{}
+	case FalseNode:
+		return r
+	}
+	switch r.(type) {
+	case TrueNode:
+		return TrueNode{}
+	case FalseNode:
+		return l
+	}
+	return &OrNode{BinaryNode{Left: l, Right: r}}
+}
+
+func Negate(e Formula) Formula {
+	switch n := e.(type) {
+	case TrueNode:
+		return FalseNode{}
+	case FalseNode:
+		return TrueNode{}
+	case *NotNode:
+		return n.Formula
+	case *Literal:
+		n.Positive = !n.Positive
+		return n
+	}
+	return &NotNode{UnaryNode{Formula: e}}
 }

@@ -2,8 +2,8 @@ package pddl
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
-	"os"
 )
 
 // A parser parses PDDL.
@@ -13,18 +13,14 @@ type parser struct {
 	npeeks int
 }
 
-// newParserFile returns a new parser that parses
-// a PDDL file.
-func newParserFile(path string) (*parser, error) {
-	file, err := os.Open(path)
+// newParser returns a new parser that parses
+// from the given io.Reader.
+func newParser(file string, r io.Reader) (*parser, error) {
+	text, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-	text, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-	return &parser{lex: newLexer(path, string(text))}, nil
+	return &parser{lex: newLexer(file, string(text))}, nil
 }
 
 // next returns the next lexical token from the parser.

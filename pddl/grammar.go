@@ -1,21 +1,25 @@
 package pddl
 
+import (
+	"io"
+)
+
 // ParseDomain returns a *Domain parsed from
 // a PDDL file, or an error if the parse fails.
-func ParseDomain(path string) (d *Domain, err error) {
-	p, err := newParserFile(path)
+func ParseDomain(file string, r io.Reader) (d *Domain, err error) {
+	p, err := newParser(file, r)
 	if err != nil {
 		return nil, err
 	}
-//	defer func() {
-//		if r := recover(); r != nil {
-//			var ok bool
-//			err, ok = r.(parseError)
-//			if !ok {
-//				panic(r)
-//			}
-//		}
-//	}()
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			err, ok = r.(parseError)
+			if !ok {
+				panic(r)
+			}
+		}
+	}()
 	p.expect(tokOpen)
 	p.expectId("define")
 	d = new(Domain)
@@ -319,8 +323,11 @@ func parseFexp(p *parser) string {
 	return p.expect(tokNum).text
 }
 
-func ParseProblem(path string) (prob *Problem, err error) {
-	p, err := newParserFile(path)
+// ParseProblem returns a Problem parsed from
+// the an io.Reader.  Returns the problem or an
+// error.
+func ParseProblem(file string, r io.Reader) (prob *Problem, err error) {
+	p, err := newParser(file, r)
 	if err != nil {
 		return nil, err
 	}

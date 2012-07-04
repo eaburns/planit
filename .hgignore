@@ -1,5 +1,0 @@
-syntax: glob
-*.pddl
-*.6
-*.a
-pddltest

@@ -467,5 +467,5 @@ func parseStrings(p *parser, typ tokenType) (lst []string) {
 }
 
 func parseName(p *parser, text string) Name {
-	return MakeName(text, p.loc())
+	return Name{ text, p.loc() }
 }

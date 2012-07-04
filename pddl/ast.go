@@ -33,16 +33,7 @@ const (
 
 type Name struct {
 	Str string
-	Num int
 	Loc Loc
-}
-
-func MakeName(s string, l Loc) Name {
-	return Name{Str: s, Num: -1, Loc: l}
-}
-
-func (n *Name) Number() int {
-	return n.Num
 }
 
 type Loc struct {
@@ -101,7 +92,6 @@ type QuantNode struct{
 
 type Literal struct {
 	Predicate  Name
-	Num        int
 	Positive   bool
 	Parameters []Term
 	LeafNode

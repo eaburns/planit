@@ -1,6 +1,9 @@
 package pddl
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
 
 type Domain struct {
 	Name         string
@@ -76,26 +79,22 @@ type Term struct {
 	Variable bool
 }
 
-type Formula interface {}
+type Formula interface{
+	print(io.Writer, string)
+}
 
 type LeafNode struct{}
 
-type BinaryNode struct {
-	Left, Right Formula
-}
+type UnaryNode struct{ Formula Formula }
 
-type UnaryNode struct {
-	Formula Formula
-}
+type BinaryNode struct{ Left, Right Formula }
 
-type QuantNode struct {
-	Variable TypedName
+type MultiNode struct{ Formula []Formula }
+
+type QuantNode struct{
+	Variables []TypedName
 	UnaryNode
 }
-
-type TrueNode struct{}
-
-type FalseNode struct{}
 
 type Literal struct {
 	Predicate  Name
@@ -105,10 +104,16 @@ type Literal struct {
 	LeafNode
 }
 
-type AndNode struct{ BinaryNode }
-type OrNode struct{ BinaryNode }
+type AndNode struct{ MultiNode }
+
+type OrNode struct{ MultiNode }
+
 type NotNode struct{ UnaryNode }
+
+type ImplyNode struct{ BinaryNode }
+
 type ForallNode struct{ QuantNode }
+
 type ExistsNode struct{ QuantNode }
 
 type WhenNode struct {
@@ -116,75 +121,18 @@ type WhenNode struct {
 	UnaryNode
 }
 
-type AssignOp int
-
-const (
-	OpAssign AssignOp = iota
-	OpScaleUp
-	OpScaleDown
-	OpIncrease
-	OpDecrease
+var (
+	// AssignOps is the set of valid assignment operators.
+	AssignOps = map[string]bool{
+		"=": true,
+		"assign": true,
+		"increase": true,
+	}
 )
 
-var AssignOps = map[string]AssignOp{
-	"assign": OpAssign,
-	//	"scale-up": OpScaleUp,
-	//	"scale-down": OpScaleDown,
-	//	"decrease": OpDecrease,
-
-	"increase": OpIncrease,
-}
-
 type AssignNode struct {
-	Op   AssignOp
+	Op   string
 	Lval string // Just total-cost for now.
 	Rval string // Just a number
 	LeafNode
-}
-
-func Conjunct(l Formula, r Formula) Formula {
-	switch l.(type) {
-	case TrueNode:
-		return r
-	case FalseNode:
-		return FalseNode{}
-	}
-	switch r.(type) {
-	case TrueNode:
-		return l
-	case FalseNode:
-		return FalseNode{}
-	}
-	return &AndNode{BinaryNode{Left: l, Right: r}}
-}
-
-func Disjunct(l Formula, r Formula) Formula {
-	switch l.(type) {
-	case TrueNode:
-		return TrueNode{}
-	case FalseNode:
-		return r
-	}
-	switch r.(type) {
-	case TrueNode:
-		return TrueNode{}
-	case FalseNode:
-		return l
-	}
-	return &OrNode{BinaryNode{Left: l, Right: r}}
-}
-
-func Negate(e Formula) Formula {
-	switch n := e.(type) {
-	case TrueNode:
-		return FalseNode{}
-	case FalseNode:
-		return TrueNode{}
-	case *NotNode:
-		return n.Formula
-	case *Literal:
-		n.Positive = !n.Positive
-		return n
-	}
-	return &NotNode{UnaryNode{Formula: e}}
 }

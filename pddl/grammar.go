@@ -7,15 +7,15 @@ func ParseDomain(path string) (d *Domain, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			err, ok = r.(parseError)
-			if !ok {
-				panic(r)
-			}
-		}
-	}()
+//	defer func() {
+//		if r := recover(); r != nil {
+//			var ok bool
+//			err, ok = r.(parseError)
+//			if !ok {
+//				panic(r)
+//			}
+//		}
+//	}()
 	p.expect(tokOpen)
 	p.expectId("define")
 	d = new(Domain)
@@ -66,16 +66,6 @@ func parseTypesDef(p *parser) (types []TypedName) {
 	if p.acceptNamedList(":types") {
 		types = parseTypedListString(p, tokId)
 		p.expect(tokClose)
-	}
-	object := false
-	for i := range types {
-		if types[i].Name.Str == "object" {
-			object = true
-		}
-	}
-	if !object {
-		objname := MakeName("object", Loc{"<implicit>", -1})
-		types = append(types, TypedName{Name: objname})
 	}
 	return
 }
@@ -167,15 +157,10 @@ func parseGd(p *parser) (res Formula) {
 	case p.acceptNamedList("or"):
 		res = parseOrGd(p, parseGd)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{Formula: parseGd(p)}}
+		res = &NotNode{ UnaryNode{ parseGd(p) } }
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
-		res = &OrNode{
-			BinaryNode{
-				Left:  &NotNode{UnaryNode{Formula: parseGd(p)}},
-				Right: parseGd(p),
-			},
-		}
+		res = &ImplyNode{ BinaryNode{ parseGd(p), parseGd(p) } }
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
 		res = parseExistsGd(p, parseGd)
@@ -219,69 +204,39 @@ func parseTerms(p *parser) (lst []Term) {
 }
 
 func parseAndGd(p *parser, nested func(*parser) Formula) Formula {
-	conj := make([]Formula, 0)
+	var fs []Formula
 	for p.peek().typ == tokOpen {
-		conj = append(conj, nested(p))
+		fs = append(fs, nested(p))
 	}
-	e := Formula(TrueNode{})
-	for i := len(conj) - 1; i >= 0; i-- {
-		e = Conjunct(conj[i], e)
-	}
-	p.expect(tokClose)
-	return e
+	defer p.expect(tokClose)
+	return &AndNode{ MultiNode{ fs } }
 }
 
 func parseOrGd(p *parser, nested func(*parser) Formula) Formula {
-	disj := make([]Formula, 0)
+	var fs []Formula
 	for p.peek().typ == tokOpen {
-		disj = append(disj, nested(p))
+		fs = append(fs, nested(p))
 	}
-	e := Formula(FalseNode{})
-	for i := len(disj) - 1; i >= 0; i-- {
-		e = Disjunct(disj[i], e)
-	}
-	p.expect(tokClose)
-	return e
+	defer p.expect(tokClose)
+	return &OrNode{ MultiNode{ fs } }
 }
 
 func parseForallGd(p *parser, nested func(*parser) Formula) Formula {
 	p.expect(tokOpen)
-	vrs := parseTypedListString(p, tokQid)
+	vars := parseTypedListString(p, tokQid)
 	p.expect(tokClose)
 
-	res := &ForallNode{}
-	bottom := res
-	for i, vr := range vrs {
-		bottom.Variable = vr
-		if i < len(vrs)-1 {
-			bottom.Formula = &ForallNode{}
-			bottom = bottom.Formula.(*ForallNode)
-		}
-	}
-
-	bottom.Formula = nested(p)
-	p.expect(tokClose)
-	return res
+	defer p.expect(tokClose)
+	return &ForallNode{ QuantNode{ vars, UnaryNode{ Formula: nested(p) } } }
 }
 
 func parseExistsGd(p *parser, nested func(*parser) Formula) Formula {
 	p.expect(tokOpen)
-	vrs := parseTypedListString(p, tokQid)
+	vars := parseTypedListString(p, tokQid)
 	p.expect(tokClose)
 
-	res := &ExistsNode{}
-	bottom := res
-	for i, vr := range vrs {
-		bottom.Variable = vr
-		if i < len(vrs)-1 {
-			bottom.Formula = &ExistsNode{}
-			bottom = bottom.Formula.(*ExistsNode)
-		}
-	}
-
-	bottom.Formula = nested(p)
-	p.expect(tokClose)
-	return res
+	defer p.expect(tokClose)
+	return &ExistsNode{ QuantNode{ vars, UnaryNode{ Formula: nested(p) } } }
 }
 
 func parseEffect(p *parser) Formula {
@@ -292,16 +247,12 @@ func parseEffect(p *parser) Formula {
 }
 
 func parseAndEffect(p *parser, nested func(*parser) Formula) Formula {
-	conj := make([]Formula, 0)
+	var fs []Formula
 	for p.peek().typ == tokOpen {
-		conj = append(conj, nested(p))
+		fs = append(fs, nested(p))
 	}
-	e := Formula(TrueNode{})
-	for i := len(conj) - 1; i >= 0; i-- {
-		e = Conjunct(conj[i], e)
-	}
-	p.expect(tokClose)
-	return e
+	defer p.expect(tokClose)
+	return &AndNode{ MultiNode{ fs } }
 }
 
 func parseCeffect(p *parser) (res Formula) {
@@ -318,31 +269,16 @@ func parseCeffect(p *parser) (res Formula) {
 
 func parseForallEffect(p *parser, nested func(*parser) Formula) Formula {
 	p.expect(tokOpen)
-	vrs := parseTypedListString(p, tokQid)
+	vars := parseTypedListString(p, tokQid)
 	p.expect(tokClose)
 
-	res := &ForallNode{}
-	bottom := res
-	for i, vr := range vrs {
-		bottom.Variable = vr
-		if i < len(vrs)-1 {
-			bottom.Formula = &ForallNode{}
-			bottom = bottom.Formula.(*ForallNode)
-		}
-	}
-
-	bottom.Formula = nested(p)
-	p.expect(tokClose)
-	return res
+	defer p.expect(tokClose)
+	return &ForallNode{ QuantNode{ vars, UnaryNode{ Formula: nested(p) } } }
 }
 
 func parseWhen(p *parser, nested func(*parser) Formula) Formula {
-	res := &WhenNode{
-		Condition: parseGd(p),
-	}
-	res.Formula = nested(p)
-	p.expect(tokClose)
-	return res
+	defer p.expect(tokClose)
+	return &WhenNode{ parseGd(p), UnaryNode{ Formula: nested(p) } }
 }
 
 func parsePeffect(p *parser) Formula {
@@ -355,7 +291,7 @@ func parsePeffect(p *parser) Formula {
 func parseAssign(p *parser) Formula {
 	p.expect(tokOpen)
 	res := &AssignNode{
-		Op:   AssignOps[p.expect(tokId).text],
+		Op:   p.expect(tokId).text,
 		Lval: parseFhead(p),
 		Rval: parseFexp(p),
 	}
@@ -449,7 +385,7 @@ func parseInit(p *parser) (els []Formula) {
 func parseInitEl(p *parser) Formula {
 	if p.acceptNamedList("=") {
 		eq := &AssignNode{
-			Op:   OpAssign,
+			Op:   "=",
 			Lval: parseFhead(p),
 			Rval: p.expect(tokNum).text,
 		}
@@ -496,7 +432,7 @@ func parseTypedListString(p *parser, typ tokenType) (lst []TypedName) {
 
 func parseType(p *parser) (typ []Name) {
 	if _, ok := p.accept(tokMinus); !ok {
-		return []Name{parseName(p, "object")}
+		return []Name{}
 	}
 	if _, ok := p.accept(tokOpen); ok {
 		p.expectId("either")

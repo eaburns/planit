@@ -58,23 +58,26 @@ type Action struct {
 
 type TypedName struct {
 	Name
-	Types []Name
+	Num int
+	Types []Type
+}
+
+type Type struct {
+	Name
+	Definition *TypedName
 }
 
 type Predicate struct {
 	Name
+	Num int
 	Parameters []TypedName
 }
 
 type Function struct {
 	Name
-	Types      []Name
+	Num int
+	Types      []Type
 	Parameters []TypedName
-}
-
-type Term struct {
-	Name
-	Variable bool
 }
 
 type Formula interface {
@@ -98,9 +101,20 @@ type QuantNode struct {
 }
 
 type PropositionNode struct {
-	Predicate  Name
+	Name
+	// Predicate points to the predicate
+	// definition for this proposition.
+	Predicate *Predicate
 	Parameters []Term
 	LeafNode
+}
+
+type Term struct {
+	Name
+	// Definition points to the variable
+	// or constant definition for this term.
+	Definition *TypedName
+	Variable bool
 }
 
 type AndNode struct{ MultiNode }

@@ -21,22 +21,88 @@ var (
 	}
 )
 
-// declarations are names that have been declared.
-type declarations struct {
-	reqs, types, consts, preds, funcs map[string]bool
+// defs has the set of definitons for a domain/problem.
+type defs struct {
+	reqs map[string]bool
+	types map[string]*TypedName
+	consts map[string]*TypedName
+	preds map[string]*Predicate
+	funcs map[string]*Function
+}
+
+// makeDefs returns an empty defs.
+func makeDefs() defs {
+	return defs{
+		reqs:   map[string]bool{},
+		types:  map[string]*TypedName{},
+		consts: map[string]*TypedName{},
+		preds:  map[string]*Predicate{},
+		funcs:  map[string]*Function{},
+	}
+}
+
+// defs returns the set of definitions for a domain.
+// If there is an error in the definitions, it is returned.
+func (d *Domain) defs() (defs, error) {
+	ds := makeDefs()
+	for _, r := range d.Requirements {
+		if !supportedReqs[r.Str] {
+			return ds, errorf(r.Loc, "%s is not a supported requirement", r.Str)
+		}
+		if ds.reqs[r.Str] {
+			return ds, errorf(r.Loc, "%s is dsared multiple times", r.Str)
+		}
+		ds.reqs[r.Str] = true
+	}
+	for i, t := range d.Types {
+		if ds.types[t.Str] != nil {
+			return ds, errorf(t.Loc, "%s is dsared multiple times", t.Str)
+		}
+		ds.types[t.Str] = &d.Types[i]
+		d.Types[i].Num = i
+	}
+	if ds.reqs[":typing"] && ds.types["object"] == nil {
+		ds.types["object"] = &TypedName{ Name: Name{ Str: "object" }, Num: len(ds.types) }
+	}
+	for i, c := range d.Constants {
+		if ds.consts[c.Str] != nil {
+			return ds, errorf(c.Loc, "%s is dsared multiple times", c.Str)
+		}
+		ds.consts[c.Str] = &d.Constants[i]
+		d.Constants[i].Num = i
+	}
+	for i, p := range d.Predicates {
+		if ds.preds[p.Str] != nil {
+			return ds, errorf(p.Loc, "%s is dsared multiple times", p.Str)
+		}
+		ds.preds[p.Str] = &d.Predicates[i]
+		d.Predicates[i].Num = i
+	}
+	for i, f := range d.Functions {
+		if ds.funcs[f.Str] != nil {
+			return ds, errorf(f.Loc, "%s is dsared multiple times", f.Str)
+		}
+		ds.funcs[f.Str] = &d.Functions[i]
+		d.Functions[i].Num = i
+	}
+	return ds, nil
 }
 
 // CheckDomain returns an error if there are
-// any semantic errors in the domain.
+// any semantic errors in the domain, otherwise
+// all definitions are numbered and indentifiers
+// in the domain are linked to their definition, via
+// the appropriate pointers.
 func CheckDomain(d *Domain) error {
-	decl, err := d.declarations()
+	ds, err := d.defs()
 	if err != nil {
 		return err
 	}
-	if len(d.Types) > 0 && !decl.reqs[":typing"] {
+
+	if len(d.Types) > 0 && !ds.reqs[":typing"] {
 		return errorf(d.Types[0].Loc, ":types requires :typing")
 	}
-	if err := checkTypedNames(&decl, d.Types); err != nil {
+	if err := checkTypedNames(&ds, d.Types); err != nil {
 		return err
 	}
 	for _, t := range d.Types {
@@ -44,27 +110,31 @@ func CheckDomain(d *Domain) error {
 			return errorf(t.Loc, "'either' supertypes are not semantically defined")
 		}
 	}
-	if err := checkTypedNames(&decl, d.Constants); err != nil {
+
+	if err := checkTypedNames(&ds, d.Constants); err != nil {
 		return err
 	}
+
 	for _, pred := range d.Predicates {
-		if err := checkTypedNames(&decl, pred.Parameters); err != nil {
+		if err := checkTypedNames(&ds, pred.Parameters); err != nil {
 			return err
 		}
 	}
-	if len(d.Functions) > 0 && !decl.reqs[":action-costs"] {
+
+	if len(d.Functions) > 0 && !ds.reqs[":action-costs"] {
 		return errorf(d.Functions[0].Loc, ":functions requires :action-costs")
 	}
 	for _, fun := range d.Functions {
 		if fun.Str != "total-cost" || len(fun.Parameters) > 0 {
 			return errorf(fun.Loc, ":action-costs only allows a 0-ary total-cost function")
 		}
-		if err := checkTypedNames(&decl, fun.Parameters); err != nil {
+		if err := checkTypedNames(&ds, fun.Parameters); err != nil {
 			return err
 		}
 	}
+
 	for _, act := range d.Actions {
-		if err := checkTypedNames(&decl, act.Parameters); err != nil {
+		if err := checkTypedNames(&ds, act.Parameters); err != nil {
 			return err
 		}
 	}
@@ -74,68 +144,21 @@ func CheckDomain(d *Domain) error {
 // checkTypedNames returns an error if there is
 // type are used when :typing is not required, or
 // if there is an undeclared type in the list.
-func checkTypedNames(d *declarations, lst []TypedName) error {
-	for _, ent := range lst {
+func checkTypedNames(d *defs, lst []TypedName) error {
+	for i, ent := range lst {
 		if len(ent.Types) > 0 && !d.reqs[":typing"] {
 			return errorf(ent.Loc, "typse used but :typing is not required")
 		}
-		for _, typ := range ent.Types {
-			if !d.types[typ.Str] {
+		for j, typ := range ent.Types {
+			switch def := d.types[typ.Str]; def {
+			case nil:
 				return errorf(typ.Loc, "type %s is not declared", typ.Str)
+			default:
+				lst[i].Types[j].Definition = def
 			}
 		}
 	}
 	return nil
-}
-
-// declarations returns the set of declarations for a
-// domain.  If there is an error in the declarations
-// for the domain then it is returned.
-func (d *Domain) declarations() (declarations, error) {
-	decl := declarations{
-		reqs:   map[string]bool{},
-		types:  map[string]bool{},
-		consts: map[string]bool{},
-		preds:  map[string]bool{},
-		funcs:  map[string]bool{},
-	}
-	for _, r := range d.Requirements {
-		if !supportedReqs[r.Str] {
-			return decl, errorf(r.Loc, "%s is not a supported requirement", r.Str)
-		}
-		if decl.reqs[r.Str] {
-			return decl, errorf(r.Loc, "%s is declared multiple times", r.Str)
-		}
-		decl.reqs[r.Str] = true
-	}
-	for _, t := range d.Types {
-		if decl.types[t.Str] {
-			return decl, errorf(t.Loc, "%s is declared multiple times", t.Str)
-		}
-		decl.types[t.Str] = true
-	}
-	if decl.reqs[":typing"] {
-		decl.types["object"] = true
-	}
-	for _, c := range d.Constants {
-		if decl.consts[c.Str] {
-			return decl, errorf(c.Loc, "%s is declared multiple times", c.Str)
-		}
-		decl.consts[c.Str] = true
-	}
-	for _, p := range d.Predicates {
-		if decl.preds[p.Str] {
-			return decl, errorf(p.Loc, "%s is declared multiple times", p.Str)
-		}
-		decl.preds[p.Str] = true
-	}
-	for _, f := range d.Functions {
-		if decl.funcs[f.Str] {
-			return decl, errorf(f.Loc, "%s is declared multiple times", f.Str)
-		}
-		decl.funcs[f.Str] = true
-	}
-	return decl, nil
 }
 
 // errorf returns an error with the string

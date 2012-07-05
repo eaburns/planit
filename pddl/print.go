@@ -166,7 +166,7 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 }
 
 // typeString returns the string representation of a type.
-func typeString(t []Name) (str string) {
+func typeString(t []Type) (str string) {
 	switch len(t) {
 	case 0:
 		break
@@ -184,7 +184,7 @@ func typeString(t []Name) (str string) {
 
 func (l *PropositionNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(", prefix)
-	fmt.Fprint(w, l.Predicate.Str)
+	fmt.Fprint(w, l.Str)
 	for _, t := range l.Parameters {
 		fmt.Fprintf(w, " %s", t.Name.Str)
 	}

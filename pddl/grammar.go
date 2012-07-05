@@ -137,20 +137,20 @@ func parseTypedListString(p *parser, typ tokenType) (lst []TypedName) {
 	return
 }
 
-func parseType(p *parser) (typ []Name) {
+func parseType(p *parser) (typ []Type) {
 	if _, ok := p.accept(tokMinus); !ok {
-		return []Name{}
+		return []Type{}
 	}
 	if _, ok := p.accept(tokOpen); ok {
 		p.expectId("either")
 		for _, s := range parseStringPlus(p, tokId) {
-			typ = append(typ, parseName(p, s))
+			typ = append(typ, Type{Name: parseName(p, s)})
 		}
 		p.expect(tokClose)
 		return typ
 	}
 	t := p.expect(tokId)
-	return []Name{parseName(p, t.text)}
+	return []Type{{Name: parseName(p, t.text)}}
 }
 
 func parseFunctionTypedList(p *parser) (funcs []Function) {
@@ -171,12 +171,12 @@ func parseFunctionTypedList(p *parser) (funcs []Function) {
 	return
 }
 
-func parseFunctionType(p *parser) (typ []Name) {
+func parseFunctionType(p *parser) (typ []Type) {
 	if _, ok := p.accept(tokMinus); !ok {
-		return []Name{}
+		return []Type{}
 	}
 	t := p.expectId("number")
-	return []Name{parseName(p, t.text)}
+	return []Type{{Name: parseName(p, t.text)}}
 }
 
 func parseActionDef(p *parser) Action {
@@ -259,7 +259,7 @@ func parseProposition(p *parser) *PropositionNode {
 	p.expect(tokOpen)
 	defer p.expect(tokClose)
 	return &PropositionNode{
-		Predicate:  parseName(p, p.expect(tokId).text),
+		Name:  parseName(p, p.expect(tokId).text),
 		Parameters: parseTerms(p),
 	}
 }

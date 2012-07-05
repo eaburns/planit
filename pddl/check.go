@@ -23,11 +23,11 @@ var (
 
 // defs has the set of definitons for a domain/problem.
 type defs struct {
-	reqs map[string]bool
-	types map[string]*TypedName
+	reqs   map[string]bool
+	types  map[string]*TypedName
 	consts map[string]*TypedName
-	preds map[string]*Predicate
-	funcs map[string]*Function
+	preds  map[string]*Predicate
+	funcs  map[string]*Function
 }
 
 // makeDefs returns an empty defs.
@@ -62,7 +62,7 @@ func (d *Domain) defs() (defs, error) {
 		d.Types[i].Num = i
 	}
 	if ds.reqs[":typing"] && ds.types["object"] == nil {
-		ds.types["object"] = &TypedName{ Name: Name{ Str: "object" }, Num: len(ds.types) }
+		ds.types["object"] = &TypedName{Name: Name{Str: "object"}, Num: len(ds.types)}
 	}
 	for i, c := range d.Constants {
 		if ds.consts[c.Str] != nil {

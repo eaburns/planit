@@ -58,7 +58,7 @@ type Action struct {
 
 type TypedName struct {
 	Name
-	Num int
+	Num   int
 	Types []Type
 }
 
@@ -69,13 +69,13 @@ type Type struct {
 
 type Predicate struct {
 	Name
-	Num int
+	Num        int
 	Parameters []TypedName
 }
 
 type Function struct {
 	Name
-	Num int
+	Num        int
 	Types      []Type
 	Parameters []TypedName
 }
@@ -104,7 +104,7 @@ type PropositionNode struct {
 	Name
 	// Predicate points to the predicate
 	// definition for this proposition.
-	Predicate *Predicate
+	Predicate  *Predicate
 	Parameters []Term
 	LeafNode
 }
@@ -114,7 +114,7 @@ type Term struct {
 	// Definition points to the variable
 	// or constant definition for this term.
 	Definition *TypedName
-	Variable bool
+	Variable   bool
 }
 
 type AndNode struct{ MultiNode }

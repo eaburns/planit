@@ -259,7 +259,7 @@ func parseProposition(p *parser) *PropositionNode {
 	p.expect(tokOpen)
 	defer p.expect(tokClose)
 	return &PropositionNode{
-		Name:  parseName(p, p.expect(tokId).text),
+		Name:       parseName(p, p.expect(tokId).text),
 		Parameters: parseTerms(p),
 	}
 }

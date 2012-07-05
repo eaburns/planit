@@ -21,136 +21,191 @@ var (
 	}
 )
 
-// defs has the set of definitons for a domain/problem.
-type defs struct {
-	reqs   map[string]bool
-	types  map[string]*TypedName
-	consts map[string]*TypedName
-	preds  map[string]*Predicate
-	funcs  map[string]*Function
-}
+type (
+	// reqDefs is a requirement definition set.
+	reqDefs map[string]bool
 
-// makeDefs returns an empty defs.
-func makeDefs() defs {
-	return defs{
-		reqs:   map[string]bool{},
-		types:  map[string]*TypedName{},
-		consts: map[string]*TypedName{},
-		preds:  map[string]*Predicate{},
-		funcs:  map[string]*Function{},
-	}
-}
+	// typeDefs maps a type name to its definition.
+	typeDefs map[string]*TypedName
 
-// defs returns the set of definitions for a domain.
-// If there is an error in the definitions, it is returned.
-func (d *Domain) defs() (defs, error) {
-	ds := makeDefs()
-	for _, r := range d.Requirements {
-		if !supportedReqs[r.Str] {
-			return ds, errorf(r.Loc, "%s is not a supported requirement", r.Str)
-		}
-		if ds.reqs[r.Str] {
-			return ds, errorf(r.Loc, "%s is dsared multiple times", r.Str)
-		}
-		ds.reqs[r.Str] = true
+	// constDefs maps a constant or object name to
+	// its definition.
+	constDefs map[string]*TypedName
+
+	// predDefs maps a predicate name to its definition.
+	predDefs map[string]*Predicate
+
+	// funcDefs maps a function name to its definition.
+	funcDefs map[string]*Function
+
+	// defs aggregates all of the different definition
+	// classes.
+	defs struct {
+		reqs reqDefs
+		types typeDefs
+		consts constDefs
+		preds predDefs
+		funcs funcDefs
 	}
-	for i, t := range d.Types {
-		if ds.types[t.Str] != nil {
-			return ds, errorf(t.Loc, "%s is dsared multiple times", t.Str)
-		}
-		ds.types[t.Str] = &d.Types[i]
-		d.Types[i].Num = i
-	}
-	if ds.reqs[":typing"] && ds.types["object"] == nil {
-		ds.types["object"] = &TypedName{Name: Name{Str: "object"}, Num: len(ds.types)}
-	}
-	for i, c := range d.Constants {
-		if ds.consts[c.Str] != nil {
-			return ds, errorf(c.Loc, "%s is dsared multiple times", c.Str)
-		}
-		ds.consts[c.Str] = &d.Constants[i]
-		d.Constants[i].Num = i
-	}
-	for i, p := range d.Predicates {
-		if ds.preds[p.Str] != nil {
-			return ds, errorf(p.Loc, "%s is dsared multiple times", p.Str)
-		}
-		ds.preds[p.Str] = &d.Predicates[i]
-		d.Predicates[i].Num = i
-	}
-	for i, f := range d.Functions {
-		if ds.funcs[f.Str] != nil {
-			return ds, errorf(f.Loc, "%s is dsared multiple times", f.Str)
-		}
-		ds.funcs[f.Str] = &d.Functions[i]
-		d.Functions[i].Num = i
-	}
-	return ds, nil
-}
+)
 
 // CheckDomain returns an error if there are
 // any semantic errors in the domain, otherwise
 // all definitions are numbered and indentifiers
 // in the domain are linked to their definition, via
 // the appropriate pointers.
-func CheckDomain(d *Domain) error {
-	ds, err := d.defs()
+func CheckDomain(d *Domain) (err error) {
+	defs := defs{}
+
+	defs.reqs, err = checkReqs(d.Requirements)
 	if err != nil {
-		return err
+		return
 	}
-
-	if len(d.Types) > 0 && !ds.reqs[":typing"] {
-		return errorf(d.Types[0].Loc, ":types requires :typing")
+	defs.types, err = checkTypes(defs.reqs, d.Types)
+	if err != nil {
+		return
 	}
-	if err := checkTypedNames(&ds, d.Types); err != nil {
-		return err
+	defs.consts, err = checkConsts(defs.reqs, defs.types, d.Constants)
+	if err != nil {
+		return
 	}
-	for _, t := range d.Types {
-		if len(t.Types) > 1 {
-			return errorf(t.Loc, "'either' supertypes are not semantically defined")
-		}
+	defs.preds, err = checkPreds(defs.reqs, defs.types, d.Predicates)
+	if err != nil {
+		return
 	}
-
-	if err := checkTypedNames(&ds, d.Constants); err != nil {
-		return err
+	defs.funcs, err = checkFuncs(defs.reqs, defs.types, d.Functions)
+	if err != nil {
+		return
 	}
-
-	for _, pred := range d.Predicates {
-		if err := checkTypedNames(&ds, pred.Parameters); err != nil {
-			return err
-		}
-	}
-
-	if len(d.Functions) > 0 && !ds.reqs[":action-costs"] {
-		return errorf(d.Functions[0].Loc, ":functions requires :action-costs")
-	}
-	for _, fun := range d.Functions {
-		if fun.Str != "total-cost" || len(fun.Parameters) > 0 {
-			return errorf(fun.Loc, ":action-costs only allows a 0-ary total-cost function")
-		}
-		if err := checkTypedNames(&ds, fun.Parameters); err != nil {
-			return err
-		}
-	}
-
 	for _, act := range d.Actions {
-		if err := checkTypedNames(&ds, act.Parameters); err != nil {
-			return err
+		parms := act.Parameters
+		if err = checkTypedNames(defs.reqs, defs.types, parms); err != nil {
+			return
 		}
 	}
 	return nil
 }
 
+// checkReqs checks requirement definitions.
+// On success, a set of requirements is returned,
+// else an error is returned.
+func checkReqs(rs []Name) (reqDefs, error) {
+	reqs := reqDefs{}
+	for _, r := range rs {
+		if !supportedReqs[r.Str] {
+			return reqs, errorf(r.Loc, "%s is not a supported requirement", r.Str)
+		}
+		if reqs[r.Str] {
+			return reqs, errorf(r.Loc, "%s is dsared multiple times", r.Str)
+		}
+		reqs[r.Str] = true
+	}
+	return reqs, nil
+}
+
+// checkTypes returns a mapping from type names
+// to their definition, or an error if there is a semantic
+// error in the type definitions.
+func checkTypes(reqs reqDefs, ts []TypedName) (typeDefs, error) {
+	types := typeDefs{}
+	if len(ts) > 0 && !reqs[":typing"] {
+		return types, errorf(ts[0].Loc, ":types requires :typing")
+	}
+	for i, t := range ts {
+		if types[t.Str] != nil {
+			return types, errorf(t.Loc, "%s is defined multiple times", t.Str)
+		}
+		types[t.Str] = &ts[i]
+		ts[i].Num = i
+	}
+	if reqs[":typing"] && types["object"] == nil {
+		types["object"] = &TypedName{Name: Name{Str: "object"}, Num: len(types)}
+	}
+	if err := checkTypedNames(reqs, types, ts); err != nil {
+		return types, err
+	}
+	for _, t := range ts {
+		if len(t.Types) > 1 {
+			return types, errorf(t.Loc, "'either' supertypes are not semantically defined")
+		}
+	}
+	return types, nil
+}
+
+// checkConsts returns the map from constant names
+// to their definition if there are no semantic errors,
+// otherwise an error is returned.
+func checkConsts(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, error) {
+	consts := constDefs{}
+	for i, c := range cs {
+		if consts[c.Str] != nil {
+			return consts, errorf(c.Loc, "%s is dsared multiple times", c.Str)
+		}
+		consts[c.Str] = &cs[i]
+		cs[i].Num = i
+	}
+	if err := checkTypedNames(reqs, types, cs); err != nil {
+ 		return consts, err
+ 	}
+	return consts, nil
+}
+
+// checkPreds returts a map from a predicate name
+// to its definition, or an error if there is a semantic
+// error.
+func checkPreds(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, error) {
+	preds := predDefs{}
+	for i, p := range ps {
+		if preds[p.Str] != nil {
+			return preds, errorf(p.Loc, "%s is dsared multiple times", p.Str)
+		}
+		preds[p.Str] = &ps[i]
+		ps[i].Num = i
+	}
+	for _, pred := range ps {
+		if err := checkTypedNames(reqs, types, pred.Parameters); err != nil {
+			return preds, err
+		}
+	}
+	return preds, nil
+}
+
+// checkFuncs returts a map from a function name
+// to its definition, or an error if there is a semantic
+// error.
+func checkFuncs(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
+	funcs := funcDefs{}
+	for i, f := range fs {
+		if funcs[f.Str] != nil {
+			return funcs, errorf(f.Loc, "%s is dsared multiple times", f.Str)
+		}
+		funcs[f.Str] = &fs[i]
+		fs[i].Num = i
+	}
+	if len(fs) > 0 && !reqs[":action-costs"] {
+		return funcs, errorf(fs[0].Loc, ":functions requires :action-costs")
+	}
+	for _, fun := range fs {
+		if fun.Str != "total-cost" || len(fun.Parameters) > 0 {
+			return funcs, errorf(fun.Loc, ":action-costs only allows a 0-ary total-cost function")
+		}
+		if err := checkTypedNames(reqs, types, fun.Parameters); err != nil {
+			return funcs ,err
+		}
+	}
+	return funcs, nil
+}
+
 // checkTypedNames returns an error if there is
 // type are used when :typing is not required, or
 // if there is an undeclared type in the list.
-func checkTypedNames(d *defs, lst []TypedName) error {
+func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
 	for i, ent := range lst {
-		if len(ent.Types) > 0 && !d.reqs[":typing"] {
+		if len(ent.Types) > 0 && !reqs[":typing"] {
 			return errorf(ent.Loc, "typse used but :typing is not required")
 		}
 		for j, typ := range ent.Types {
-			switch def := d.types[typ.Str]; def {
+			switch def := types[typ.Str]; def {
 			case nil:
 				return errorf(typ.Loc, "type %s is not declared", typ.Str)
 			default:

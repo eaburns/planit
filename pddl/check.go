@@ -7,14 +7,14 @@ import (
 var (
 	// supportedReqs is a list of the requirement
 	// flags that are supported by planit.
-	supportedReqs = map[string]bool {
-		":strips": true,
-		":typing": true,
-		":negative-preconditions": true,
+	supportedReqs = map[string]bool{
+		":strips":                    true,
+		":typing":                    true,
+		":negative-preconditions":    true,
 		":disjunctive-preconditions": true,
-		":equality": true,
-		":quantified-preconditions": true,
-		":conditional-effects": true,
+		":equality":                  true,
+		":quantified-preconditions":  true,
+		":conditional-effects":       true,
 	}
 )
 
@@ -25,7 +25,7 @@ type declarations struct {
 
 // CheckDomain returns an error if there are
 // any semantic errors in the domain.
-func CheckDomain(d* Domain) error {
+func CheckDomain(d *Domain) error {
 	decl, err := d.declarations()
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func checkTypedNames(d *declarations, lst []TypedName) error {
 		for _, typ := range ent.Types {
 			if !d.types[typ.Str] {
 				return errorf(typ.Loc, "type %s is not declared", typ.Str)
-			}	
+			}
 		}
 	}
 	return nil
@@ -79,10 +79,10 @@ func checkTypedNames(d *declarations, lst []TypedName) error {
 // for the domain then it is returned.
 func (d *Domain) declarations() (declarations, error) {
 	decl := declarations{
-		reqs: map[string]bool{},
-		types: map[string]bool{},
+		reqs:   map[string]bool{},
+		types:  map[string]bool{},
 		consts: map[string]bool{},
-		preds: map[string]bool{},
+		preds:  map[string]bool{},
 	}
 	for _, r := range d.Requirements {
 		if !supportedReqs[r.Str] {

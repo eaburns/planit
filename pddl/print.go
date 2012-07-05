@@ -60,7 +60,7 @@ func PrintDomain(w io.Writer, d *Domain) {
 
 // PrintProblem prints the problem in valid PDDL to the given writer.
 func PrintProblem(w io.Writer, p *Problem) {
-	fmt.Fprintf(w, "(define (problem %s)\n%s(domain %s)\n", p.Name, indent, p.Domain)
+	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n", p.Name, indent, p.Domain)
 	printRequirements(w, p.Requirements)
 
 	if len(p.Objects) > 0 {
@@ -117,6 +117,12 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 			}
 		}
 		fmt.Fprint(w, " - ", typ)
+		// The first entry can be prefixed by the empty
+		// string, but subsequent entries need at least
+		// a space.
+		if prefix == "" {
+			prefix = " "
+		}
 	}
 	for i, n := range noType {
 		if i == 0 {

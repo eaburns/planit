@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	// supportedReqs is a list of the requirement
+	// flags that are supported by planit.
 	supportedReqs = map[string]bool {
 		":strips": true,
 		":typing": true,

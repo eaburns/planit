@@ -2,6 +2,7 @@ package pddl
 
 import (
 	"io"
+	"log"
 )
 
 // ParseDomain returns a *Domain parsed from
@@ -31,6 +32,7 @@ func ParseDomain(file string, r io.Reader) (d *Domain, err error) {
 
 	// Ignore :functions for now
 	if p.acceptNamedList(":functions") {
+		log.Println(p.loc(), "ignoring functions declaration")
 		for nesting := 1; nesting > 0; {
 			switch p.next().typ {
 			case tokClose:

@@ -23,7 +23,7 @@ var (
 
 // declarations are names that have been declared.
 type declarations struct {
-	reqs, types, consts, preds map[string]bool
+	reqs, types, consts, preds, funcs map[string]bool
 }
 
 // CheckDomain returns an error if there are
@@ -34,14 +34,14 @@ func CheckDomain(d *Domain) error {
 		return err
 	}
 	if len(d.Types) > 0 && !decl.reqs[":typing"] {
-		return errorf(d.Types[0].Loc, "types used but :typing is not required")
+		return errorf(d.Types[0].Loc, ":types requires :typing")
 	}
 	if err := checkTypedNames(&decl, d.Types); err != nil {
 		return err
 	}
 	for _, t := range d.Types {
 		if len(t.Types) > 1 {
-			return errorf(t.Loc, "either supertypes are not semantically defined")
+			return errorf(t.Loc, "'either' supertypes are not semantically defined")
 		}
 	}
 	if err := checkTypedNames(&decl, d.Constants); err != nil {
@@ -49,6 +49,17 @@ func CheckDomain(d *Domain) error {
 	}
 	for _, pred := range d.Predicates {
 		if err := checkTypedNames(&decl, pred.Parameters); err != nil {
+			return err
+		}
+	}
+	if len(d.Functions) > 0 && !decl.reqs[":action-costs"] {
+		return errorf(d.Functions[0].Loc, ":functions requires :action-costs")
+	}
+	for _, fun := range d.Functions {
+		if fun.Str != "total-cost" || len(fun.Parameters) > 0 {
+			return errorf(fun.Loc, ":action-costs only allows a 0-ary total-cost function")
+		}
+		if err := checkTypedNames(&decl, fun.Parameters); err != nil {
 			return err
 		}
 	}
@@ -86,6 +97,7 @@ func (d *Domain) declarations() (declarations, error) {
 		types:  map[string]bool{},
 		consts: map[string]bool{},
 		preds:  map[string]bool{},
+		funcs: map[string]bool{},
 	}
 	for _, r := range d.Requirements {
 		if !supportedReqs[r.Str] {
@@ -116,6 +128,12 @@ func (d *Domain) declarations() (declarations, error) {
 			return decl, errorf(p.Loc, "%s is declared multiple times", p.Str)
 		}
 		decl.preds[p.Str] = true
+	}
+	for _, f := range d.Functions {
+		if decl.funcs[f.Str] {
+			return decl, errorf(f.Loc, "%s is declared multiple times", f.Str)
+		}
+		decl.funcs[f.Str] = true
 	}
 	return decl, nil
 }

@@ -15,6 +15,9 @@ var (
 		":equality":                  true,
 		":quantified-preconditions":  true,
 		":conditional-effects":       true,
+
+		// http://ipc.informatik.uni-freiburg.de/PddlActionCosts
+		":action-costs": true,
 	}
 )
 

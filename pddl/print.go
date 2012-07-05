@@ -27,10 +27,26 @@ func PrintDomain(w io.Writer, d *Domain) {
 	if len(d.Predicates) > 0 {
 		fmt.Fprintf(w, "%s(:predicates\n", indent)
 		for i, p := range d.Predicates {
-			fmt.Fprintf(w, "%s(%s", indent+indent, p.Name.Str)
+			fmt.Fprintf(w, "%s(%s", indent+indent, p.Str)
 			printTypedNames(w, " ", p.Parameters)
 			fmt.Fprint(w, ")")
 			if i < len(d.Predicates)-1 {
+				fmt.Fprint(w, "\n")
+			}
+		}
+		fmt.Fprintln(w, ")")
+	}
+
+	if len(d.Functions) > 0 {
+		fmt.Fprintf(w, "%s(:functions\n", indent)
+		for i, f := range d.Functions {
+			fmt.Fprintf(w, "%s(%s", indent+indent, f.Str)
+			printTypedNames(w, " ", f.Parameters)
+			fmt.Fprint(w, ")")
+			if len(f.Types) > 0 {
+				fmt.Fprint(w, " - ", typeString(f.Types))
+			}
+			if i < len(d.Functions)-1 {
 				fmt.Fprint(w, "\n")
 			}
 		}
@@ -98,7 +114,7 @@ func printRequirements(w io.Writer, reqs []Name) {
 // declGroup is a group of declarators along
 // with their type.
 type declGroup struct {
-	typ string
+	typ  string
 	ents []string
 }
 

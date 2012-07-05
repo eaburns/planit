@@ -11,6 +11,7 @@ type Domain struct {
 	Types        []TypedName
 	Constants    []TypedName
 	Predicates   []Predicate
+	Functions    []Function
 	Actions      []Action
 }
 
@@ -62,6 +63,12 @@ type TypedName struct {
 
 type Predicate struct {
 	Name
+	Parameters []TypedName
+}
+
+type Function struct {
+	Name
+	Types      []Name
 	Parameters []TypedName
 }
 

@@ -29,6 +29,7 @@ func ParseDomain(file string, r io.Reader) (d *Domain, err error) {
 	d.Types = parseTypesDef(p)
 	d.Constants = parseConstsDef(p)
 	d.Predicates = parsePredsDef(p)
+	d.Functions = parseFuncsDef(p)
 
 	// Ignore :functions for now
 	if p.acceptNamedList(":functions") {
@@ -84,11 +85,11 @@ func parseConstsDef(p *parser) (consts []TypedName) {
 	return
 }
 
-func parsePredsDef(p *parser) (Predicates []Predicate) {
+func parsePredsDef(p *parser) (predicates []Predicate) {
 	if p.acceptNamedList(":predicates") {
-		Predicates = append(Predicates, parseAtomicFormSkele(p))
+		predicates = append(predicates, parseAtomicFormSkele(p))
 		for p.peek().typ == tokOpen {
-			Predicates = append(Predicates, parseAtomicFormSkele(p))
+			predicates = append(predicates, parseAtomicFormSkele(p))
 		}
 		p.expect(tokClose)
 	}
@@ -97,12 +98,85 @@ func parsePredsDef(p *parser) (Predicates []Predicate) {
 
 func parseAtomicFormSkele(p *parser) Predicate {
 	p.expect(tokOpen)
-	pred := Predicate{
+	defer p.expect(tokClose)
+	return Predicate{
 		Name:       parseName(p, p.expect(tokId).text),
 		Parameters: parseTypedListString(p, tokQid),
 	}
-	p.expect(tokClose)
-	return pred
+}
+
+func parseAtomicFuncSkele(p *parser) Function {
+	p.expect(tokOpen)
+	defer p.expect(tokClose)
+	return Function{
+		Name:       parseName(p, p.expect(tokId).text),
+		Parameters: parseTypedListString(p, tokQid),
+	}
+}
+
+func parseFuncsDef(p *parser) (funcs []Function) {
+	if p.acceptNamedList(":functions") {
+		funcs = append(funcs, parseFunctionTypedList(p)...)
+		p.expect(tokClose)
+	}
+	return
+}
+
+func parseTypedListString(p *parser, typ tokenType) (lst []TypedName) {
+	for {
+		names := parseStrings(p, typ)
+		if len(names) == 0 {
+			break
+		}
+		typ := parseType(p)
+		for _, n := range names {
+			name := parseName(p, n)
+			lst = append(lst, TypedName{Name: name, Types: typ})
+		}
+	}
+	return
+}
+
+func parseType(p *parser) (typ []Name) {
+	if _, ok := p.accept(tokMinus); !ok {
+		return []Name{}
+	}
+	if _, ok := p.accept(tokOpen); ok {
+		p.expectId("either")
+		for _, s := range parseStringPlus(p, tokId) {
+			typ = append(typ, parseName(p, s))
+		}
+		p.expect(tokClose)
+		return typ
+	}
+	t := p.expect(tokId)
+	return []Name{parseName(p, t.text)}
+}
+
+func parseFunctionTypedList(p *parser) (funcs []Function) {
+	for {
+		var fs []Function
+		for p.peek().typ == tokOpen {
+			fs = append(fs, parseAtomicFuncSkele(p))
+		}
+		if len(fs) == 0 {
+			break
+		}
+		typ := parseFunctionType(p)
+		for i, _ := range fs {
+			fs[i].Types = typ
+		}
+		funcs = append(funcs, fs...)
+	}
+	return
+}
+
+func parseFunctionType(p *parser) (typ []Name) {
+	if _, ok := p.accept(tokMinus); !ok {
+		return []Name{}
+	}
+	t := p.expectId("number")
+	return []Name{parseName(p, t.text)}
 }
 
 func parseActionDef(p *parser) Action {
@@ -427,37 +501,6 @@ func parseMetric(p *parser) (m Metric) {
 		p.expect(tokClose)
 	}
 	return
-}
-
-func parseTypedListString(p *parser, typ tokenType) (lst []TypedName) {
-	for {
-		names := parseStrings(p, typ)
-		if len(names) == 0 {
-			break
-		}
-		typ := parseType(p)
-		for _, n := range names {
-			name := parseName(p, n)
-			lst = append(lst, TypedName{Name: name, Types: typ})
-		}
-	}
-	return lst
-}
-
-func parseType(p *parser) (typ []Name) {
-	if _, ok := p.accept(tokMinus); !ok {
-		return []Name{}
-	}
-	if _, ok := p.accept(tokOpen); ok {
-		p.expectId("either")
-		for _, s := range parseStringPlus(p, tokId) {
-			typ = append(typ, parseName(p, s))
-		}
-		p.expect(tokClose)
-		return typ
-	}
-	t := p.expect(tokId)
-	return []Name{parseName(p, t.text)}
 }
 
 func parseStringPlus(p *parser, typ tokenType) []string {

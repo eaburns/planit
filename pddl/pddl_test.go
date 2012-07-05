@@ -31,7 +31,7 @@ func TestPrintDomain(t *testing.T) {
 		 :adl
 		 :action-costs)
 	(:types
-		order product count)
+		count order product)
 	(:predicates
 		(includes ?o - order ?p - product)
 		(waiting ?o - order)
@@ -39,7 +39,7 @@ func TestPrintDomain(t *testing.T) {
 		(shipped ?o - order)
 		(made ?p - product)
 		(stacks-avail ?s - count)
-		(next-count ?s ?ns - count))
+		(next-count ?ns ?s - count))
 	(:action make-product
 			:parameters (?p - product)
 			:precondition
@@ -68,7 +68,7 @@ func TestPrintDomain(t *testing.T) {
 						(stacks-avail ?avail))
 					(stacks-avail ?new-avail)))
 	(:action ship-order
-			:parameters (?o - order ?avail ?new-avail - count)
+			:parameters (?avail ?new-avail - count ?o - order)
 			:precondition
 				(and
 					(started ?o)
@@ -87,7 +87,7 @@ func TestPrintDomain(t *testing.T) {
 						(stacks-avail ?avail))
 					(stacks-avail ?new-avail)))
 	(:action open-new-stack
-			:parameters (?open ?new-open - count)
+			:parameters (?new-open ?open - count)
 			:precondition
 				(and
 					(stacks-avail ?open)
@@ -98,8 +98,7 @@ func TestPrintDomain(t *testing.T) {
 						(stacks-avail ?open))
 					(stacks-avail ?new-open)
 					(increase total-cost 1)))
-)
-`
+)`
 	ast, err := ParseDomain("", strings.NewReader(dom))
 	if err != nil {
 		t.Fatal(err)

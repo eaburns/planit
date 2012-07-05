@@ -3,6 +3,7 @@ package pddl
 import (
 	"fmt"
 	"io"
+	"sort"
 )
 
 const indent = "\t"
@@ -95,10 +96,35 @@ func printRequirements(w io.Writer, reqs []Name) {
 	}
 }
 
+// declGroup is a group of declarators along
+// with their type.
+type declGroup struct {
+	typ string
+	ents []string
+}
+
+// declGroups implements sort.Interface, sorting
+// the list of typed declarations by their type name.
+type declGroups []declGroup
+
+func (t declGroups) Len() int {
+	return len(t)
+}
+
+func (t declGroups) Less(i, j int) bool {
+	return t[i].typ < t[j].typ
+}
+
+func (t declGroups) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
 // printTypedNames prints a slice of TypedNames.
 // Names are grouped and printed with all other names
-// of the same type.  Untyped entries are printed in a group
-// after all typed entries.  The prefix is printed before each
+// of the same type, in alphebetical order on the type
+// names. Untyped entries are printed in a group after all
+// typed entries.  The elements of each group are printed
+// in alphebetical order.  The prefix is printed before each
 // group.
 func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 	byType := make(map[string][]string)
@@ -108,15 +134,23 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 	}
 	noType := byType[""]
 	delete(byType, "")
+
+	var decls declGroups
 	for typ, names := range byType {
-		for i, n := range names {
+		decls = append(decls, declGroup{ typ, names })
+	}
+	sort.Sort(decls)
+
+	for _, d := range decls {
+		sort.Strings(d.ents)
+		for i, e := range d.ents {
 			if i == 0 {
-				fmt.Fprint(w, prefix+n)
+				fmt.Fprint(w, prefix+e)
 			} else {
-				fmt.Fprint(w, " "+n)
+				fmt.Fprint(w, " "+e)
 			}
 		}
-		fmt.Fprint(w, " - ", typ)
+		fmt.Fprint(w, " - ", d.typ)
 		// The first entry can be prefixed by the empty
 		// string, but subsequent entries need at least
 		// a space.
@@ -124,6 +158,8 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 			prefix = " "
 		}
 	}
+
+	sort.Strings(noType)
 	for i, n := range noType {
 		if i == 0 {
 			fmt.Fprint(w, prefix+n)

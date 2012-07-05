@@ -3,7 +3,6 @@ package pddl
 import (
 	"fmt"
 	"io"
-	"sort"
 )
 
 const indent = "\t"
@@ -119,53 +118,35 @@ func (t declGroups) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// printTypedNames prints a slice of TypedNames.
-// Names are grouped and printed with all other names
-// of the same type, in alphebetical order on the type
-// names. Untyped entries are printed in a group after all
-// typed entries.  The elements of each group are printed
-// in alphebetical order.  The prefix is printed before each
-// group.
+// printTypedNames prints a slice of TypedNames
+// in their given order. The prefix is printed before
+// each group.
 func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
-	byType := make(map[string][]string)
+	if len(ns) == 0 {
+		return
+	}
+	tprev := typeString(ns[0].Types)
+	sep := prefix
 	for _, n := range ns {
-		tstr := typeString(n.Types)
-		byType[tstr] = append(byType[tstr], n.Str)
-	}
-	noType := byType[""]
-	delete(byType, "")
-
-	var decls declGroups
-	for typ, names := range byType {
-		decls = append(decls, declGroup{ typ, names })
-	}
-	sort.Sort(decls)
-
-	for _, d := range decls {
-		sort.Strings(d.ents)
-		for i, e := range d.ents {
-			if i == 0 {
-				fmt.Fprint(w, prefix+e)
-			} else {
-				fmt.Fprint(w, " "+e)
+		tcur := typeString(n.Types)
+		if tcur != tprev {
+			if tprev == "" {
+				// There should be no way to get into
+				// this situation!
+				panic(n.Loc.String() + ": untyped declarations in the middle of a typed list")
+			}
+			fmt.Fprintf(w, " - %s", tprev)
+			tprev = tcur
+			sep = prefix
+			if sep == "" {
+				sep = " "
 			}
 		}
-		fmt.Fprint(w, " - ", d.typ)
-		// The first entry can be prefixed by the empty
-		// string, but subsequent entries need at least
-		// a space.
-		if prefix == "" {
-			prefix = " "
-		}
+		fmt.Fprintf(w, "%s%s", sep, n.Str)
+		sep = " "
 	}
-
-	sort.Strings(noType)
-	for i, n := range noType {
-		if i == 0 {
-			fmt.Fprint(w, prefix+n)
-		} else {
-			fmt.Fprint(w, " "+n)
-		}
+	if tprev != "" {
+		fmt.Fprintf(w, " - %s", tprev)
 	}
 }
 

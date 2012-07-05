@@ -25,80 +25,62 @@ func TestParseDomain(t *testing.T) {
 
 func TestPrintDomain(t *testing.T) {
 	dom := `
+;; openstacks, strips version
+
 (define (domain openstacks-sequencedstrips-ADL)
-	(:requirements
-		 :typing
-		 :adl
-		 :action-costs)
-	(:types
-		count order product)
-	(:predicates
-		(includes ?o - order ?p - product)
-		(waiting ?o - order)
-		(started ?o - order)
-		(shipped ?o - order)
-		(made ?p - product)
-		(stacks-avail ?s - count)
-		(next-count ?ns ?s - count))
-	(:action make-product
-			:parameters (?p - product)
-			:precondition
-				(and
-					(not
-						(made ?p))
-					(forall (?o - order)
-						(imply
-							(includes ?o ?p)
-							(started ?o))))
-			:effect
-				(made ?p))
-	(:action start-order
-			:parameters (?avail ?new-avail - count ?o - order)
-			:precondition
-				(and
-					(waiting ?o)
-					(stacks-avail ?avail)
-					(next-count ?new-avail ?avail))
-			:effect
-				(and
-					(not
-						(waiting ?o))
-					(started ?o)
-					(not
-						(stacks-avail ?avail))
-					(stacks-avail ?new-avail)))
-	(:action ship-order
-			:parameters (?avail ?new-avail - count ?o - order)
-			:precondition
-				(and
-					(started ?o)
-					(forall (?p - product)
-						(imply
-							(includes ?o ?p)
-							(made ?p)))
-					(stacks-avail ?avail)
-					(next-count ?avail ?new-avail))
-			:effect
-				(and
-					(not
-						(started ?o))
-					(shipped ?o)
-					(not
-						(stacks-avail ?avail))
-					(stacks-avail ?new-avail)))
-	(:action open-new-stack
-			:parameters (?new-open ?open - count)
-			:precondition
-				(and
-					(stacks-avail ?open)
-					(next-count ?open ?new-open))
-			:effect
-				(and
-					(not
-						(stacks-avail ?open))
-					(stacks-avail ?new-open)
-					(increase total-cost 1)))
-)`
+  (:requirements :typing :adl :action-costs)
+  (:types order product count)
+  (:predicates (includes ?o - order ?p - product)
+	       (waiting ?o - order)
+	       (started ?o - order)
+	       (shipped ?o - order)
+	       (made ?p - product)
+	       (stacks-avail ?s - count)
+	       (next-count ?s ?ns - count))
+
+  (:functions (total-cost) - number)
+	       
+  (:action make-product
+    :parameters (?p - product)
+    :precondition (and (not (made ?p))
+		       (forall (?o - order)
+			       (imply (includes ?o ?p)
+				      (started ?o))))
+    :effect (made ?p))
+
+  (:action start-order
+    :parameters (?o - order ?avail ?new-avail - count)
+    :precondition (and (waiting ?o)
+		       (stacks-avail ?avail)
+		       (next-count ?new-avail ?avail))
+    :effect (and (not (waiting ?o))
+		 (started ?o)
+		 (not (stacks-avail ?avail))
+		 (stacks-avail ?new-avail))
+    )
+
+  (:action ship-order
+    :parameters (?o - order ?avail ?new-avail - count)
+    :precondition (and (started ?o)
+		       (forall (?p - product)
+			       (imply (includes ?o ?p) (made ?p)))
+		       (stacks-avail ?avail)
+		       (next-count ?avail ?new-avail))
+    :effect (and (not (started ?o))
+		 (shipped ?o)
+		 (not (stacks-avail ?avail))
+		 (stacks-avail ?new-avail))
+    )
+
+  (:action open-new-stack
+    :parameters (?open ?new-open - count)
+    :precondition (and (stacks-avail ?open)
+		       (next-count ?open ?new-open))
+    :effect (and (not (stacks-avail ?open))
+		 (stacks-avail ?new-open) (increase (total-cost) 1))
+    )
+
+  )`
 	ast, err := ParseDomain("", strings.NewReader(dom))
 	if err != nil {
 		t.Fatal(err)
@@ -179,38 +161,48 @@ func TestParseProblem(t *testing.T) {
 func TestPrintProblem(t *testing.T) {
 	prob := `
 (define (problem os-sequencedstrips-p5_1)
-	(:domain openstacks-sequencedstrips-ADL)
-	(:objects
-		n0 n1 n2 n3 n4 n5 - count
-		o1 o2 o3 o4 o5 - order
-		p1 p2 p3 p4 p5 - product)
-	(:init
-		(next-count n0 n1)
-		(next-count n1 n2)
-		(next-count n2 n3)
-		(next-count n3 n4)
-		(next-count n4 n5)
-		(stacks-avail n0)
-		(waiting o1)
-		(includes o1 p2)
-		(waiting o2)
-		(includes o2 p1)
-		(includes o2 p2)
-		(waiting o3)
-		(includes o3 p3)
-		(waiting o4)
-		(includes o4 p3)
-		(includes o4 p4)
-		(waiting o5)
-		(includes o5 p5)
-		(= total-cost 0))
-	(:goal
-		(and
-			(shipped o1)
-			(shipped o2)
-			(shipped o3)
-			(shipped o4)
-			(shipped o5)))
+(:domain openstacks-sequencedstrips-ADL)
+(:objects 
+n0 n1 n2 n3 n4 n5  - count
+o1 o2 o3 o4 o5  - order
+p1 p2 p3 p4 p5  - product
+
+)
+
+(:init
+(next-count n0 n1) (next-count n1 n2) (next-count n2 n3) (next-count n3 n4) (next-count n4 n5) 
+(stacks-avail n0)
+
+(waiting o1)
+(includes o1 p2)
+
+(waiting o2)
+(includes o2 p1)(includes o2 p2)
+
+(waiting o3)
+(includes o3 p3)
+
+(waiting o4)
+(includes o4 p3)(includes o4 p4)
+
+(waiting o5)
+(includes o5 p5)
+
+(= (total-cost) 0)
+
+)
+
+(:goal
+(and
+(shipped o1)
+(shipped o2)
+(shipped o3)
+(shipped o4)
+(shipped o5)
+))
+
+(:metric minimize (total-cost))
+
 )`
 	ast, err := ParseProblem("", strings.NewReader(prob))
 	if err != nil {

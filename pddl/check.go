@@ -4,6 +4,18 @@ import (
 	"fmt"
 )
 
+var (
+	supportedReqs = map[string]bool {
+		":strips": true,
+		":typing": true,
+		":negative-preconditions": true,
+		":disjunctive-preconditions": true,
+		":equality": true,
+		":quantified-preconditions": true,
+		":conditional-effects": true,
+	}
+)
+
 // declarations are names that have been declared.
 type declarations struct {
 	reqs, types, consts, preds map[string]bool
@@ -16,8 +28,8 @@ func CheckDomain(d* Domain) error {
 	if err != nil {
 		return err
 	}
-	if len(d.Types) > 0 && !decl.reqs[":types"] {
-		return errorf(d.Types[0].Loc, "types used but :types is not required")
+	if len(d.Types) > 0 && !decl.reqs[":typing"] {
+		return errorf(d.Types[0].Loc, "types used but :typing is not required")
 	}
 	if err := checkTypedNames(&decl, d.Types); err != nil {
 		return err
@@ -44,12 +56,12 @@ func CheckDomain(d* Domain) error {
 }
 
 // checkTypedNames returns an error if there is
-// type are used when :types is not required, or
+// type are used when :typing is not required, or
 // if there is an undeclared type in the list.
 func checkTypedNames(d *declarations, lst []TypedName) error {
 	for _, ent := range lst {
-		if len(ent.Types) > 0 && !d.reqs[":types"] {
-			return errorf(ent.Loc, "typse used but :types is not required")
+		if len(ent.Types) > 0 && !d.reqs[":typing"] {
+			return errorf(ent.Loc, "typse used but :typing is not required")
 		}
 		for _, typ := range ent.Types {
 			if !d.types[typ.Str] {
@@ -71,6 +83,9 @@ func (d *Domain) declarations() (declarations, error) {
 		preds: map[string]bool{},
 	}
 	for _, r := range d.Requirements {
+		if !supportedReqs[r.Str] {
+			return decl, errorf(r.Loc, "%s is not a supported requirement", r.Str)
+		}
 		if decl.reqs[r.Str] {
 			return decl, errorf(r.Loc, "%s is declared multiple times", r.Str)
 		}
@@ -82,7 +97,7 @@ func (d *Domain) declarations() (declarations, error) {
 		}
 		decl.types[t.Str] = true
 	}
-	if decl.reqs[":types"] {
+	if decl.reqs[":typing"] {
 		decl.types["object"] = true
 	}
 	for _, c := range d.Constants {

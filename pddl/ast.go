@@ -70,7 +70,7 @@ type Term struct {
 	Variable bool
 }
 
-type Formula interface{
+type Formula interface {
 	// print prints the formula as valid PDDL
 	// to an io.Writed, prefixed with a string
 	// for indentation purposes.
@@ -85,7 +85,7 @@ type BinaryNode struct{ Left, Right Formula }
 
 type MultiNode struct{ Formula []Formula }
 
-type QuantNode struct{
+type QuantNode struct {
 	Variables []TypedName
 	UnaryNode
 }
@@ -116,8 +116,8 @@ type WhenNode struct {
 var (
 	// AssignOps is the set of valid assignment operators.
 	AssignOps = map[string]bool{
-		"=": true,
-		"assign": true,
+		"=":        true,
+		"assign":   true,
 		"increase": true,
 	}
 )

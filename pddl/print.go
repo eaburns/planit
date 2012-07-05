@@ -112,7 +112,7 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 			if i == 0 {
 				fmt.Fprint(w, prefix+n)
 			} else {
-				fmt.Fprint(w, " " + n)
+				fmt.Fprint(w, " "+n)
 			}
 		}
 		fmt.Fprint(w, " - ", typ)
@@ -121,7 +121,7 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 		if i == 0 {
 			fmt.Fprint(w, prefix+n)
 		} else {
-			fmt.Fprint(w, " " + n)
+			fmt.Fprint(w, " "+n)
 		}
 	}
 }

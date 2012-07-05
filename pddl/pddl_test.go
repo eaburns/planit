@@ -1,12 +1,12 @@
 package pddl
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 const (
-	testDomainFile = "p01-domain.pddl"
+	testDomainFile  = "p01-domain.pddl"
 	testProblemFile = "p01.pddl"
 )
 

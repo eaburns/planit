@@ -90,7 +90,7 @@ type QuantNode struct{
 	UnaryNode
 }
 
-type Proposition struct {
+type PropositionNode struct {
 	Predicate  Name
 	Parameters []Term
 	LeafNode

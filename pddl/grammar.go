@@ -179,10 +179,10 @@ func parseGd(p *parser) (res Formula) {
 	return
 }
 
-func parseProposition(p *parser) *Proposition {
+func parseProposition(p *parser) *PropositionNode {
 	p.expect(tokOpen)
 	defer p.expect(tokClose)
-	return &Proposition{
+	return &PropositionNode{
 		Predicate:  parseName(p, p.expect(tokId).text),
 		Parameters: parseTerms(p),
 	}

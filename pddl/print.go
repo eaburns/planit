@@ -82,14 +82,15 @@ func PrintProblem(w io.Writer, p *Problem) {
 	fmt.Fprintln(w, ")\n)")
 }
 
-func printRequirements(w io.Writer, reqs []string) {
+func printRequirements(w io.Writer, reqs []Name) {
 	if len(reqs) > 0 {
 		fmt.Fprintf(w, "%s(:requirements\n", indent)
 		for i, r := range reqs {
+			s := r.Str
 			if i == len(reqs)-1 {
-				r += ")"
+				s += ")"
 			}
-			fmt.Fprintln(w, indent+indent, r)
+			fmt.Fprintln(w, indent+indent, s)
 		}
 	}
 }

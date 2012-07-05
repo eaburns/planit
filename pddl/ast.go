@@ -7,7 +7,7 @@ import (
 
 type Domain struct {
 	Name         string
-	Requirements []string
+	Requirements []Name
 	Types        []TypedName
 	Constants    []TypedName
 	Predicates   []Predicate
@@ -17,7 +17,7 @@ type Domain struct {
 type Problem struct {
 	Name         string
 	Domain       string
-	Requirements []string
+	Requirements []Name
 	Objects      []TypedName
 	Init         []Formula
 	Goal         Formula

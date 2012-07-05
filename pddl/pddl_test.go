@@ -3,6 +3,7 @@ package pddl
 import (
 	"os"
 	"testing"
+	"strings"
 )
 
 const (
@@ -21,6 +22,7 @@ func TestParseDomain(t *testing.T) {
 	}
 }
 
+/*
 func TestPrintDomain(t *testing.T) {
 	file, err := os.Open(testDomainFile)
 	if err != nil {
@@ -28,6 +30,59 @@ func TestPrintDomain(t *testing.T) {
 	}
 	d, err := ParseDomain(testDomainFile, file)
 	PrintDomain(os.Stdout, d)
+}
+*/
+
+func TestCheckDomain(t *testing.T) {
+	tests := [...]struct{
+		pddl string
+		ok bool
+	}{
+		{ "(define (domain x) (:types t))", false },
+		{ "(define (domain x) (:requirements :types) (:types t))", true },
+		{ "(define (domain x) (:requirements :types) (:types t - undecl))", false },
+		{ "(define (domain x) (:requirements :types) (:types s t - s))", true },
+		{ "(define (domain x) (:requirements :types) (:types t - u u))", true },
+		{ "(define (domain x) (:requirements :types) (:types t - object))", true },
+		{ "(define (domain x) (:requirements :types) (:types u - (either s t) s t))", false },
+
+		{ "(define (domain x) (:requirements :types) (:constants c - undecl))", false },
+		{ "(define (domain x) (:requirements :types) (:constants c - object))", true },
+		{ "(define (domain x) (:constants c - unreqd))", false },
+		{ "(define (domain x) (:requirements :types) (:types t) (:constants c - t ))", true },
+		{ "(define (domain x) (:requirements :types) (:types t) (:constants c - (either t undecl) ))", false },
+		{ "(define (domain x) (:requirements :types) (:types s t) (:constants c - (either s t) ))", true },
+
+		{ "(define (domain x) (:predicates (p ?parm)))", true },
+		{ "(define (domain x) (:predicates (p ?parm - unreqd)))", false },
+		{ "(define (domain x) (:requirements :types) (:predicates (p ?parm - object)))", true },
+		{ "(define (domain x) (:requirements :types) (:types t) (:predicates (p ?parm - t)))", true },
+		{ "(define (domain x) (:requirements :types) (:predicates (p ?parm - undecl)))", false },
+		{ "(define (domain x) (:requirements :types) (:types t) (:predicates (p ?parm - (either t undecl))))", false },
+		{ "(define (domain x) (:requirements :types) (:types s t) (:predicates (p ?parm - (either s t))))", true },
+
+		{ "(define (domain x) (:action a :parameters (?p - unreq)))", false },
+		{ "(define (domain x) (:action a :parameters (?p)))", true },
+		{ "(define (domain x) (:requirements :types) (:action a :parameters (?p)))", true },
+		{ "(define (domain x) (:requirements :types) (:action a :parameters (?p - object)))", true },
+		{ "(define (domain x) (:requirements :types) (:action a :parameters (?p - undecl)))", false },
+		{ "(define (domain x) (:requirements :types) (:types t) (:action a :parameters (?p - t)))", true },
+		{ "(define (domain x) (:requirements :types) (:types t) (:action a :parameters (?p - (either t undecl) )))", false },
+		{ "(define (domain x) (:requirements :types) (:types s t) (:action a :parameters (?p - (either s t))))", true },
+	}
+
+	for _, test := range tests {
+		d, err := ParseDomain("", strings.NewReader(test.pddl))
+		if err != nil {
+			t.Fatalf("%s\n%s", test.pddl, err)
+		}
+		switch err := CheckDomain(d); {
+		case err != nil && test.ok:
+			t.Errorf("%s\nunexpected error %s", test.pddl, err)
+		case err == nil && !test.ok:
+			t.Errorf("%s\nexpected error", test.pddl)
+		}
+	}
 }
 
 func TestParseProblem(t *testing.T) {
@@ -41,6 +96,7 @@ func TestParseProblem(t *testing.T) {
 	}
 }
 
+/*
 func TestPrintProblem(t *testing.T) {
 	file, err := os.Open(testProblemFile)
 	if err != nil {
@@ -52,3 +108,4 @@ func TestPrintProblem(t *testing.T) {
 	}
 	PrintProblem(os.Stdout, p)
 }
+*/

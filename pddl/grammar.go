@@ -56,10 +56,10 @@ func parseDomainName(p *parser) string {
 	return n.text
 }
 
-func parseReqsDef(p *parser) (reqs []string) {
+func parseReqsDef(p *parser) (reqs []Name) {
 	if p.acceptNamedList(":requirements") {
 		for t, ok := p.accept(tokCid); ok; t, ok = p.accept(tokCid) {
-			reqs = append(reqs, t.text)
+			reqs = append(reqs, parseName(p, t.text))
 		}
 		p.expect(tokClose)
 	}

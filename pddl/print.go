@@ -143,19 +143,11 @@ func typeString(t []Name) (str string) {
 	return
 }
 
-func (l *Literal) print(w io.Writer, prefix string) {
+func (l *Proposition) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(", prefix)
-	if !l.Positive {
-		fmt.Fprint(w, "not(")
-	}
-
 	fmt.Fprint(w, l.Predicate.Str)
 	for _, t := range l.Parameters {
 		fmt.Fprintf(w, " %s", t.Name.Str)
-	}
-
-	if !l.Positive {
-		fmt.Fprint(w, ")")
 	}
 	fmt.Fprint(w, ")")
 }

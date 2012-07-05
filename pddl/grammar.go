@@ -170,26 +170,22 @@ func parseGd(p *parser) (res Formula) {
 		res = parseExistsGd(p, parseGd)
 	case p.acceptNamedList("forall"):
 		res = parseForallGd(p, parseGd)
+	case p.acceptNamedList("not"):
+		res = &NotNode{ UnaryNode{ parseProposition(p) } }
+		p.expect(tokClose)
 	default:
-		res = parseLiteral(p)
+		res = parseProposition(p)
 	}
 	return
 }
 
-func parseLiteral(p *parser) *Literal {
-	pos := true
-	if p.acceptNamedList("not") {
-		pos = false
-		defer p.expect(tokClose)
-	}
+func parseProposition(p *parser) *Proposition {
 	p.expect(tokOpen)
-	res := &Literal{
+	defer p.expect(tokClose)
+	return &Proposition{
 		Predicate:  parseName(p, p.expect(tokId).text),
-		Positive:   pos,
 		Parameters: parseTerms(p),
 	}
-	p.expect(tokClose)
-	return res
 }
 
 func parseTerms(p *parser) (lst []Term) {
@@ -289,7 +285,11 @@ func parsePeffect(p *parser) Formula {
 	if _, ok := AssignOps[p.peekn(2).text]; ok && p.peek().typ == tokOpen {
 		return parseAssign(p)
 	}
-	return parseLiteral(p)
+	if p.acceptNamedList("not") {
+		defer p.expect(tokClose)
+		return &NotNode{ UnaryNode{ parseProposition(p) } }
+	}
+	return parseProposition(p)
 }
 
 func parseAssign(p *parser) Formula {
@@ -389,17 +389,22 @@ func parseInit(p *parser) (els []Formula) {
 	return
 }
 
-func parseInitEl(p *parser) Formula {
-	if p.acceptNamedList("=") {
-		eq := &AssignNode{
+func parseInitEl(p *parser) (res Formula) {
+	switch {
+	case p.acceptNamedList("="):
+		res = &AssignNode{
 			Op:   "=",
 			Lval: parseFhead(p),
 			Rval: p.expect(tokNum).text,
 		}
 		p.expect(tokClose)
-		return eq
+	case p.acceptNamedList("not"):
+		res =  &NotNode{ UnaryNode{ parseProposition(p) } }
+		p.expect(tokClose)
+	default:
+		res = parseProposition(p)
 	}
-	return parseLiteral(p)
+	return
 }
 
 func parseGoal(p *parser) Formula {

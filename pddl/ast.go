@@ -90,9 +90,8 @@ type QuantNode struct{
 	UnaryNode
 }
 
-type Literal struct {
+type Proposition struct {
 	Predicate  Name
-	Positive   bool
 	Parameters []Term
 	LeafNode
 }

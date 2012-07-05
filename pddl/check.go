@@ -97,7 +97,7 @@ func (d *Domain) declarations() (declarations, error) {
 		types:  map[string]bool{},
 		consts: map[string]bool{},
 		preds:  map[string]bool{},
-		funcs: map[string]bool{},
+		funcs:  map[string]bool{},
 	}
 	for _, r := range d.Requirements {
 		if !supportedReqs[r.Str] {

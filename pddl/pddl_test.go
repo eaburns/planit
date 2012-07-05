@@ -130,7 +130,7 @@ func TestCheckDomain(t *testing.T) {
 		{"(define (domain x) (:requirements :typing) (:action a :parameters (?p - undecl)))", false},
 		{"(define (domain x) (:requirements :typing) (:types t) (:action a :parameters (?p - t)))", true},
 		{"(define (domain x) (:requirements :typing) (:types t) (:action a :parameters (?p - (either t undecl) )))", false},
-		{"(define (domain x) (:requirements :typing) (:types s t) (:action a :parameters (?p - (either s t))))", true}, 
+		{"(define (domain x) (:requirements :typing) (:types s t) (:action a :parameters (?p - (either s t))))", true},
 
 		{"(define (domain x) (:functions (foo)))", false},
 		{"(define (domain x) (:functions (total-cost)))", false},

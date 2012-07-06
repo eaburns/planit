@@ -254,12 +254,12 @@ func checkFuncs(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
 func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
 	for i, ent := range lst {
 		if len(ent.Types) > 0 && !reqs[":typing"] {
-			return errorf(ent.Loc, "typse used but :typing is not required")
+			return errorf(ent.Loc, "types used but :typing is not required")
 		}
 		for j, typ := range ent.Types {
 			switch def := types[typ.Str]; def {
 			case nil:
-				return errorf(typ.Loc, "type %s is not declared", typ.Str)
+				return errorf(typ.Loc, "undefined type: %s", typ.Str)
 			default:
 				lst[i].Types[j].Definition = def
 			}

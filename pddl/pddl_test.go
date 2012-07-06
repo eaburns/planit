@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"regexp"
 )
 
 const (
@@ -92,91 +93,162 @@ func TestPrintDomain(t *testing.T) {
 	}
 }
 
-func TestCheckDomain(t *testing.T) {
-	tests := [...]struct {
-		pddl string
-		ok   bool
-	}{
-		{"(define (domain x) (:requirements :strips))", true},
-		{"(define (domain x) (:requirements :foobar))", false},
+type test struct {
+	pddl string
+	errMsg string
+}
 
-		{"(define (domain x) (:types t))", false},
-		{"(define (domain x) (:requirements :typing) (:types t))", true},
-		{"(define (domain x) (:requirements :typing) (:types t - undecl))", false},
-		{"(define (domain x) (:requirements :typing) (:types s t - s))", true},
-		{"(define (domain x) (:requirements :typing) (:types t - u u))", true},
-		{"(define (domain x) (:requirements :typing) (:types t - object))", true},
-		{"(define (domain x) (:requirements :typing) (:types u - (either s t) s t))", false},
-
-		{"(define (domain x) (:requirements :typing) (:constants c - undecl))", false},
-		{"(define (domain x) (:requirements :typing) (:constants c - object))", true},
-		{"(define (domain x) (:constants c - unreqd))", false},
-		{"(define (domain x) (:requirements :typing) (:types t) (:constants c - t ))", true},
-		{"(define (domain x) (:requirements :typing) (:types t) (:constants c - (either t undecl) ))", false},
-		{"(define (domain x) (:requirements :typing) (:types s t) (:constants c - (either s t) ))", true},
-
-		{"(define (domain x) (:predicates (p ?parm)))", true},
-		{"(define (domain x) (:predicates (p ?parm - unreqd)))", false},
-		{"(define (domain x) (:requirements :typing) (:predicates (p ?parm - object)))", true},
-		{"(define (domain x) (:requirements :typing) (:types t) (:predicates (p ?parm - t)))", true},
-		{"(define (domain x) (:requirements :typing) (:predicates (p ?parm - undecl)))", false},
-		{"(define (domain x) (:requirements :typing) (:types t) (:predicates (p ?parm - (either t undecl))))", false},
-		{"(define (domain x) (:requirements :typing) (:types s t) (:predicates (p ?parm - (either s t))))", true},
-
-		{"(define (domain x) (:action a :parameters (?p - unreq)))", false},
-		{"(define (domain x) (:action a :parameters (?p)))", true},
-		{"(define (domain x) (:requirements :typing) (:action a :parameters (?p)))", true},
-		{"(define (domain x) (:requirements :typing) (:action a :parameters (?p - object)))", true},
-		{"(define (domain x) (:requirements :typing) (:action a :parameters (?p - undecl)))", false},
-		{"(define (domain x) (:requirements :typing) (:types t) (:action a :parameters (?p - t)))", true},
-		{"(define (domain x) (:requirements :typing) (:types t) (:action a :parameters (?p - (either t undecl) )))", false},
-		{"(define (domain x) (:requirements :typing) (:types s t) (:action a :parameters (?p - (either s t))))", true},
-
-		{"(define (domain x) (:functions (foo)))", false},
-		{"(define (domain x) (:functions (total-cost)))", false},
-		{"(define (domain x) (:requirements :action-costs)))", true},
-		{"(define (domain x) (:requirements :action-costs) (:functions (total-cost)))", true},
-		{"(define (domain x) (:requirements :action-costs) (:functions (total-cost) - number))", true},
-		{"(define (domain x) (:requirements :action-costs) (:functions (total-cost ?foo)))", false},
-
-		{"(define (domain x) (:action a :parameters () :precondition (forall (?v - notypes) (and))))", false},
-		{`(define (domain x) (:requirements :typing)
-			(:action a :parameters ()
-				:precondition (forall (?v - undef) (and))))`, false},
-		{`(define (domain x) (:requirements :typing) (:types t)
-			(:action a :parameters ()
-				:precondition (forall (?v - t) (and))))`, true},
-
-		{"(define (domain x) (:predicates (a)) (:action a :parameters () :precondition (a)))", true },
-		{"(define (domain x) (:action a :parameters () :precondition (a)))", false },
-		// def pred incorrect arity
-		// def pred incorrect arg types
-
-		{"(define (domain x) (:predicates (a ?x)) (:action a :parameters () :precondition (a ?x)))", false },
-		{"(define (domain x) (:predicates (a ?x)) (:action a :parameters () :precondition (a x)))", false },
-		{"(define (domain x) (:predicates (a ?x)) (:action a :parameters (?x) :precondition (a ?x)))", true },
-		{`(define (domain x) (:predicates (a ?x))
-			(:action a :parameters () :precondition (forall (?x) (a ?x))))`, true },
-		{`(define (domain x) (:action a :parameters () :precondition (a x)))`, false },
-		{`(define (domain x) (:constants c) (:predicates (a))
-			(:action a :parameters () :precondition (a c)))`, true },
-
-		// undef func
-		// def func
-	}
-
+// checkPddlDomain checks a set of tests by
+// calling CheckDomain on the pddl and verifying
+// that the error message matches the regular
+// expression.
+func checkPddlDomain(tests []test, t *testing.T) {
 	for _, test := range tests {
 		d, err := ParseDomain("", strings.NewReader(test.pddl))
 		if err != nil {
-			t.Fatalf("%s\n%s", test.pddl, err)
+			t.Errorf("%s\n%s", test.pddl, err)
+			continue
 		}
-		switch err := CheckDomain(d); {
-		case err != nil && test.ok:
-			t.Errorf("%s\nunexpected error %s", test.pddl, err)
-		case err == nil && !test.ok:
-			t.Errorf("%s\nexpected error", test.pddl)
+		err = CheckDomain(d)
+		if test.errMsg == "" {
+			if err != nil {
+				t.Errorf("%s\nunexpected error message: %s",
+					test.pddl, err.Error())
+			}
+			continue
+		}
+		if err == nil {
+			t.Errorf("%s\nexpected error message matching: %s",
+				test.pddl, test.errMsg)
+			continue
+		}
+		re := regexp.MustCompile(test.errMsg)
+		if !re.Match([]byte(err.Error())) {
+			t.Errorf("%s\nexpected error message matching %s, got %s",
+				test.pddl, test.errMsg, err.Error())
 		}
 	}
+}
+
+func TestRequirementDef(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:requirements :strips))`, ""},
+
+		{`(define (domain x) (:requirements :foobar))`,
+			":foobar is not a supported requirement" },
+	}, t)
+}
+
+func TestCheckTypesDef(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:types t))`,
+			":types requires :typing"},
+		{`(define (domain x) (:requirements :typing) (:types t))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types t - undecl))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:types s t - s))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types t - u u))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types t - object))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types u - (either s t) s t))`,
+			"not semantically defined"},
+	}, t)
+}
+
+func TestCheckConstantsDef(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:requirements :typing) (:constants c - undecl))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:constants c - object))`, ""},
+		{`(define (domain x) (:constants c - unreqd))`,
+			":typing is not required"},
+		{`(define (domain x) (:requirements :typing) (:types t) (:constants c - t ))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types t) (:constants c - (either t undecl) ))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:types s t) (:constants c - (either s t) ))`, ""},
+	}, t)
+}
+
+func TestCheckPredicatesDef(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:predicates (p ?parm)))`, ""},
+		{`(define (domain x) (:predicates (p ?parm - unreqd)))`,
+			":typing is not required"},
+		{`(define (domain x) (:requirements :typing) (:predicates (p ?parm - object)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types t) (:predicates (p ?parm - t)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:predicates (p ?parm - undecl)))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:types t) (:predicates (p ?parm - (either t undecl))))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:types s t) (:predicates (p ?parm - (either s t))))`, ""},
+	}, t)
+}
+
+func TestCheckActionDefs(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:action a :parameters (?p - unreq)))`,
+			":typing is not required"},
+		{`(define (domain x) (:action a :parameters (?p)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:action a :parameters (?p)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:action a :parameters (?p - object)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:action a :parameters (?p - undecl)))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:types t) (:action a :parameters (?p - t)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types t)
+			(:action a :parameters (?p - (either t undecl) )))`,
+			"undefined type: undecl"},
+		{`(define (domain x) (:requirements :typing) (:types s t)
+			(:action a :parameters (?p - (either s t))))`, ""},
+	}, t)
+}
+
+func TestCheckFunctionsDef(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:functions (foo)))`,
+			"requires :action-costs"},
+		{`(define (domain x) (:functions (total-cost)))`,
+			"requires :action-costs"},
+		{`(define (domain x) (:requirements :action-costs)))`, ""},
+		{`(define (domain x) (:requirements :action-costs) (:functions (total-cost)))`, ""},
+		{`(define (domain x) (:requirements :action-costs) (:functions (total-cost) - number))`, ""},
+		{`(define (domain x) (:requirements :action-costs) (:functions (total-cost ?foo)))`,
+			"0-ary total-cost function"},
+		{`(define (domain x) (:requirements :action-costs) (:functions (afunc ?foo)))`,
+			"0-ary total-cost function"},
+		{`(define (domain x) (:requirements :action-costs) (:functions (afunc)))`,
+			"0-ary total-cost function"},
+	}, t)
+}
+
+func TestCheckQuantifiers(t *testing.T) {
+	checkPddlDomain([]test{
+		{`(define (domain x) (:action a :parameters () :precondition (forall (?v - notypes) (and))))`,
+			":typing is not required"},
+		{`(define (domain x) (:requirements :typing)
+			(:action a :parameters () :precondition (forall (?v - undef) (and))))`,
+			"undefined type: undef"},
+		{`(define (domain x) (:requirements :typing) (:types t)
+			(:action a :parameters () :precondition (forall (?v - t) (and))))`,
+			""},
+	}, t)
+}
+
+func TestCheckPredicate(t *testing.T) {
+		// def pred incorrect arity
+		// def pred incorrect arg types
+	checkPddlDomain([]test{
+		{`(define (domain x) (:predicates (p)) (:action a :parameters () :precondition (p)))`, "" },
+		{`(define (domain x) (:action a :parameters () :precondition (p)))`,
+			"undefined predicate: p" },
+		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters () :precondition (p ?x)))`,
+			"undefined variable: \\?x" },
+		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters () :precondition (p x)))`,
+			"undefined constant: x" },
+		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters (?x) :precondition (p ?x)))`, "" },
+		{`(define (domain x) (:predicates (p ?x))
+			(:action a :parameters () :precondition (forall (?x) (p ?x))))`, "" },
+		{`(define (domain x) (:constants c) (:predicates (p))
+			(:action a :parameters () :precondition (p c)))`, "" },
+	}, t)
 }
 
 func TestParseProblem(t *testing.T) {

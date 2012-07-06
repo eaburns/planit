@@ -336,7 +336,7 @@ func (p *PropositionNode) check(defs *defs) error {
 	}
 	for i := range p.Arguments {
 		var n *TypedName
-		var kind string = "variable"
+		kind := "variable"
 		if p.Arguments[i].Variable {
 			n = defs.vars.find(p.Arguments[i].Str)
 		} else {
@@ -359,4 +359,3 @@ func (a *AssignNode) check(defs *defs) error {
 	log.Printf("TODO: check assignment for numeric Rval\n")
 	return nil
 }
-

@@ -41,20 +41,20 @@ type (
 
 	// varDefs is a linked list of variable definitions.
 	varDefs struct {
-		up *varDefs
-		name string
+		up         *varDefs
+		name       string
 		definition *TypedName
 	}
 
 	// defs aggregates all of the different definition
 	// classes.
 	defs struct {
-		reqs reqDefs
-		types typeDefs
+		reqs   reqDefs
+		types  typeDefs
 		consts constDefs
-		preds predDefs
-		funcs funcDefs
-		vars *varDefs
+		preds  predDefs
+		funcs  funcDefs
+		vars   *varDefs
 	}
 )
 
@@ -73,9 +73,9 @@ func (v *varDefs) find(n string) *TypedName {
 // push returns a new varDefs with the given
 // definitions defined.
 func (v *varDefs) push(d *TypedName) *varDefs {
-	return &varDefs {
-		up: v,
-		name: d.Str,
+	return &varDefs{
+		up:         v,
+		name:       d.Str,
 		definition: d,
 	}
 }
@@ -197,8 +197,8 @@ func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, er
 		cs[i].Num = i
 	}
 	if err := checkTypedNames(reqs, types, cs); err != nil {
- 		return consts, err
- 	}
+		return consts, err
+	}
 	return consts, nil
 }
 
@@ -242,7 +242,7 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 			return funcs, errorf(fun.Loc, ":action-costs only allows a 0-ary total-cost function")
 		}
 		if err := checkTypedNames(reqs, types, fun.Parameters); err != nil {
-			return funcs ,err
+			return funcs, err
 		}
 	}
 	return funcs, nil
@@ -284,7 +284,6 @@ func (b *BinaryNode) check(defs *defs) error {
 	}
 	return b.Right.check(defs)
 }
-
 
 func (m *MultiNode) check(defs *defs) error {
 	for i := range m.Formula {
@@ -348,6 +347,15 @@ func (p *PropositionNode) check(defs *defs) error {
 				kind, p.Arguments[i].Str)
 		}
 		p.Arguments[i].Definition = n
+
+		parmType := p.Definition.Parameters[i].Types
+		argType := p.Arguments[i].Definition.Types
+		if !compatTypes(defs.types, parmType, argType) {
+			return errorf(p.Arguments[i].Loc,
+				"%s, argument %s [type %s] is incompatible with parameter %s [type %s]",
+				p.Definition.Str, p.Arguments[i].Str, typeString(argType),
+				p.Definition.Parameters[i].Str, typeString(parmType))
+		}
 	}
 	return nil
 }
@@ -358,4 +366,43 @@ func (a *AssignNode) check(defs *defs) error {
 	}
 	log.Printf("TODO: check assignment for numeric Rval\n")
 	return nil
+}
+
+// compatTypes returns true r is convertable to l via widening.
+func compatTypes(types typeDefs, left, right []Type) bool {
+	if len(right) == 1 {
+		for _, l := range left {
+			for _, s := range superTypes(types, l) {
+				if s == right[0].Definition {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for _, r := range right {
+		if !compatTypes(types, left, []Type{r}) {
+			return false
+		}
+	}
+	return true
+}
+
+// superTypes returns a slice of the parent types
+// of the given type, including the type itself.
+func superTypes(types typeDefs, t Type) (supers []*TypedName) {
+	seen := make([]bool, len(types))
+	cur := t.Definition
+	for !seen[cur.Num] {
+		seen[cur.Num] = true
+		supers = append(supers, cur)
+		if len(cur.Types) > 1 {
+			// This should have been caught already
+			panic(cur.Str + " has more than one parent type")
+		}
+		if len(cur.Types) > 0 {
+			cur = cur.Types[0].Definition
+		}
+	}
+	return
 }

@@ -3,9 +3,9 @@ package pddl
 import (
 	"bytes"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
-	"regexp"
 )
 
 const (
@@ -94,7 +94,7 @@ func TestPrintDomain(t *testing.T) {
 }
 
 type test struct {
-	pddl string
+	pddl   string
 	errMsg string
 }
 
@@ -135,7 +135,7 @@ func TestRequirementDef(t *testing.T) {
 		{`(define (domain x) (:requirements :strips))`, ""},
 
 		{`(define (domain x) (:requirements :foobar))`,
-			":foobar is not a supported requirement" },
+			":foobar is not a supported requirement"},
 	}, t)
 }
 
@@ -233,26 +233,50 @@ func TestCheckQuantifiers(t *testing.T) {
 }
 
 func TestCheckProposition(t *testing.T) {
-		// def pred incorrect arg types
 	checkPddlDomain([]test{
-		{`(define (domain x) (:predicates (p)) (:action a :parameters () :precondition (p)))`, "" },
+		{`(define (domain x) (:predicates (p)) (:action a :parameters () :precondition (p)))`, ""},
 		{`(define (domain x) (:action a :parameters () :precondition (p)))`,
-			"undefined predicate: p" },
+			"undefined predicate: p"},
 		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters () :precondition (p ?x)))`,
-			"undefined variable: \\?x" },
+			"undefined variable: \\?x"},
 		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters () :precondition (p x)))`,
-			"undefined constant: x" },
-		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters (?x) :precondition (p ?x)))`, "" },
+			"undefined constant: x"},
+		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters (?x) :precondition (p ?x)))`, ""},
 		{`(define (domain x) (:predicates (p ?x))
-			(:action a :parameters () :precondition (forall (?x) (p ?x))))`, "" },
+			(:action a :parameters () :precondition (forall (?x) (p ?x))))`, ""},
 		{`(define (domain x) (:constants c) (:predicates (p ?x))
-			(:action a :parameters () :precondition (p c)))`, "" },
+			(:action a :parameters () :precondition (p c)))`, ""},
 		{`(define (domain x) (:constants c) (:predicates (p))
 			(:action a :parameters () :precondition (p c)))`,
-			"requires 0 arguments" },
+			"requires 0 arguments"},
 		{`(define (domain x) (:constants c d) (:predicates (p ?x))
 			(:action a :parameters () :precondition (p c d)))`,
-			"requires 1 argument" },
+			"requires 1 argument"},
+		{`(define (domain x) (:requirements :typing) (:types t)
+			(:constants c - t) (:predicates (p ?x - t))
+			(:action a :parameters () :precondition (p c)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types s t)
+			(:constants c - t) (:predicates (p ?x - (either t s)))
+			(:action a :parameters () :precondition (p c)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types s t)
+			(:constants c - (either t s)) (:predicates (p ?x - (either t s)))
+			(:action a :parameters () :precondition (p c)))`, ""},
+		{`(define (domain x) (:requirements :typing) (:types s t)
+			(:constants c - t) (:predicates (p ?x - s))
+			(:action a :parameters () :precondition (p c)))`,
+			"incompatible"},
+		{`(define (domain x) (:requirements :typing) (:types s t)
+			(:constants c - (either t s)) (:predicates (p ?x - t))
+			(:action a :parameters () :precondition (p c)))`,
+			"incompatible"},
+		{`(define (domain x) (:requirements :typing) (:types s t u)
+			(:constants c - (either t s)) (:predicates (p ?x - (either s t u)))
+			(:action a :parameters () :precondition (p c)))`,
+			""},
+		{`(define (domain x) (:requirements :typing) (:types s t u)
+			(:constants c - (either t s)) (:predicates (p ?x - (either t u)))
+			(:action a :parameters () :precondition (p c)))`,
+			"incompatible"},
 	}, t)
 }
 

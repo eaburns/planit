@@ -109,8 +109,8 @@ type PropositionNode struct {
 	Name
 	// Definition points to the predicate
 	// definition for this proposition.
-	Definition  *Predicate
-	Arguments []Term
+	Definition *Predicate
+	Arguments  []Term
 	LeafNode
 }
 
@@ -150,7 +150,7 @@ var (
 
 type AssignNode struct {
 	Op   string
-	Lval Name // Just total-cost for now.
+	Lval Name   // Just total-cost for now.
 	Rval string // Just a number
 	LeafNode
 }

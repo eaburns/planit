@@ -9,6 +9,7 @@ var (
 	// supportedReqs is a list of the requirement
 	// flags that are supported by planit.
 	supportedReqs = map[string]bool{
+		":adl":	true,
 		":strips":                    true,
 		":typing":                    true,
 		":negative-preconditions":    true,
@@ -88,13 +89,74 @@ func (v *varDefs) pop() *varDefs {
 	return v.up
 }
 
+// Check returns an error if there are any
+// semantic errors in a domain or problem,
+// otherwise all definitions are numbered and
+// indentifiers are linked to their definition.
+func Check(d *Domain, p *Problem) (err error) {
+	defs, err := CheckDomain(d)
+	if err != nil {
+		return
+	}
+	if p.Domain != d.Name {
+		return fmt.Errorf("problem %s expects domain %s, but got %s",
+			p.Name, p.Domain, d.Name)
+	}
+	reqs, err := checkReqsDef(p.Requirements)
+	if err != nil {
+		return
+	}
+	for req := range reqs {
+		if defs.reqs[req] {
+			return fmt.Errorf("problem requirement %s is already a domain requirement", req)
+		}
+		defs.reqs[req] = true
+	}
+
+	objs, err := checkConstsDef(defs.reqs, defs.types, p.Objects)
+	if err != nil {
+		return
+	}
+	for o, def := range objs {
+		if defs.consts[o] != nil {
+			return errorf(def.Loc, "object %s is already a domain constant", o)
+		}
+		def.Num = len(defs.consts)
+		defs.consts[o] = def
+	}
+
+	// just a quick sanity check
+	chk := map[int]bool{}
+	for _, def := range defs.consts {
+		if chk[def.Num] {
+			panic(fmt.Sprintf("%d numbers multiple constants", def.Num))
+		}
+		chk[def.Num] = true
+	}
+	for i := 0; i < len(defs.consts); i++ {
+		if !chk[i] {
+			panic(fmt.Sprintf("%d constants but %d numbers none of them",
+				len(defs.consts), i))
+		}
+	}
+
+	for i := range p.Init {
+		if err := p.Init[i].check(&defs); err != nil {
+			return err
+		}
+	}
+	if err := p.Goal.check(&defs); err != nil {
+		return err
+	}
+	// check the metric
+	return
+}
+
 // CheckDomain returns an error if there are
 // any semantic errors in the domain, otherwise
 // all definitions are numbered and indentifiers
-// in the domain are linked to their definition, via
-// the appropriate pointers.
-func CheckDomain(d *Domain) (err error) {
-	var defs defs
+// are linked to their definition.
+func CheckDomain(d *Domain) (defs defs, err error) {
 	defs.reqs, err = checkReqsDef(d.Requirements)
 	if err != nil {
 		return
@@ -136,7 +198,7 @@ func CheckDomain(d *Domain) (err error) {
 			return
 		}
 	}
-	return nil
+	return
 }
 
 // checkReqsDef checks requirement definitions.

@@ -1,0 +1,12 @@
+TYPES:
+
+	validate seems to accept widening conversions (e.g., an
+	action parameter can be a narrower type than the parameter of
+	a predicate for which it appears as an argument, but not the
+	other way around).
+
+	This implies the following test:
+		are *all* of the parameter types of an action valid
+		types for the predicates for which they are argumets.
+
+

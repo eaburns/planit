@@ -112,7 +112,6 @@ func Check(d *Domain, p *Problem) (err error) {
 		}
 		defs.reqs[req] = true
 	}
-
 	objs, err := checkConstsDef(defs.reqs, defs.types, p.Objects)
 	if err != nil {
 		return
@@ -124,22 +123,6 @@ func Check(d *Domain, p *Problem) (err error) {
 		def.Num = len(defs.consts)
 		defs.consts[o] = def
 	}
-
-	// just a quick sanity check
-	chk := map[int]bool{}
-	for _, def := range defs.consts {
-		if chk[def.Num] {
-			panic(fmt.Sprintf("%d numbers multiple constants", def.Num))
-		}
-		chk[def.Num] = true
-	}
-	for i := 0; i < len(defs.consts); i++ {
-		if !chk[i] {
-			panic(fmt.Sprintf("%d constants but %d numbers none of them",
-				len(defs.consts), i))
-		}
-	}
-
 	for i := range p.Init {
 		if err := p.Init[i].check(&defs); err != nil {
 			return err

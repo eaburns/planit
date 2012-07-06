@@ -277,6 +277,9 @@ func TestCheckProposition(t *testing.T) {
 			(:constants c - (either t s)) (:predicates (p ?x - (either t u)))
 			(:action a :parameters () :precondition (p c)))`,
 			"incompatible"},
+		{`(define (domain x) (:constants c) (:predicates (p ?x))
+			(:action a :parameters () :precondition (p c)))`,
+			""},
 	}, t)
 }
 

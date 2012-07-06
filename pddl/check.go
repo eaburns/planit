@@ -334,27 +334,24 @@ func (p *PropositionNode) check(defs *defs) error {
 			p.Definition.Str, len(p.Definition.Parameters), arg)
 	}
 	for i := range p.Arguments {
-		var n *TypedName
-		kind := "variable"
+		kind := "constant"
+		arg := defs.consts[p.Arguments[i].Str]
 		if p.Arguments[i].Variable {
-			n = defs.vars.find(p.Arguments[i].Str)
-		} else {
-			n = defs.consts[p.Arguments[i].Str]
-			kind = "constant"
+			arg = defs.vars.find(p.Arguments[i].Str)
+			kind = "variable"
 		}
-		if n == nil {
+		if arg == nil {
 			return errorf(p.Arguments[i].Loc, "undefined %s: %s",
 				kind, p.Arguments[i].Str)
 		}
-		p.Arguments[i].Definition = n
+		p.Arguments[i].Definition = arg
 
-		parmType := p.Definition.Parameters[i].Types
-		argType := p.Arguments[i].Definition.Types
-		if !compatTypes(defs.types, parmType, argType) {
+		parm := p.Definition.Parameters[i]
+		if !compatTypes(defs.types, parm.Types, arg.Types) {
 			return errorf(p.Arguments[i].Loc,
-				"%s, argument %s [type %s] is incompatible with parameter %s [type %s]",
-				p.Definition.Str, p.Arguments[i].Str, typeString(argType),
-				p.Definition.Parameters[i].Str, typeString(parmType))
+				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
+				arg.Str, typeString(arg.Types), parm.Str,
+ 				typeString(parm.Types), p.Definition.Str)
 		}
 	}
 	return nil

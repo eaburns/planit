@@ -110,7 +110,7 @@ type PropositionNode struct {
 	// Definition points to the predicate
 	// definition for this proposition.
 	Definition  *Predicate
-	Parameters []Term
+	Arguments []Term
 	LeafNode
 }
 

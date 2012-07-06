@@ -326,7 +326,7 @@ func (p *PropositionNode) check(defs *defs) error {
 	default:
 		p.Definition = pred
 	}
-	if len(p.Parameters) != len(p.Definition.Parameters) {
+	if len(p.Arguments) != len(p.Definition.Parameters) {
 		var arg = "arguments"
 		if len(p.Definition.Parameters) == 1 {
 			arg = arg[:len(arg)-1]
@@ -334,20 +334,20 @@ func (p *PropositionNode) check(defs *defs) error {
 		return errorf(p.Loc, "predicate %s requires %d %s",
 			p.Definition.Str, len(p.Definition.Parameters), arg)
 	}
-	for i := range p.Parameters {
+	for i := range p.Arguments {
 		var n *TypedName
 		var kind string = "variable"
-		if p.Parameters[i].Variable {
-			n = defs.vars.find(p.Parameters[i].Str)
+		if p.Arguments[i].Variable {
+			n = defs.vars.find(p.Arguments[i].Str)
 		} else {
-			n = defs.consts[p.Parameters[i].Str]
+			n = defs.consts[p.Arguments[i].Str]
 			kind = "constant"
 		}
 		if n == nil {
-			return errorf(p.Parameters[i].Loc, "undefined %s: %s",
-				kind, p.Parameters[i].Str)
+			return errorf(p.Arguments[i].Loc, "undefined %s: %s",
+				kind, p.Arguments[i].Str)
 		}
-		p.Parameters[i].Definition = n
+		p.Arguments[i].Definition = n
 	}
 	return nil
 }

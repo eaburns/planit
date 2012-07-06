@@ -185,7 +185,7 @@ func typeString(t []Type) (str string) {
 func (l *PropositionNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(", prefix)
 	fmt.Fprint(w, l.Str)
-	for _, t := range l.Parameters {
+	for _, t := range l.Arguments {
 		fmt.Fprintf(w, " %s", t.Name.Str)
 	}
 	fmt.Fprint(w, ")")

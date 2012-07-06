@@ -94,23 +94,23 @@ func (v *varDefs) pop() *varDefs {
 func CheckDomain(d *Domain) (err error) {
 	defs := defs{}
 
-	defs.reqs, err = checkReqs(d.Requirements)
+	defs.reqs, err = checkReqsDef(d.Requirements)
 	if err != nil {
 		return
 	}
-	defs.types, err = checkTypes(defs.reqs, d.Types)
+	defs.types, err = checkTypesDef(defs.reqs, d.Types)
 	if err != nil {
 		return
 	}
-	defs.consts, err = checkConsts(defs.reqs, defs.types, d.Constants)
+	defs.consts, err = checkConstsDef(defs.reqs, defs.types, d.Constants)
 	if err != nil {
 		return
 	}
-	defs.preds, err = checkPreds(defs.reqs, defs.types, d.Predicates)
+	defs.preds, err = checkPredsDef(defs.reqs, defs.types, d.Predicates)
 	if err != nil {
 		return
 	}
-	defs.funcs, err = checkFuncs(defs.reqs, defs.types, d.Functions)
+	defs.funcs, err = checkFuncsDef(defs.reqs, defs.types, d.Functions)
 	if err != nil {
 		return
 	}
@@ -138,10 +138,10 @@ func CheckDomain(d *Domain) (err error) {
 	return nil
 }
 
-// checkReqs checks requirement definitions.
+// checkReqsDef checks requirement definitions.
 // On success, a set of requirements is returned,
 // else an error is returned.
-func checkReqs(rs []Name) (reqDefs, error) {
+func checkReqsDef(rs []Name) (reqDefs, error) {
 	reqs := reqDefs{}
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
@@ -155,10 +155,10 @@ func checkReqs(rs []Name) (reqDefs, error) {
 	return reqs, nil
 }
 
-// checkTypes returns a mapping from type names
+// checkTypesDef returns a mapping from type names
 // to their definition, or an error if there is a semantic
 // error in the type definitions.
-func checkTypes(reqs reqDefs, ts []TypedName) (typeDefs, error) {
+func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 	types := typeDefs{}
 	if len(ts) > 0 && !reqs[":typing"] {
 		return types, errorf(ts[0].Loc, ":types requires :typing")
@@ -184,10 +184,10 @@ func checkTypes(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 	return types, nil
 }
 
-// checkConsts returns the map from constant names
-// to their definition if there are no semantic errors,
-// otherwise an error is returned.
-func checkConsts(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, error) {
+// checkConstsDef returns the map from constant
+// names to their definition if there are no semantic
+// errors, otherwise an error is returned.
+func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, error) {
 	consts := constDefs{}
 	for i, c := range cs {
 		if consts[c.Str] != nil {
@@ -202,10 +202,10 @@ func checkConsts(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, error
 	return consts, nil
 }
 
-// checkPreds returts a map from a predicate name
-// to its definition, or an error if there is a semantic
-// error.
-func checkPreds(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, error) {
+// checkPredsDef returns a map from a predicate
+// name to its definition, or an error if there is a
+// semantic error.
+func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, error) {
 	preds := predDefs{}
 	for i, p := range ps {
 		if preds[p.Str] != nil {
@@ -222,10 +222,10 @@ func checkPreds(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, error) 
 	return preds, nil
 }
 
-// checkFuncs returts a map from a function name
+// checkFuncs returns a map from a function name
 // to its definition, or an error if there is a semantic
 // error.
-func checkFuncs(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
+func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
 	funcs := funcDefs{}
 	for i, f := range fs {
 		if funcs[f.Str] != nil {
@@ -326,6 +326,14 @@ func (p *PropositionNode) check(defs *defs) error {
 	default:
 		p.Definition = pred
 	}
+	if len(p.Parameters) != len(p.Definition.Parameters) {
+		var arg = "arguments"
+		if len(p.Definition.Parameters) == 1 {
+			arg = arg[:len(arg)-1]
+		}
+		return errorf(p.Loc, "predicate %s requires %d %s",
+			p.Definition.Str, len(p.Definition.Parameters), arg)
+	}
 	for i := range p.Parameters {
 		var n *TypedName
 		var kind string = "variable"
@@ -336,7 +344,8 @@ func (p *PropositionNode) check(defs *defs) error {
 			kind = "constant"
 		}
 		if n == nil {
-			return errorf(p.Parameters[i].Loc, "undefined %s: %s", kind, p.Parameters[i].Str)
+			return errorf(p.Parameters[i].Loc, "undefined %s: %s",
+				kind, p.Parameters[i].Str)
 		}
 		p.Parameters[i].Definition = n
 	}

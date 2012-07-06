@@ -232,8 +232,7 @@ func TestCheckQuantifiers(t *testing.T) {
 	}, t)
 }
 
-func TestCheckPredicate(t *testing.T) {
-		// def pred incorrect arity
+func TestCheckProposition(t *testing.T) {
 		// def pred incorrect arg types
 	checkPddlDomain([]test{
 		{`(define (domain x) (:predicates (p)) (:action a :parameters () :precondition (p)))`, "" },
@@ -246,8 +245,14 @@ func TestCheckPredicate(t *testing.T) {
 		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters (?x) :precondition (p ?x)))`, "" },
 		{`(define (domain x) (:predicates (p ?x))
 			(:action a :parameters () :precondition (forall (?x) (p ?x))))`, "" },
-		{`(define (domain x) (:constants c) (:predicates (p))
+		{`(define (domain x) (:constants c) (:predicates (p ?x))
 			(:action a :parameters () :precondition (p c)))`, "" },
+		{`(define (domain x) (:constants c) (:predicates (p))
+			(:action a :parameters () :precondition (p c)))`,
+			"requires 0 arguments" },
+		{`(define (domain x) (:constants c d) (:predicates (p ?x))
+			(:action a :parameters () :precondition (p c d)))`,
+			"requires 1 argument" },
 	}, t)
 }
 

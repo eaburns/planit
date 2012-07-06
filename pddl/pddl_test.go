@@ -203,8 +203,6 @@ func TestCheckActionDefs(t *testing.T) {
 
 func TestCheckFunctionsDef(t *testing.T) {
 	checkPddlDomain([]test{
-		{`(define (domain x) (:functions (foo)))`,
-			"requires :action-costs"},
 		{`(define (domain x) (:functions (total-cost)))`,
 			"requires :action-costs"},
 		{`(define (domain x) (:requirements :action-costs)))`, ""},

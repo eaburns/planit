@@ -94,8 +94,7 @@ func (v *varDefs) pop() *varDefs {
 // in the domain are linked to their definition, via
 // the appropriate pointers.
 func CheckDomain(d *Domain) (err error) {
-	defs := defs{}
-
+	var defs defs
 	defs.reqs, err = checkReqsDef(d.Requirements)
 	if err != nil {
 		return
@@ -211,10 +210,7 @@ func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, er
 		consts[c.Str] = &cs[i]
 		cs[i].Num = i
 	}
-	if err := checkTypedNames(reqs, types, cs); err != nil {
-		return consts, err
-	}
-	return consts, nil
+	return consts, checkTypedNames(reqs, types, cs)
 }
 
 // checkPredsDef returns a map from a predicate
@@ -226,13 +222,11 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 		if preds[p.Str] != nil {
 			return preds, errorf(p.Loc, "%s is defined multiple times", p.Str)
 		}
-		preds[p.Str] = &ps[i]
-		ps[i].Num = i
-	}
-	for _, pred := range ps {
-		if err := checkTypedNames(reqs, types, pred.Parameters); err != nil {
+		if err := checkTypedNames(reqs, types, p.Parameters); err != nil {
 			return preds, err
 		}
+		preds[p.Str] = &ps[i]
+		ps[i].Num = i
 	}
 	if reqs[":equality"] && preds["="] == nil {
 		preds["="] = &Predicate{
@@ -256,19 +250,14 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 		if funcs[f.Str] != nil {
 			return funcs, errorf(f.Loc, "%s is defined multiple times", f.Str)
 		}
+		if f.Str != "total-cost" || len(f.Parameters) > 0 {
+			return funcs, errorf(f.Loc, ":action-costs only allows a 0-ary total-cost function")
+		}
 		funcs[f.Str] = &fs[i]
 		fs[i].Num = i
 	}
 	if len(fs) > 0 && !reqs[":action-costs"] {
 		return funcs, errorf(fs[0].Loc, ":functions requires :action-costs")
-	}
-	for _, fun := range fs {
-		if fun.Str != "total-cost" || len(fun.Parameters) > 0 {
-			return funcs, errorf(fun.Loc, ":action-costs only allows a 0-ary total-cost function")
-		}
-		if err := checkTypedNames(reqs, types, fun.Parameters); err != nil {
-			return funcs, err
-		}
 	}
 	return funcs, nil
 }

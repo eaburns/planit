@@ -248,5 +248,5 @@ func (n *WhenNode) print(w io.Writer, prefix string) {
 }
 
 func (n *AssignNode) print(w io.Writer, prefix string) {
-	fmt.Fprintf(w, "%s(%s %s %s)", prefix, n.Op, n.Lval, n.Rval)
+	fmt.Fprintf(w, "%s(%s %s %s)", prefix, n.Op, n.Lval.Str, n.Rval)
 }

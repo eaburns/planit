@@ -138,6 +138,31 @@ func TestCheckDomain(t *testing.T) {
 		{"(define (domain x) (:requirements :action-costs) (:functions (total-cost)))", true},
 		{"(define (domain x) (:requirements :action-costs) (:functions (total-cost) - number))", true},
 		{"(define (domain x) (:requirements :action-costs) (:functions (total-cost ?foo)))", false},
+
+		{"(define (domain x) (:action a :parameters () :precondition (forall (?v - notypes) (and))))", false},
+		{`(define (domain x) (:requirements :typing)
+			(:action a :parameters ()
+				:precondition (forall (?v - undef) (and))))`, false},
+		{`(define (domain x) (:requirements :typing) (:types t)
+			(:action a :parameters ()
+				:precondition (forall (?v - t) (and))))`, true},
+
+		{"(define (domain x) (:predicates (a)) (:action a :parameters () :precondition (a)))", true },
+		{"(define (domain x) (:action a :parameters () :precondition (a)))", false },
+		// def pred incorrect arity
+		// def pred incorrect arg types
+
+		{"(define (domain x) (:predicates (a ?x)) (:action a :parameters () :precondition (a ?x)))", false },
+		{"(define (domain x) (:predicates (a ?x)) (:action a :parameters () :precondition (a x)))", false },
+		{"(define (domain x) (:predicates (a ?x)) (:action a :parameters (?x) :precondition (a ?x)))", true },
+		{`(define (domain x) (:predicates (a ?x))
+			(:action a :parameters () :precondition (forall (?x) (a ?x))))`, true },
+		{`(define (domain x) (:action a :parameters () :precondition (a x)))`, false },
+		{`(define (domain x) (:constants c) (:predicates (a))
+			(:action a :parameters () :precondition (a c)))`, true },
+
+		// undef func
+		// def func
 	}
 
 	for _, test := range tests {

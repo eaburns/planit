@@ -2,6 +2,7 @@ package pddl
 
 import (
 	"fmt"
+	"log"
 )
 
 var (
@@ -38,6 +39,13 @@ type (
 	// funcDefs maps a function name to its definition.
 	funcDefs map[string]*Function
 
+	// varDefs is a linked list of variable definitions.
+	varDefs struct {
+		up *varDefs
+		name string
+		definition *TypedName
+	}
+
 	// defs aggregates all of the different definition
 	// classes.
 	defs struct {
@@ -46,8 +54,37 @@ type (
 		consts constDefs
 		preds predDefs
 		funcs funcDefs
+		vars *varDefs
 	}
 )
+
+// find returns the definition of the variable
+// or nil if it was undefined.
+func (v *varDefs) find(n string) *TypedName {
+	if v == nil {
+		return nil
+	}
+	if v.name == n {
+		return v.definition
+	}
+	return v.up.find(n)
+}
+
+// push returns a new varDefs with the given
+// definitions defined.
+func (v *varDefs) push(d *TypedName) *varDefs {
+	return &varDefs {
+		up: v,
+		name: d.Str,
+		definition: d,
+	}
+}
+
+// pop returns a varDefs with the latest definition
+// removed.
+func (v *varDefs) pop() *varDefs {
+	return v.up
+}
 
 // CheckDomain returns an error if there are
 // any semantic errors in the domain, otherwise
@@ -80,6 +117,21 @@ func CheckDomain(d *Domain) (err error) {
 	for _, act := range d.Actions {
 		parms := act.Parameters
 		if err = checkTypedNames(defs.reqs, defs.types, parms); err != nil {
+			return
+		}
+		for i := range act.Parameters {
+			defs.vars = defs.vars.push(&act.Parameters[i])
+		}
+		if act.Precondition != nil {
+			err = act.Precondition.check(&defs)
+		}
+		if err != nil && act.Effect != nil {
+			err = act.Effect.check(&defs)
+		}
+		for _ = range act.Parameters {
+			defs.vars.pop()
+		}
+		if err != nil {
 			return
 		}
 	}
@@ -221,3 +273,81 @@ func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
 func errorf(loc Loc, f string, vs ...interface{}) error {
 	return fmt.Errorf("%s: %s", loc.String(), fmt.Sprintf(f, vs...))
 }
+
+func (u *UnaryNode) check(defs *defs) error {
+	return u.Formula.check(defs)
+}
+
+func (b *BinaryNode) check(defs *defs) error {
+	if err := b.Left.check(defs); err != nil {
+		return err
+	}
+	return b.Right.check(defs)
+}
+
+
+func (m *MultiNode) check(defs *defs) error {
+	for i := range m.Formula {
+		if err := m.Formula[i].check(defs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (q *QuantNode) check(defs *defs) error {
+	if err := checkTypedNames(defs.reqs, defs.types, q.Variables); err != nil {
+		return err
+	}
+	for i := range q.Variables {
+		defs.vars = defs.vars.push(&q.Variables[i])
+	}
+	err := q.Formula.check(defs)
+	if err == nil {
+		err = q.UnaryNode.check(defs)
+	}
+	for _ = range q.Variables {
+		defs.vars = defs.vars.pop()
+	}
+	return err
+}
+
+func (w *WhenNode) check(defs *defs) error {
+	if err := w.Condition.check(defs); err != nil {
+		return err
+	}
+	return w.UnaryNode.check(defs)
+}
+
+func (p *PropositionNode) check(defs *defs) error {
+	switch pred := defs.preds[p.Str]; {
+	case pred == nil:
+		return errorf(p.Loc, "undefined predicate: %s", p.Str)
+	default:
+		p.Definition = pred
+	}
+	for i := range p.Parameters {
+		var n *TypedName
+		var kind string = "variable"
+		if p.Parameters[i].Variable {
+			n = defs.vars.find(p.Parameters[i].Str)
+		} else {
+			n = defs.consts[p.Parameters[i].Str]
+			kind = "constant"
+		}
+		if n == nil {
+			return errorf(p.Parameters[i].Loc, "undefined %s: %s", kind, p.Parameters[i].Str)
+		}
+		p.Parameters[i].Definition = n
+	}
+	return nil
+}
+
+func (a *AssignNode) check(defs *defs) error {
+	if defs.funcs[a.Lval.Str] == nil {
+		return errorf(a.Lval.Loc, "undefined function: %s", a.Lval.Str)
+	}
+	log.Printf("TODO: check assignment for numeric Rval\n")
+	return nil
+}
+

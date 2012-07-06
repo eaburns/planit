@@ -85,6 +85,11 @@ type Formula interface {
 	// to an io.Writed, prefixed with a string
 	// for indentation purposes.
 	print(io.Writer, string)
+
+	// check returns an error if there is a semantic
+	// error in the formula, otherwise it returns
+	// nil.
+	check(*defs) error
 }
 
 type LeafNode struct{}
@@ -102,9 +107,9 @@ type QuantNode struct {
 
 type PropositionNode struct {
 	Name
-	// Predicate points to the predicate
+	// Definition points to the predicate
 	// definition for this proposition.
-	Predicate  *Predicate
+	Definition  *Predicate
 	Parameters []Term
 	LeafNode
 }
@@ -145,7 +150,7 @@ var (
 
 type AssignNode struct {
 	Op   string
-	Lval string // Just total-cost for now.
+	Lval Name // Just total-cost for now.
 	Rval string // Just a number
 	LeafNode
 }

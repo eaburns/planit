@@ -15,6 +15,8 @@ var (
 		":disjunctive-preconditions": true,
 		":equality":                  true,
 		":quantified-preconditions":  true,
+		":universal-preconditions":  true,
+		":existential-preconditions":  true,
 		":conditional-effects":       true,
 
 		// http://ipc.informatik.uni-freiburg.de/PddlActionCosts
@@ -148,9 +150,22 @@ func checkReqsDef(rs []Name) (reqDefs, error) {
 			return reqs, errorf(r.Loc, "%s is not a supported requirement", r.Str)
 		}
 		if reqs[r.Str] {
-			return reqs, errorf(r.Loc, "%s is dsared multiple times", r.Str)
+			return reqs, errorf(r.Loc, "%s is defined multiple times", r.Str)
 		}
 		reqs[r.Str] = true
+	}
+	if reqs[":adl"] {
+		reqs[":strips"] = true
+		reqs[":typing"] = true
+		reqs[":negative-preconditions"] = true
+		reqs[":disjunctive-preconditions"] = true
+		reqs[":equality"] = true
+		reqs[":quantified-preconditions"] = true
+		reqs[":conditional-effects"] = true
+	}
+	if reqs[":quantified-preconditions"] {
+		reqs[":existential-preconditions"] = true
+		reqs[":universal-preconditions"] = true
 	}
 	return reqs, nil
 }
@@ -191,7 +206,7 @@ func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, er
 	consts := constDefs{}
 	for i, c := range cs {
 		if consts[c.Str] != nil {
-			return consts, errorf(c.Loc, "%s is dsared multiple times", c.Str)
+			return consts, errorf(c.Loc, "%s is defined multiple times", c.Str)
 		}
 		consts[c.Str] = &cs[i]
 		cs[i].Num = i
@@ -209,7 +224,7 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 	preds := predDefs{}
 	for i, p := range ps {
 		if preds[p.Str] != nil {
-			return preds, errorf(p.Loc, "%s is dsared multiple times", p.Str)
+			return preds, errorf(p.Loc, "%s is defined multiple times", p.Str)
 		}
 		preds[p.Str] = &ps[i]
 		ps[i].Num = i
@@ -217,6 +232,16 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 	for _, pred := range ps {
 		if err := checkTypedNames(reqs, types, pred.Parameters); err != nil {
 			return preds, err
+		}
+	}
+	if reqs[":equality"] && preds["="] == nil {
+		preds["="] = &Predicate{
+			Name: Name{ Str: "=" },
+			Num: len(preds),
+			Parameters: []TypedName {
+				{ Name: Name{Str: "a"} },
+				{ Name: Name{Str: "b"} },
+			},
 		}
 	}
 	return preds, nil
@@ -229,7 +254,7 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 	funcs := funcDefs{}
 	for i, f := range fs {
 		if funcs[f.Str] != nil {
-			return funcs, errorf(f.Loc, "%s is dsared multiple times", f.Str)
+			return funcs, errorf(f.Loc, "%s is defined multiple times", f.Str)
 		}
 		funcs[f.Str] = &fs[i]
 		fs[i].Num = i
@@ -292,6 +317,20 @@ func (m *MultiNode) check(defs *defs) error {
 		}
 	}
 	return nil
+}
+
+func (f *ForallNode) check(defs *defs) error {
+	if !defs.reqs[":universal-preconditions"] {
+		return errorf(f.Loc, "forall used but :universal-preconditions is not required")
+	}
+	return f.QuantNode.check(defs)
+}
+
+func (e *ExistsNode) check(defs *defs) error {
+	if !defs.reqs[":existential-preconditions"] {
+		return errorf(e.Loc, "exists used but :existential-preconditions is not required")
+	}
+	return e.QuantNode.check(defs)
 }
 
 func (q *QuantNode) check(defs *defs) error {

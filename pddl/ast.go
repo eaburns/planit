@@ -95,7 +95,10 @@ type Formula interface {
 
 type LeafNode struct{}
 
-type UnaryNode struct{ Formula Formula }
+type UnaryNode struct{
+	Loc Loc
+	Formula Formula
+}
 
 type BinaryNode struct{ Left, Right Formula }
 

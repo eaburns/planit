@@ -221,12 +221,13 @@ func TestCheckFunctionsDef(t *testing.T) {
 
 func TestCheckQuantifiers(t *testing.T) {
 	checkPddlDomain([]test{
-		{`(define (domain x) (:action a :parameters () :precondition (forall (?v - notypes) (and))))`,
+		{`(define (domain x) (:requirements :universal-preconditions)
+			(:action a :parameters () :precondition (forall (?v - notypes) (and))))`,
 			":typing is not required"},
-		{`(define (domain x) (:requirements :typing)
+		{`(define (domain x) (:requirements :typing :universal-preconditions)
 			(:action a :parameters () :precondition (forall (?v - undef) (and))))`,
 			"undefined type: undef"},
-		{`(define (domain x) (:requirements :typing) (:types t)
+		{`(define (domain x) (:requirements :typing :universal-preconditions) (:types t)
 			(:action a :parameters () :precondition (forall (?v - t) (and))))`,
 			""},
 	}, t)
@@ -242,7 +243,7 @@ func TestCheckProposition(t *testing.T) {
 		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters () :precondition (p x)))`,
 			"undefined constant: x"},
 		{`(define (domain x) (:predicates (p ?x)) (:action a :parameters (?x) :precondition (p ?x)))`, ""},
-		{`(define (domain x) (:predicates (p ?x))
+		{`(define (domain x) (:requirements :universal-preconditions) (:predicates (p ?x))
 			(:action a :parameters () :precondition (forall (?x) (p ?x))))`, ""},
 		{`(define (domain x) (:constants c) (:predicates (p ?x))
 			(:action a :parameters () :precondition (p c)))`, ""},

@@ -237,7 +237,7 @@ func parseGd(p *parser) (res Formula) {
 	case p.acceptNamedList("or"):
 		res = parseOrGd(p, parseGd)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{parseGd(p)}}
+		res = &NotNode{UnaryNode{p.loc(), parseGd(p)}}
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
 		res = &ImplyNode{BinaryNode{parseGd(p), parseGd(p)}}
@@ -247,7 +247,7 @@ func parseGd(p *parser) (res Formula) {
 	case p.acceptNamedList("forall"):
 		res = parseForallGd(p, parseGd)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{parseProposition(p)}}
+		res = &NotNode{UnaryNode{p.loc(), parseProposition(p)}}
 		p.expect(tokClose)
 	default:
 		res = parseProposition(p)
@@ -363,7 +363,7 @@ func parsePeffect(p *parser) Formula {
 	}
 	if p.acceptNamedList("not") {
 		defer p.expect(tokClose)
-		return &NotNode{UnaryNode{parseProposition(p)}}
+		return &NotNode{UnaryNode{p.loc(), parseProposition(p)}}
 	}
 	return parseProposition(p)
 }
@@ -474,7 +474,7 @@ func parseInitEl(p *parser) (res Formula) {
 		}
 		p.expect(tokClose)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{parseProposition(p)}}
+		res = &NotNode{UnaryNode{p.loc(), parseProposition(p)}}
 		p.expect(tokClose)
 	default:
 		res = parseProposition(p)

@@ -237,17 +237,17 @@ func parseGd(p *parser) (res Formula) {
 	case p.acceptNamedList("or"):
 		res = parseOrGd(p, parseGd)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{p.loc(), parseGd(p)}}
+		res = &NotNode{UnaryNode{Node{p.loc()}, parseGd(p)}}
 		p.expect(tokClose)
 	case p.acceptNamedList("imply"):
-		res = &ImplyNode{BinaryNode{parseGd(p), parseGd(p)}}
+		res = &ImplyNode{BinaryNode{Node{p.loc()}, parseGd(p), parseGd(p)}}
 		p.expect(tokClose)
 	case p.acceptNamedList("exists"):
 		res = parseExistsGd(p, parseGd)
 	case p.acceptNamedList("forall"):
 		res = parseForallGd(p, parseGd)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{p.loc(), parseProposition(p)}}
+		res = &NotNode{UnaryNode{Node{p.loc()}, parseProposition(p)}}
 		p.expect(tokClose)
 	default:
 		res = parseProposition(p)
@@ -259,7 +259,8 @@ func parseProposition(p *parser) *PropositionNode {
 	p.expect(tokOpen)
 	defer p.expect(tokClose)
 	return &PropositionNode{
-		Name:      makeName(p, p.expect(tokId).text),
+		Node: Node{p.loc()}, 
+		Predicate:      p.expect(tokId).text,
 		Arguments: parseTerms(p),
 	}
 }
@@ -285,7 +286,7 @@ func parseAndGd(p *parser, nested func(*parser) Formula) Formula {
 		fs = append(fs, nested(p))
 	}
 	defer p.expect(tokClose)
-	return &AndNode{MultiNode{fs}}
+	return &AndNode{MultiNode{Node{p.loc()}, fs}}
 }
 
 func parseOrGd(p *parser, nested func(*parser) Formula) Formula {
@@ -294,7 +295,7 @@ func parseOrGd(p *parser, nested func(*parser) Formula) Formula {
 		fs = append(fs, nested(p))
 	}
 	defer p.expect(tokClose)
-	return &OrNode{MultiNode{fs}}
+	return &OrNode{MultiNode{Node{p.loc()}, fs}}
 }
 
 func parseForallGd(p *parser, nested func(*parser) Formula) Formula {
@@ -303,7 +304,7 @@ func parseForallGd(p *parser, nested func(*parser) Formula) Formula {
 	p.expect(tokClose)
 
 	defer p.expect(tokClose)
-	return &ForallNode{QuantNode{vars, UnaryNode{Formula: nested(p)}}}
+	return &ForallNode{QuantNode{vars, UnaryNode{Formula: nested(p)}}, false}
 }
 
 func parseExistsGd(p *parser, nested func(*parser) Formula) Formula {
@@ -328,7 +329,7 @@ func parseAndEffect(p *parser, nested func(*parser) Formula) Formula {
 		fs = append(fs, nested(p))
 	}
 	defer p.expect(tokClose)
-	return &AndNode{MultiNode{fs}}
+	return &AndNode{MultiNode{Node{p.loc()}, fs}}
 }
 
 func parseCeffect(p *parser) (res Formula) {
@@ -349,7 +350,7 @@ func parseForallEffect(p *parser, nested func(*parser) Formula) Formula {
 	p.expect(tokClose)
 
 	defer p.expect(tokClose)
-	return &ForallNode{QuantNode{vars, UnaryNode{Formula: nested(p)}}}
+	return &ForallNode{QuantNode{vars, UnaryNode{Formula: nested(p)}}, true}
 }
 
 func parseWhen(p *parser, nested func(*parser) Formula) Formula {
@@ -363,7 +364,7 @@ func parsePeffect(p *parser) Formula {
 	}
 	if p.acceptNamedList("not") {
 		defer p.expect(tokClose)
-		return &NotNode{UnaryNode{p.loc(), parseProposition(p)}}
+		return &NotNode{UnaryNode{Node{p.loc()}, parseProposition(p)}}
 	}
 	return parseProposition(p)
 }
@@ -474,7 +475,7 @@ func parseInitEl(p *parser) (res Formula) {
 		}
 		p.expect(tokClose)
 	case p.acceptNamedList("not"):
-		res = &NotNode{UnaryNode{p.loc(), parseProposition(p)}}
+		res = &NotNode{UnaryNode{Node{p.loc()}, parseProposition(p)}}
 		p.expect(tokClose)
 	default:
 		res = parseProposition(p)

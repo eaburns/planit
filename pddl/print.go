@@ -182,10 +182,10 @@ func typeString(t []Type) (str string) {
 	return
 }
 
-func (l *PropositionNode) print(w io.Writer, prefix string) {
+func (p *PropositionNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(", prefix)
-	fmt.Fprint(w, l.Str)
-	for _, t := range l.Arguments {
+	fmt.Fprint(w, p.Predicate)
+	for _, t := range p.Arguments {
 		fmt.Fprintf(w, " %s", t.Name.Str)
 	}
 	fmt.Fprint(w, ")")

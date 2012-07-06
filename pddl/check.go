@@ -319,20 +319,6 @@ func (m *MultiNode) check(defs *defs) error {
 	return nil
 }
 
-func (f *ForallNode) check(defs *defs) error {
-	if !defs.reqs[":universal-preconditions"] {
-		return errorf(f.Loc, "forall used but :universal-preconditions is not required")
-	}
-	return f.QuantNode.check(defs)
-}
-
-func (e *ExistsNode) check(defs *defs) error {
-	if !defs.reqs[":existential-preconditions"] {
-		return errorf(e.Loc, "exists used but :existential-preconditions is not required")
-	}
-	return e.QuantNode.check(defs)
-}
-
 func (q *QuantNode) check(defs *defs) error {
 	if err := checkTypedNames(defs.reqs, defs.types, q.Variables); err != nil {
 		return err
@@ -350,7 +336,51 @@ func (q *QuantNode) check(defs *defs) error {
 	return err
 }
 
+func (n *OrNode) check(defs *defs) error {
+	if !defs.reqs[":disjunctive-preconditions"] {
+		return errorf(n.Loc, "or used but :disjunctive-preconditions is not required")
+	}
+	return n.MultiNode.check(defs)
+}
+
+func (n *NotNode) check(defs *defs) error {
+	switch _, ok := n.Formula.(*PropositionNode); {
+	case ok && !defs.reqs[":negative-preconditions"]:
+		return errorf(n.Loc, "negative literal used but :negative-preconditions is not required")
+	case !ok && !defs.reqs[":disjunctive-preconditions"]:
+		return errorf(n.Loc, "not used but :disjunctive-preconditions is not required")
+	}
+	return n.UnaryNode.check(defs)
+}
+
+func (i *ImplyNode) check(defs *defs) error {
+	if !defs.reqs[":disjunctive-preconditions"] {
+		return errorf(i.Loc, "imply used but :disjunctive-preconditions is not required")
+	}
+	return i.BinaryNode.check(defs)
+}
+
+func (f *ForallNode) check(defs *defs) error {
+	switch {
+	case !f.Effect && !defs.reqs[":universal-preconditions"]:
+		return errorf(f.Loc, "forall used but :universal-preconditions is not required")
+	case  f.Effect && !defs.reqs[":conditional-effects"]:
+		return errorf(f.Loc, "forall used but :conditional-effects is not required")
+	}
+	return f.QuantNode.check(defs)
+}
+
+func (e *ExistsNode) check(defs *defs) error {
+	if !defs.reqs[":existential-preconditions"] {
+		return errorf(e.Loc, "exists used but :existential-preconditions is not required")
+	}
+	return e.QuantNode.check(defs)
+}
+
 func (w *WhenNode) check(defs *defs) error {
+	if !defs.reqs[":conditional-effects"] {
+		return errorf(w.Loc, "when used but :conditional-effects is not required")
+	}
 	if err := w.Condition.check(defs); err != nil {
 		return err
 	}
@@ -358,9 +388,9 @@ func (w *WhenNode) check(defs *defs) error {
 }
 
 func (p *PropositionNode) check(defs *defs) error {
-	switch pred := defs.preds[p.Str]; {
+	switch pred := defs.preds[p.Predicate]; {
 	case pred == nil:
-		return errorf(p.Loc, "undefined predicate: %s", p.Str)
+		return errorf(p.Loc, "undefined predicate: %s", p.Predicate)
 	default:
 		p.Definition = pred
 	}
@@ -397,7 +427,10 @@ func (p *PropositionNode) check(defs *defs) error {
 }
 
 func (a *AssignNode) check(defs *defs) error {
-	if defs.funcs[a.Lval.Str] == nil {
+	switch {
+	case !defs.reqs[":action-costs"]:
+		return errorf(a.Loc, "%s used but :action-costs is not required", a.Op)
+	case defs.funcs[a.Lval.Str] == nil:
 		return errorf(a.Lval.Loc, "undefined function: %s", a.Lval.Str)
 	}
 	log.Printf("TODO: check assignment for numeric Rval\n")

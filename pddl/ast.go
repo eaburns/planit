@@ -93,16 +93,22 @@ type Formula interface {
 	check(*defs) error
 }
 
-type LeafNode struct{}
+type Node struct{ Loc Loc }
 
 type UnaryNode struct{
-	Loc Loc
+	Node
 	Formula Formula
 }
 
-type BinaryNode struct{ Left, Right Formula }
+type BinaryNode struct { 
+	Node
+	Left, Right Formula
+}
 
-type MultiNode struct{ Formula []Formula }
+type MultiNode struct{
+	Node
+	Formula []Formula
+}
 
 type QuantNode struct {
 	Variables []TypedName
@@ -110,12 +116,10 @@ type QuantNode struct {
 }
 
 type PropositionNode struct {
-	Name
-	// Definition points to the predicate
-	// definition for this proposition.
+	Predicate string
 	Definition *Predicate
 	Arguments  []Term
-	LeafNode
+	Node
 }
 
 type Term struct {
@@ -134,7 +138,15 @@ type NotNode struct{ UnaryNode }
 
 type ImplyNode struct{ BinaryNode }
 
-type ForallNode struct{ QuantNode }
+type ForallNode struct{
+	QuantNode
+
+	// Effect is true if this node is an effect.
+	// This is used to distinguish between
+	// the need to require :universal-preconditions
+	// and :conditional-effects.
+	Effect bool
+}
 
 type ExistsNode struct{ QuantNode }
 
@@ -156,5 +168,5 @@ type AssignNode struct {
 	Op   string
 	Lval Name   // Just total-cost for now.
 	Rval string // Just a number
-	LeafNode
+	Node
 }

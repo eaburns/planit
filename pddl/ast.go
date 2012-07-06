@@ -59,6 +59,7 @@ type Action struct {
 type TypedName struct {
 	Name
 	Num   int
+	// A disjunction of types.
 	Types []Type
 }
 

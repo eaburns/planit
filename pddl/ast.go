@@ -58,7 +58,7 @@ type Action struct {
 
 type TypedName struct {
 	Name
-	Num   int
+	Num int
 	// A disjunction of types.
 	Types []Type
 }
@@ -95,17 +95,17 @@ type Formula interface {
 
 type Node struct{ Loc Loc }
 
-type UnaryNode struct{
+type UnaryNode struct {
 	Node
 	Formula Formula
 }
 
-type BinaryNode struct { 
+type BinaryNode struct {
 	Node
 	Left, Right Formula
 }
 
-type MultiNode struct{
+type MultiNode struct {
 	Node
 	Formula []Formula
 }
@@ -116,7 +116,7 @@ type QuantNode struct {
 }
 
 type PropositionNode struct {
-	Predicate string
+	Predicate  string
 	Definition *Predicate
 	Arguments  []Term
 	Node
@@ -138,7 +138,7 @@ type NotNode struct{ UnaryNode }
 
 type ImplyNode struct{ BinaryNode }
 
-type ForallNode struct{
+type ForallNode struct {
 	QuantNode
 
 	// Effect is true if this node is an effect.

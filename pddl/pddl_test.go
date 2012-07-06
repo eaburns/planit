@@ -18,20 +18,23 @@ func TestParseDomain(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = ParseDomain(testDomainFile, file)
+	_, _, err = Parse(testDomainFile, file)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestPrintDomain(t *testing.T) {
-	ast, err := ParseDomain("", strings.NewReader(dom))
+	ast, _, err := Parse("", strings.NewReader(dom))
 	if err != nil {
 		t.Fatal(err)
 	}
+	if ast == nil {
+		t.Fatal("not a domain")
+	}
 	buf := bytes.NewBuffer([]byte{})
 	PrintDomain(buf, ast)
-	if _, err := ParseDomain("", strings.NewReader(buf.String())); err != nil {
+	if _, _, err := Parse("", strings.NewReader(buf.String())); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -47,9 +50,13 @@ type test struct {
 // expression.
 func checkPddlDomain(tests []test, t *testing.T) {
 	for _, test := range tests {
-		d, err := ParseDomain("", strings.NewReader(test.pddl))
+		d, _, err := Parse("", strings.NewReader(test.pddl))
 		if err != nil {
 			t.Errorf("%s\n%s", test.pddl, err)
+			continue
+		}
+		if d == nil {
+			t.Error("not a domain")
 			continue
 		}
 		_, err = CheckDomain(d)
@@ -230,32 +237,41 @@ func TestParseProblem(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = ParseProblem(testProblemFile, file)
+	_, _, err = Parse(testProblemFile, file)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestPrintProblem(t *testing.T) {
-	ast, err := ParseProblem("", strings.NewReader(prob))
+	_, ast, err := Parse("", strings.NewReader(prob))
 	if err != nil {
 		t.Fatal(err)
 	}
+	if ast == nil {
+		t.Fatal("not a problem")
+	}
 	buf := bytes.NewBuffer([]byte{})
 	PrintProblem(buf, ast)
-	if _, err := ParseProblem("", strings.NewReader(buf.String())); err != nil {
+	if _, _, err := Parse("", strings.NewReader(buf.String())); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCheck(t *testing.T) {
-	d, err := ParseDomain("<domain>", strings.NewReader(dom))
+	d, _, err := Parse("<domain>", strings.NewReader(dom))
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := ParseProblem("<problem>", strings.NewReader(prob))
+	if d == nil {
+		t.Fatal("not a domain")
+	}
+	_, p, err := Parse("<problem>", strings.NewReader(prob))
 	if err != nil {
 		t.Fatal(err)
+	}
+	if p == nil {
+		t.Fatal("not a problem")
 	}
 	if err := Check(d, p); err != nil {
 		t.Error(err)

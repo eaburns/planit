@@ -9,15 +9,15 @@ var (
 	// supportedReqs is a list of the requirement
 	// flags that are supported by planit.
 	supportedReqs = map[string]bool{
-		":adl":	true,
+		":adl":                       true,
 		":strips":                    true,
 		":typing":                    true,
 		":negative-preconditions":    true,
 		":disjunctive-preconditions": true,
 		":equality":                  true,
 		":quantified-preconditions":  true,
-		":universal-preconditions":  true,
-		":existential-preconditions":  true,
+		":universal-preconditions":   true,
+		":existential-preconditions": true,
 		":conditional-effects":       true,
 
 		// http://ipc.informatik.uni-freiburg.de/PddlActionCosts
@@ -118,7 +118,7 @@ func Check(d *Domain, p *Problem) (err error) {
 	}
 	for o, def := range objs {
 		if defs.consts[o] != nil {
-			return errorf(def.Loc, "object %s is already a domain constant", o)
+			return errorf(def.Loc, "problem object %s is already a domain constant", o)
 		}
 		def.Num = len(defs.consts)
 		defs.consts[o] = def
@@ -275,11 +275,11 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 	}
 	if reqs[":equality"] && preds["="] == nil {
 		preds["="] = &Predicate{
-			Name: Name{ Str: "=" },
-			Num: len(preds),
-			Parameters: []TypedName {
-				{ Name: Name{Str: "a"} },
-				{ Name: Name{Str: "b"} },
+			Name: Name{Str: "="},
+			Num:  len(preds),
+			Parameters: []TypedName{
+				{Name: Name{Str: "a"}},
+				{Name: Name{Str: "b"}},
 			},
 		}
 	}
@@ -398,7 +398,7 @@ func (f *ForallNode) check(defs *defs) error {
 	switch {
 	case !f.Effect && !defs.reqs[":universal-preconditions"]:
 		return errorf(f.Loc, "forall used but :universal-preconditions is not required")
-	case  f.Effect && !defs.reqs[":conditional-effects"]:
+	case f.Effect && !defs.reqs[":conditional-effects"]:
 		return errorf(f.Loc, "forall used but :conditional-effects is not required")
 	}
 	return f.QuantNode.check(defs)
@@ -454,7 +454,7 @@ func (p *PropositionNode) check(defs *defs) error {
 			return errorf(p.Arguments[i].Loc,
 				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
 				arg.Str, typeString(arg.Types), parm.Str,
- 				typeString(parm.Types), p.Definition.Str)
+				typeString(parm.Types), p.Definition.Str)
 		}
 	}
 	return nil

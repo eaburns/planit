@@ -9,7 +9,7 @@ import (
 // A parser parses PDDL.
 type parser struct {
 	lex    *lexer
-	peeks  [2]token
+	peeks  [4]token
 	npeeks int
 }
 

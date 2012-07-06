@@ -5,12 +5,12 @@ import (
 	"log"
 )
 
-// ParseDomain returns a *Domain parsed from
-// a PDDL file, or an error if the parse fails.
-func ParseDomain(file string, r io.Reader) (d *Domain, err error) {
+// Parse returns either a domain, a problem or
+// a parse error.
+func Parse(file string, r io.Reader) (dom *Domain, prob *Problem, err error) {
 	p, err := newParser(file, r)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -21,9 +21,19 @@ func ParseDomain(file string, r io.Reader) (d *Domain, err error) {
 			}
 		}
 	}()
+	if p.peekn(4).text == "domain" {
+		dom = parseDomain(p)
+	} else {
+		prob = parseProblem(p)
+	}
+	return
+}
+
+// parseDomain parses a domain.
+func parseDomain(p *parser) *Domain {
 	p.expect(tokOpen)
 	p.expectId("define")
-	d = new(Domain)
+	d := new(Domain)
 	d.Name = parseDomainName(p)
 	d.Requirements = parseReqsDef(p)
 	d.Types = parseTypesDef(p)
@@ -48,7 +58,7 @@ func ParseDomain(file string, r io.Reader) (d *Domain, err error) {
 	}
 
 	p.expect(tokClose)
-	return d, nil
+	return d
 }
 
 func parseDomainName(p *parser) string {
@@ -259,8 +269,8 @@ func parseProposition(p *parser) *PropositionNode {
 	p.expect(tokOpen)
 	defer p.expect(tokClose)
 	return &PropositionNode{
-		Node: Node{p.loc()}, 
-		Predicate:      p.expect(tokId).text,
+		Node:      Node{p.loc()},
+		Predicate: p.expect(tokId).text,
 		Arguments: parseTerms(p),
 	}
 }
@@ -399,26 +409,11 @@ func parseFexp(p *parser) string {
 	return p.expect(tokNum).text
 }
 
-// ParseProblem returns a Problem parsed from
-// the an io.Reader.  Returns the problem or an
-// error.
-func ParseProblem(file string, r io.Reader) (prob *Problem, err error) {
-	p, err := newParser(file, r)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			err, ok = r.(parseError)
-			if !ok {
-				panic(r)
-			}
-		}
-	}()
+// parseProblem parses a problem
+func parseProblem(p *parser) *Problem {
 	p.expect(tokOpen)
 	p.expectId("define")
-	prob = new(Problem)
+	prob := new(Problem)
 	prob.Name = parseProbName(p)
 	prob.Domain = parseProbDomain(p)
 	prob.Requirements = parseReqsDef(p)
@@ -428,7 +423,7 @@ func ParseProblem(file string, r io.Reader) (prob *Problem, err error) {
 	prob.Metric = parseMetric(p)
 
 	p.expect(tokClose)
-	return prob, nil
+	return prob
 }
 
 func parseProbName(p *parser) string {

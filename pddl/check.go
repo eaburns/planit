@@ -2,7 +2,6 @@ package pddl
 
 import (
 	"fmt"
-	"log"
 )
 
 var (
@@ -465,7 +464,6 @@ func (a *AssignNode) check(defs *defs) error {
 	case defs.funcs[a.Lval.Str] == nil:
 		return errorf(a.Lval.Loc, "undefined function: %s", a.Lval.Str)
 	}
-	log.Printf("TODO: check assignment for numeric Rval\n")
 	return nil
 }
 

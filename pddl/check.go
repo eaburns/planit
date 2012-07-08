@@ -223,6 +223,9 @@ func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 		return types, errorf(ts[0].Loc, ":types requires :typing")
 	}
 	for i, t := range ts {
+		if len(t.Types) > 1 {
+			return types, errorf(t.Loc, "'either' supertypes are not semantically defined")
+		}
 		if types[t.Str] != nil {
 			return types, errorf(t.Loc, "%s is defined multiple times", t.Str)
 		}
@@ -234,11 +237,6 @@ func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 	}
 	if err := checkTypedNames(reqs, types, ts); err != nil {
 		return types, err
-	}
-	for _, t := range ts {
-		if len(t.Types) > 1 {
-			return types, errorf(t.Loc, "'either' supertypes are not semantically defined")
-		}
 	}
 	return types, nil
 }
@@ -291,6 +289,9 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 // error.
 func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
 	funcs := funcDefs{}
+	if len(fs) > 0 && !reqs[":action-costs"] {
+		return funcs, errorf(fs[0].Loc, ":functions requires :action-costs")
+	}
 	for i, f := range fs {
 		if funcs[f.Str] != nil {
 			return funcs, errorf(f.Loc, "%s is defined multiple times", f.Str)
@@ -300,9 +301,6 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 		}
 		funcs[f.Str] = &fs[i]
 		fs[i].Num = i
-	}
-	if len(fs) > 0 && !reqs[":action-costs"] {
-		return funcs, errorf(fs[0].Loc, ":functions requires :action-costs")
 	}
 	return funcs, nil
 }

@@ -206,9 +206,10 @@ func (l *lexer) lexNum() token {
 	l.acceptRun(digits)
 	l.accept(".")
 	l.acceptRun(digits)
-	l.accept("eE")
-	l.accept("-")
-	l.acceptRun(digits)
+	if l.accept("eE") {
+		l.accept("-")
+		l.acceptRun(digits)
+	}
 	return l.makeToken(tokNum)
 }
 

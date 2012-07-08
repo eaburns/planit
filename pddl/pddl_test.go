@@ -2,23 +2,13 @@ package pddl
 
 import (
 	"bytes"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
 )
 
-const (
-	testDomainFile  = "p01-domain.pddl"
-	testProblemFile = "p01.pddl"
-)
-
 func TestParseDomain(t *testing.T) {
-	file, err := os.Open(testDomainFile)
-	if err != nil {
-		t.Error(err)
-	}
-	_, _, err = Parse(testDomainFile, file)
+	_, _, err := Parse("", strings.NewReader(dom))
 	if err != nil {
 		t.Error(err)
 	}
@@ -233,11 +223,7 @@ func TestCheckProposition(t *testing.T) {
 }
 
 func TestParseProblem(t *testing.T) {
-	file, err := os.Open(testProblemFile)
-	if err != nil {
-		t.Error(err)
-	}
-	_, _, err = Parse(testProblemFile, file)
+	_, _, err := Parse("", strings.NewReader(prob))
 	if err != nil {
 		t.Error(err)
 	}

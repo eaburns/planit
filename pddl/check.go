@@ -118,13 +118,13 @@ func Check(d *Domain, p *Problem) (err error) {
 			return makeError(o, "object %s is already a domain constant", o)
 		}
 	}
-	objs, err := checkConstsDef(defs.reqs, defs.types, p.Objects)
-	if err != nil {
+	if _, err = checkConstsDef(defs.reqs, defs.types, p.Objects); err != nil {
 		return
 	}
-	for o, def := range objs {
-		def.Num = len(defs.consts)
-		defs.consts[o] = def
+	addObjectsToTypes(defs.types, p.Objects)
+	for i := range p.Objects {
+		p.Objects[i].Num = len(defs.consts)
+		defs.consts[p.Objects[i].Str] = &p.Objects[i]
 	}
 	for i := range p.Init {
 		if err := p.Init[i].check(&defs); err != nil {
@@ -155,6 +155,7 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 	if err != nil {
 		return
 	}
+	addObjectsToTypes(defs.types, d.Constants)
 	defs.preds, err = checkPredsDef(defs.reqs, defs.types, d.Predicates)
 	if err != nil {
 		return
@@ -185,6 +186,29 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 		}
 	}
 	return
+}
+
+func addObjectsToTypes(types typeDefs, objs []TypedIdentifier) {
+	for i := range objs {
+		obj := &objs[i]
+		for _, t := range obj.Types {
+			for _, s := range superTypes(types, t) {
+				s.addObject(obj)
+			}
+		}
+	}
+}
+
+// addObject adds an object definition to the list
+// of all objects for the receiver type if it is not
+// already there.
+func (t *Type)  addObject(obj *TypedIdentifier) {
+	for _, o := range t.Objects {
+		if o == obj {
+			return
+		}
+	}
+	t.Objects = append(t.Objects, obj)
 }
 
 // checkReqsDef checks requirement definitions.

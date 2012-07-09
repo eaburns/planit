@@ -88,7 +88,7 @@ type Formula interface {
 	// check returns an error if there is a semantic
 	// error in the formula, otherwise it returns
 	// nil.
-	check(*defs) error
+	check(defs) error
 }
 
 type Node struct{ Location }

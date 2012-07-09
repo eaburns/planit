@@ -101,19 +101,19 @@ func Check(d *Domain, p *Problem) (err error) {
 		return fmt.Errorf("problem %s expects domain %s, but got %s",
 			p.Identifier, p.Domain, d.Identifier)
 	}
-	if err = checkReqsDef(defs.reqs, p.Requirements); err != nil {
+	if err = checkReqsDef(defs, p.Requirements); err != nil {
 		return
 	}
-	if err := checkConstsDef(&defs, p.Objects); err != nil {
+	if err := checkConstsDef(defs, p.Objects); err != nil {
 		return err
 	}
 	addObjectsToTypes(defs.types, p.Objects)
 	for i := range p.Init {
-		if err := p.Init[i].check(&defs); err != nil {
+		if err := p.Init[i].check(defs); err != nil {
 			return err
 		}
 	}
-	if err := p.Goal.check(&defs); err != nil {
+	if err := p.Goal.check(defs); err != nil {
 		return err
 	}
 	// check the metric
@@ -124,50 +124,53 @@ func Check(d *Domain, p *Problem) (err error) {
 // any semantic errors in the domain, otherwise
 // all definitions are numbered and indentifiers
 // are linked to their definition.
-func CheckDomain(d *Domain) (defs defs, err error) {
-	defs.reqs = reqDefs{}
-	if err = checkReqsDef(defs.reqs, d.Requirements); err != nil {
-		return
+func CheckDomain(d *Domain) (defs, error) {
+	defs := defs{
+		reqs: make(reqDefs),
+		types: make(typeDefs),
+		consts: make(constDefs),
+		preds: make(predDefs),
+		funcs: make(funcDefs),
 	}
-	defs.types, err = checkTypesDef(d, defs.reqs)
-	if err != nil {
-		return
+	if err := checkReqsDef(defs, d.Requirements); err != nil {
+		return defs, err
 	}
-	defs.consts = constDefs{}
-	if err = checkConstsDef(&defs, d.Constants); err != nil {
-		return
+	if err := checkTypesDef(defs, d); err != nil {
+		return defs, err
+	}
+	if err := checkConstsDef(defs, d.Constants); err != nil {
+		return defs, err
 	}
 	addObjectsToTypes(defs.types, d.Constants)
-	defs.preds, err = checkPredsDef(defs.reqs, defs.types, d.Predicates)
-	if err != nil {
-		return
+	if err := checkPredsDef(defs, d.Predicates); err != nil {
+		return defs, err
 	}
-	defs.funcs, err = checkFuncsDef(defs.reqs, defs.types, d.Functions)
-	if err != nil {
-		return
+	if err := checkFuncsDef(defs, d.Functions); err != nil {
+		return defs, err
 	}
 	for _, act := range d.Actions {
 		parms := act.Parameters
-		if err = checkTypedIdentifiers(defs.reqs, defs.types, parms); err != nil {
-			return
+		if err := checkTypedIdentifiers(defs, parms); err != nil {
+			return defs, err
 		}
 		for i := range act.Parameters {
 			defs.vars = defs.vars.push(&act.Parameters[i])
 		}
 		if act.Precondition != nil {
-			err = act.Precondition.check(&defs)
+			if err := act.Precondition.check(defs); err != nil {
+				return defs, err
+			}
 		}
-		if err != nil && act.Effect != nil {
-			err = act.Effect.check(&defs)
+		if act.Effect != nil {
+			if err := act.Effect.check(defs); err != nil {
+				return defs, err
+			}
 		}
 		for _ = range act.Parameters {
 			defs.vars.pop()
 		}
-		if err != nil {
-			return
-		}
 	}
-	return
+	return defs, nil
 }
 
 func addObjectsToTypes(types typeDefs, objs []TypedIdentifier) {
@@ -196,51 +199,47 @@ func (t *Type)  addObject(obj *TypedIdentifier) {
 // checkReqsDef checks requirement definitions.
 // On success, a set of requirements is returned,
 // else an error is returned.
-func checkReqsDef(reqs reqDefs, rs []Identifier) error {
+func checkReqsDef(defs defs, rs []Identifier) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
 			return makeError(r, "%s is not a supported requirement", r)
 		}
-		if reqs[r.Str] {
+		if defs.reqs[r.Str] {
 			return makeError(r, "%s is defined multiple times", r)
 		}
-		reqs[r.Str] = true
+		defs.reqs[r.Str] = true
 	}
-	if reqs[":adl"] {
-		reqs[":strips"] = true
-		reqs[":typing"] = true
-		reqs[":negative-preconditions"] = true
-		reqs[":disjunctive-preconditions"] = true
-		reqs[":equality"] = true
-		reqs[":quantified-preconditions"] = true
-		reqs[":conditional-effects"] = true
+	if defs.reqs[":adl"] {
+		defs.reqs[":strips"] = true
+		defs.reqs[":typing"] = true
+		defs.reqs[":negative-preconditions"] = true
+		defs.reqs[":disjunctive-preconditions"] = true
+		defs.reqs[":equality"] = true
+		defs.reqs[":quantified-preconditions"] = true
+		defs.reqs[":conditional-effects"] = true
 	}
-	if reqs[":quantified-preconditions"] {
-		reqs[":existential-preconditions"] = true
-		reqs[":universal-preconditions"] = true
+	if defs.reqs[":quantified-preconditions"] {
+		defs.reqs[":existential-preconditions"] = true
+		defs.reqs[":universal-preconditions"] = true
 	}
 	return nil
 }
 
-// checkTypesDef returns a mapping from type names
-// to their definition, or an error if there is a semantic
-// error in the type definitions.
-func checkTypesDef(d *Domain, reqs reqDefs) (typeDefs, error) {
-	types := typeDefs{}
-	if len(d.Types) > 0 && !reqs[":typing"] {
-		return nil, makeError(d.Types[0], ":types requires :typing")
+func checkTypesDef(defs defs, d *Domain) error {
+	if len(d.Types) > 0 && !defs.reqs[":typing"] {
+		return makeError(d.Types[0], ":types requires :typing")
 	}
 	for i, t := range d.Types {
 		if len(t.Types) > 1 {
-			return nil, makeError(t, "either super types are not semantically defined")
+			return makeError(t, "either super types are not semantically defined")
 		}
-		if types[t.Str] != nil {
-			return nil, makeError(t, "%s is defined multiple times", t)
+		if defs.types[t.Str] != nil {
+			return makeError(t, "%s is defined multiple times", t)
 		}
-		types[t.Str] = &d.Types[i]
+		defs.types[t.Str] = &d.Types[i]
 		d.Types[i].Num = i
 	}
-	if types["object"] == nil {
+	if defs.types["object"] == nil {
 		obj := Type{
 			TypedIdentifier: TypedIdentifier{
 				Identifier: Identifier{Str:"object"},
@@ -248,19 +247,19 @@ func checkTypesDef(d *Domain, reqs reqDefs) (typeDefs, error) {
 			},
 		}
 		d.Types = append(d.Types, obj)
-		types["object"] = &d.Types[len(d.Types)-1]
+		defs.types["object"] = &d.Types[len(d.Types)-1]
 	}
 	for i := range d.Types {
-		if err := checkTypeNames(reqs, types, d.Types[i].Types); err != nil {
-			return nil, err
+		if err := checkTypeNames(defs, d.Types[i].Types); err != nil {
+			return err
 		}
 	}
-	return types, nil
+	return nil
 }
 
 // checkConstsDef adds to the map from constant
 // names to their definition.
-func checkConstsDef(defs *defs, cs []TypedIdentifier) error {
+func checkConstsDef(defs defs, cs []TypedIdentifier) error {
 	for i, c := range cs {
 		if defs.consts[c.Str] != nil {
 			return makeError(c, "%s is defined multiple times", c)
@@ -268,82 +267,77 @@ func checkConstsDef(defs *defs, cs []TypedIdentifier) error {
 		cs[i].Num = len(defs.consts)
 		defs.consts[c.Str] = &cs[i]
 	}
-	return checkTypedIdentifiers(defs.reqs, defs.types, cs)
+	return checkTypedIdentifiers(defs, cs)
 }
 
-// checkPredsDef returns a map from a predicate
-// name to its definition, or an error if there is a
-// semantic error.
-func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, error) {
-	preds := predDefs{}
+func checkPredsDef(defs defs, ps []Predicate) error {
 	for i, p := range ps {
-		if preds[p.Str] != nil {
-			return preds, makeError(p, "%s is defined multiple times", p)
+		if defs.preds[p.Str] != nil {
+			return makeError(p, "%s is defined multiple times", p)
 		}
-		if err := checkTypedIdentifiers(reqs, types, p.Parameters); err != nil {
-			return preds, err
+		if err := checkTypedIdentifiers(defs, p.Parameters); err != nil {
+			return err
 		}
-		preds[p.Str] = &ps[i]
+		defs.preds[p.Str] = &ps[i]
 		ps[i].Num = i
 	}
-	if reqs[":equality"] && preds["="] == nil {
-		preds["="] = &Predicate{
+	if defs.reqs[":equality"] && defs.preds["="] == nil {
+		defs.preds["="] = &Predicate{
 			Identifier: Identifier{Str: "="},
-			Num:  len(preds),
+			Num:  len(defs.preds),
 			Parameters: []TypedIdentifier{
 				{Identifier: Identifier{Str: "a"}},
 				{Identifier: Identifier{Str: "b"}},
 			},
 		}
 	}
-	return preds, nil
+	return nil
 }
 
 // checkFuncs returns a map from a function name
 // to its definition, or an error if there is a semantic
 // error.
-func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
-	funcs := funcDefs{}
-	if len(fs) > 0 && !reqs[":action-costs"] {
-		return funcs, makeError(fs[0], ":functions requires :action-costs")
+func checkFuncsDef(defs defs, fs []Function) error {
+	if len(fs) > 0 && !defs.reqs[":action-costs"] {
+		return makeError(fs[0], ":functions requires :action-costs")
 	}
 	for i, f := range fs {
-		if funcs[f.Str] != nil {
-			return funcs, makeError(f, "%s is defined multiple times", f)
+		if defs.funcs[f.Str] != nil {
+			return makeError(f, "%s is defined multiple times", f)
 		}
 		if f.Str != "total-cost" || len(f.Parameters) > 0 {
-			return funcs, makeError(f, ":action-costs only allows a 0-ary total-cost function")
+			return makeError(f, ":action-costs only allows a 0-ary total-cost function")
 		}
-		funcs[f.Str] = &fs[i]
+		defs.funcs[f.Str] = &fs[i]
 		fs[i].Num = i
 	}
-	return funcs, nil
+	return nil
 }
 
 // checkTypedIdentifiers returns an error if there is
 // type are used when :typing is not required, or
 // if there is an undeclared type in the list.
-func checkTypedIdentifiers(reqs reqDefs, types typeDefs, lst []TypedIdentifier) error {
+func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
 	for i := range lst {
-		if err := checkTypeNames(reqs, types, lst[i].Types); err != nil {
+		if err := checkTypeNames(defs, lst[i].Types); err != nil {
 			return err
 		}
 		if len(lst[i].Types) == 0 {
 			lst[i].Types = []TypeName{{
-				Identifier: Identifier{ "object", lst[i].Loc() },
-				Definition: types["object"],
+				Identifier: Identifier{ Str:"object" },
+				Definition: defs.types["object"],
 			 }}
 		}
 	}
 	return nil
 }
 
-func checkTypeNames(reqs reqDefs, types typeDefs, ts []TypeName) error {
-	if len(ts) > 0 && !reqs[":typing"] {
+func checkTypeNames(defs defs, ts []TypeName) error {
+	if len(ts) > 0 && !defs.reqs[":typing"] {
 		return makeError(ts[0], "types used but :typing is not required")
 	}
 	for j, t := range ts {
-		switch def := types[t.Str]; def {
+		switch def := defs.types[t.Str]; def {
 		case nil:
 			return makeError(t, "undefined type: %s", t)
 		default:
@@ -353,18 +347,18 @@ func checkTypeNames(reqs reqDefs, types typeDefs, ts []TypeName) error {
 	return nil
 }
 
-func (u *UnaryNode) check(defs *defs) error {
+func (u *UnaryNode) check(defs defs) error {
 	return u.Formula.check(defs)
 }
 
-func (b *BinaryNode) check(defs *defs) error {
+func (b *BinaryNode) check(defs defs) error {
 	if err := b.Left.check(defs); err != nil {
 		return err
 	}
 	return b.Right.check(defs)
 }
 
-func (m *MultiNode) check(defs *defs) error {
+func (m *MultiNode) check(defs defs) error {
 	for i := range m.Formula {
 		if err := m.Formula[i].check(defs); err != nil {
 			return err
@@ -373,8 +367,8 @@ func (m *MultiNode) check(defs *defs) error {
 	return nil
 }
 
-func (q *QuantNode) check(defs *defs) error {
-	if err := checkTypedIdentifiers(defs.reqs, defs.types, q.Variables); err != nil {
+func (q *QuantNode) check(defs defs) error {
+	if err := checkTypedIdentifiers(defs, q.Variables); err != nil {
 		return err
 	}
 	for i := range q.Variables {
@@ -390,14 +384,14 @@ func (q *QuantNode) check(defs *defs) error {
 	return err
 }
 
-func (n *OrNode) check(defs *defs) error {
+func (n *OrNode) check(defs defs) error {
 	if !defs.reqs[":disjunctive-preconditions"] {
 		return makeError(n, "or used but :disjunctive-preconditions is not required")
 	}
 	return n.MultiNode.check(defs)
 }
 
-func (n *NotNode) check(defs *defs) error {
+func (n *NotNode) check(defs defs) error {
 	switch _, ok := n.Formula.(*PropositionNode); {
 	case ok && !defs.reqs[":negative-preconditions"]:
 		return makeError(n, "negative literal used but :negative-preconditions is not required")
@@ -407,14 +401,14 @@ func (n *NotNode) check(defs *defs) error {
 	return n.UnaryNode.check(defs)
 }
 
-func (i *ImplyNode) check(defs *defs) error {
+func (i *ImplyNode) check(defs defs) error {
 	if !defs.reqs[":disjunctive-preconditions"] {
 		return makeError(i, "imply used but :disjunctive-preconditions is not required")
 	}
 	return i.BinaryNode.check(defs)
 }
 
-func (f *ForallNode) check(defs *defs) error {
+func (f *ForallNode) check(defs defs) error {
 	switch {
 	case !f.Effect && !defs.reqs[":universal-preconditions"]:
 		return makeError(f, "forall used but :universal-preconditions is not required")
@@ -424,14 +418,14 @@ func (f *ForallNode) check(defs *defs) error {
 	return f.QuantNode.check(defs)
 }
 
-func (e *ExistsNode) check(defs *defs) error {
+func (e *ExistsNode) check(defs defs) error {
 	if !defs.reqs[":existential-preconditions"] {
 		return makeError(e, "exists used but :existential-preconditions is not required")
 	}
 	return e.QuantNode.check(defs)
 }
 
-func (w *WhenNode) check(defs *defs) error {
+func (w *WhenNode) check(defs defs) error {
 	if !defs.reqs[":conditional-effects"] {
 		return makeError(w, "when used but :conditional-effects is not required")
 	}
@@ -441,7 +435,7 @@ func (w *WhenNode) check(defs *defs) error {
 	return w.UnaryNode.check(defs)
 }
 
-func (p *PropositionNode) check(defs *defs) error {
+func (p *PropositionNode) check(defs defs) error {
 	switch pred := defs.preds[p.Predicate.Str]; {
 	case pred == nil:
 		return makeError(p, "undefined predicate: %s", p.Predicate)
@@ -479,7 +473,7 @@ func (p *PropositionNode) check(defs *defs) error {
 	return nil
 }
 
-func (a *AssignNode) check(defs *defs) error {
+func (a *AssignNode) check(defs defs) error {
 	switch {
 	case !defs.reqs[":action-costs"]:
 		return makeError(a, "%s used but :action-costs is not required", a.Op)

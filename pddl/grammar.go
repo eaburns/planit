@@ -50,7 +50,6 @@ func parseDomain(p *parser) (d *Domain, err error) {
 		}
 		d.Actions = append(d.Actions, act)
 	}
-
 	_, err = p.expect(tokClose)
 	return
 }
@@ -242,7 +241,6 @@ func parseActionDef(p *parser) (act Action, err error) {
 	if act.Parameters, err = parseActParms(p); err != nil {
 		return
 	}
-
 	if p.peek().text == ":precondition" {
 		p.junk(1)
 		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
@@ -263,7 +261,6 @@ func parseActionDef(p *parser) (act Action, err error) {
 			}
 		}
 	}
-
 	_, err = p.expect(tokClose)
 	return
 }
@@ -302,36 +299,13 @@ func parseGd(p *parser) (form Formula, err error) {
 	case p.acceptNamedList("or"):
 		form, err = parseOrGd(p, parseGd)
 	case p.acceptNamedList("not"):
-		nd := Node{p.Loc()}
-		var gd Formula
-		if gd, err = parseGd(p); err != nil {
-			return
-		}
-		form = &NotNode{UnaryNode{nd, gd}}
-		_, err = p.expect(tokClose)
+		form, err = parseNotGd(p)
 	case p.acceptNamedList("imply"):
-		nd := Node{p.Loc()}
-		var left, right Formula
-		if left, err = parseGd(p); err != nil {
-			return
-		}
-		if right, err = parseGd(p); err != nil {
-			return
-		}
-		form = &ImplyNode{BinaryNode{nd, left, right}}
-		_, err = p.expect(tokClose)
+		form, err = parseImplyGd(p)
 	case p.acceptNamedList("exists"):
 		form, err = parseExistsGd(p, parseGd)
 	case p.acceptNamedList("forall"):
 		form, err = parseForallGd(p, parseGd)
-	case p.acceptNamedList("not"):
-		nd := Node{p.Loc()}
-		var prop *PropositionNode
-		if prop, err = parseProposition(p); err != nil {
-			return
-		}
-		form = &NotNode{UnaryNode{nd, prop}}
-		_, err = p.expect(tokClose)
 	default:
 		form, err = parseProposition(p)
 	}
@@ -399,6 +373,31 @@ func parseOrGd(p *parser, nested nested) (form Formula, err error) {
 		fs = append(fs, n)
 	}
 	form = &OrNode{MultiNode{nd, fs}}
+	_, err = p.expect(tokClose)
+	return
+}
+
+func parseNotGd(p *parser) (form Formula, err error) {
+	nd := Node{p.Loc()}
+	var gd Formula
+	if gd, err = parseGd(p); err != nil {
+		return
+	}
+	form = &NotNode{UnaryNode{nd, gd}}
+	_, err = p.expect(tokClose)
+	return
+}
+
+func parseImplyGd(p *parser) (form Formula, err error) {
+	nd := Node{p.Loc()}
+	var left, right Formula
+	if left, err = parseGd(p); err != nil {
+		return
+	}
+	if right, err = parseGd(p); err != nil {
+		return
+	}
+	form = &ImplyNode{BinaryNode{nd, left, right}}
 	_, err = p.expect(tokClose)
 	return
 }
@@ -601,7 +600,6 @@ func parseProblem(p *parser) (prob *Problem, err error) {
 	if prob.Metric, err = parseMetric(p); err != nil {
 		return
 	}
-
 	_, err = p.expect(tokClose)
 	return
 }

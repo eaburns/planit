@@ -113,19 +113,10 @@ func Check(d *Domain, p *Problem) (err error) {
 	for req := range reqs {
 		defs.reqs[req] = true
 	}
-	for _, o := range p.Objects {
-		if defs.consts[o.Str] != nil {
-			return makeError(o, "object %s is already a domain constant", o)
-		}
-	}
-	if _, err = checkConstsDef(defs.reqs, defs.types, p.Objects); err != nil {
-		return
+	if err := checkObjsDef(&defs, p.Objects); err != nil {
+		return err
 	}
 	addObjectsToTypes(defs.types, p.Objects)
-	for i := range p.Objects {
-		p.Objects[i].Num = len(defs.consts)
-		defs.consts[p.Objects[i].Str] = &p.Objects[i]
-	}
 	for i := range p.Init {
 		if err := p.Init[i].check(&defs); err != nil {
 			return err
@@ -186,6 +177,22 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 		}
 	}
 	return
+}
+
+// checkObjsDef adds to the map from constant
+// names to their definition.
+func checkObjsDef(defs *defs, cs []TypedIdentifier) error {
+	for i, c := range cs {
+		if defs.consts[c.Str] != nil {
+			return makeError(c, "object %s is already a domain constant", c)
+		}
+		if defs.consts[c.Str] != nil {
+			return makeError(c, "%s is defined multiple times", c)
+		}
+		defs.consts[c.Str] = &cs[i]
+		cs[i].Num = i
+	}
+	return checkTypedIdentifiers(defs.reqs, defs.types, cs)
 }
 
 func addObjectsToTypes(types typeDefs, objs []TypedIdentifier) {

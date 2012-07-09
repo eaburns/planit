@@ -38,18 +38,6 @@ func (p *parser) Loc() Location {
 	return Location{p.lex.name, p.lex.lineno}
 }
 
-// parseErrors are panicked by the parser
-// when a parser error is encountered.
-type parseError string
-
-func (e parseError) Error() string {
-	return string(e)
-}
-
-func (p *parser) errorf(format string, args ...interface{}) {
-	panic(parseError(fmt.Sprintf("%s: %s", p.Loc(), fmt.Sprintf(format, args...))))
-}
-
 // peek at the nth token
 func (p *parser) peekn(n int) token {
 	if n > len(p.peeks) {
@@ -87,24 +75,43 @@ func (p *parser) acceptNamedList(name string) bool {
 	return true
 }
 
-func (p *parser) expect(typ tokenType) token {
-	t := p.peek()
-	if t.typ != typ {
-		p.errorf("expected %v, got %v", typ, t)
+// expect expects the next tokens to match
+// the arguments.  If the tokens match then
+// they are returned and the error is nil, otherwise
+// an error is returned.
+//
+// The arguments can be either tokenTypes or strings.
+// A tokenType matches a token on its type, and a
+// string matches either a tokQid, tokCid, or tokId
+// if the first character of the string is a '?', ':', or
+// anything else respectively.
+func (p *parser) expect(vls ...interface{}) ([]token, error) {
+	var toks []token
+	for i := range vls {
+		t := p.peek()
+		switch v := vls[i].(type) {
+		case tokenType:
+			if t.typ != v {
+				return nil, makeError(p, "expected %v, got %v", v, t.typ)
+			}
+		case string:
+			var typ tokenType = tokId
+			switch v[0] {
+			case '?':
+				typ = tokQid
+			case ':':
+				typ = tokCid
+			}
+			if t.typ != typ {
+				return nil, makeError(p, "expected %v, got %v", typ, t.typ)
+			}
+			if t.text != v {
+				return nil, makeError(p, "expected %s, get %s", v, t.text)
+			}
+		default:
+			panic(fmt.Sprintf("Unsupported type in expect: %T (%#v)", vls[i], vls[i]))
+		}
+		toks = append(toks, p.next())
 	}
-	return p.next()
-}
-
-func (p *parser) expectId(s string) token {
-	t := p.peek()
-	typ := tokId
-	if s[0] == ':' {
-		typ = tokCid
-	} else if s[0] == '?' {
-		typ = tokQid
-	}
-	if t.typ != typ || t.text != s {
-		p.errorf("expected identifier [\"%s\"], got %v", s, t)
-	}
-	return p.next()
+	return toks, nil
 }

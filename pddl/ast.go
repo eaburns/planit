@@ -46,7 +46,7 @@ func makeError(l Locer, f string, vls ...interface{}) Error {
 }
 
 type Domain struct {
-	Name         string
+	Name
 	Requirements []Name
 	Types        []TypedName
 	Constants    []TypedName
@@ -56,8 +56,8 @@ type Domain struct {
 }
 
 type Problem struct {
-	Name         string
-	Domain       string
+	Name
+	Domain       Name
 	Requirements []Name
 	Objects      []TypedName
 	Init         []Formula
@@ -77,8 +77,12 @@ type Name struct {
 	Location
 }
 
+func (n Name) String() string {
+	return n.Str
+}
+
 type Action struct {
-	Name         string
+	Name
 	Parameters   []TypedName
 	Precondition Formula
 	Effect       Formula
@@ -144,7 +148,7 @@ type QuantNode struct {
 }
 
 type PropositionNode struct {
-	Predicate  string
+	Predicate Name
 	Definition *Predicate
 	Arguments  []Term
 	Node
@@ -193,7 +197,7 @@ var (
 )
 
 type AssignNode struct {
-	Op   string
+	Op   Name
 	Lval Name   // Just total-cost for now.
 	Rval string // Just a number
 	Node

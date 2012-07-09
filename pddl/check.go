@@ -97,7 +97,7 @@ func Check(d *Domain, p *Problem) (err error) {
 	if err != nil {
 		return
 	}
-	if p.Domain != d.Name {
+	if p.Domain.Str != d.Name.Str {
 		return fmt.Errorf("problem %s expects domain %s, but got %s",
 			p.Name, p.Domain, d.Name)
 	}
@@ -413,7 +413,7 @@ func (w *WhenNode) check(defs *defs) error {
 }
 
 func (p *PropositionNode) check(defs *defs) error {
-	switch pred := defs.preds[p.Predicate]; {
+	switch pred := defs.preds[p.Predicate.Str]; {
 	case pred == nil:
 		return makeError(p, "undefined predicate: %s", p.Predicate)
 	default:

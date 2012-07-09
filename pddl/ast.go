@@ -48,7 +48,7 @@ func makeError(l Locer, f string, vls ...interface{}) Error {
 type Domain struct {
 	Identifier
 	Requirements []Identifier
-	Types        []TypedIdentifier
+	Types        []Type
 	Constants    []TypedIdentifier
 	Predicates   []Predicate
 	Functions    []Function
@@ -81,6 +81,13 @@ func (n Identifier) String() string {
 	return n.Str
 }
 
+type Type struct {
+	TypedIdentifier
+	// Objects is a pointer to the definition
+	// of each object of this type.
+	Objects []*TypedIdentifier
+}
+
 type Action struct {
 	Identifier
 	Parameters   []TypedIdentifier
@@ -91,13 +98,12 @@ type Action struct {
 type TypedIdentifier struct {
 	Identifier
 	Num int
-	// A disjunction of types.
 	Types []TypeName
 }
 
 type TypeName struct {
 	Identifier
-	Definition *TypedIdentifier
+	Definition *Type
 }
 
 type Predicate struct {

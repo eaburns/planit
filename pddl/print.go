@@ -13,8 +13,20 @@ func PrintDomain(w io.Writer, d *Domain) {
 	printRequirements(w, d.Requirements)
 
 	if len(d.Types) > 0 {
-		fmt.Fprintf(w, "%s(:types", indent)
-		printTypedNames(w, "\n"+indent+indent, d.Types)
+		fmt.Fprintf(w, "%s(:types\n", indent)
+		var ids []TypedIdentifier
+		for _, t := range d.Types {
+			var parent []TypeName
+			if len(t.Types) > 0 {
+				parent = []TypeName{t.Types[0]}
+			}
+			tid := TypedIdentifier {
+				Identifier: t.Identifier,
+				Types: parent,
+			}
+			ids = append(ids, tid)
+		}
+		printTypedNames(w, "\n"+indent+indent, ids)
 		fmt.Fprintln(w, ")")
 	}
 

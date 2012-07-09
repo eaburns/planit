@@ -29,7 +29,7 @@ type (
 	reqDefs map[string]bool
 
 	// typeDefs maps a type name to its definition.
-	typeDefs map[string]*TypedIdentifier
+	typeDefs map[string]*Type
 
 	// constDefs maps a constant or object name to
 	// its definition.
@@ -147,7 +147,7 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 	if err != nil {
 		return
 	}
-	defs.types, err = checkTypesDef(defs.reqs, d.Types)
+	defs.types, err = checkTypesDef(d, defs.reqs)
 	if err != nil {
 		return
 	}
@@ -220,29 +220,35 @@ func checkReqsDef(rs []Identifier) (reqDefs, error) {
 // checkTypesDef returns a mapping from type names
 // to their definition, or an error if there is a semantic
 // error in the type definitions.
-func checkTypesDef(reqs reqDefs, ts []TypedIdentifier) (typeDefs, error) {
+func checkTypesDef(d *Domain, reqs reqDefs) (typeDefs, error) {
 	types := typeDefs{}
-	if len(ts) > 0 && !reqs[":typing"] {
-		return types, makeError(ts[0], ":types requires :typing")
+	if len(d.Types) > 0 && !reqs[":typing"] {
+		return nil, makeError(d.Types[0], ":types requires :typing")
 	}
-	for i, t := range ts {
+	for i, t := range d.Types {
 		if len(t.Types) > 1 {
-			return types, makeError(t, "'either' supertypes are not semantically defined")
+			return nil, makeError(t, "either super types are not semantically defined")
 		}
 		if types[t.Str] != nil {
-			return types, makeError(t, "%s is defined multiple times", t)
+			return nil, makeError(t, "%s is defined multiple times", t)
 		}
-		types[t.Str] = &ts[i]
-		ts[i].Num = i
+		types[t.Str] = &d.Types[i]
+		d.Types[i].Num = i
 	}
 	if types["object"] == nil {
-		types["object"] = &TypedIdentifier{
-			Identifier: Identifier{Str: "object"},
-			Num: len(types),
+		obj := Type{
+			TypedIdentifier: TypedIdentifier{
+				Identifier: Identifier{Str:"object"},
+				Num: len(d.Types),
+			},
 		}
+		d.Types = append(d.Types, obj)
+		types["object"] = &d.Types[len(d.Types)-1]
 	}
-	if err := checkTypedIdentifiers(reqs, types, ts); err != nil {
-		return types, err
+	for i := range d.Types {
+		if err := checkTypeNames(reqs, types, d.Types[i].Types); err != nil {
+			return nil, err
+		}
 	}
 	return types, nil
 }
@@ -316,19 +322,29 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 // if there is an undeclared type in the list.
 func checkTypedIdentifiers(reqs reqDefs, types typeDefs, lst []TypedIdentifier) error {
 	for i := range lst {
-		if len(lst[i].Types) > 0 && !reqs[":typing"] {
-			return makeError(lst[i], "types used but :typing is not required")
+		if err := checkTypeNames(reqs, types, lst[i].Types); err != nil {
+			return err
 		}
 		if len(lst[i].Types) == 0 {
-			lst[i].Types = []TypeName{{ Identifier: Identifier{ "object", lst[i].Loc() } }}
+			lst[i].Types = []TypeName{{
+				Identifier: Identifier{ "object", lst[i].Loc() },
+				Definition: types["object"],
+			 }}
 		}
-		for j, typ := range lst[i].Types {
-			switch def := types[typ.Str]; def {
-			case nil:
-				return makeError(typ, "undefined type: %s", typ)
-			default:
-				lst[i].Types[j].Definition = def
-			}
+	}
+	return nil
+}
+
+func checkTypeNames(reqs reqDefs, types typeDefs, ts []TypeName) error {
+	if len(ts) > 0 && !reqs[":typing"] {
+		return makeError(ts[0], "types used but :typing is not required")
+	}
+	for j, t := range ts {
+		switch def := types[t.Str]; def {
+		case nil:
+			return makeError(t, "undefined type: %s", t)
+		default:
+			ts[j].Definition = def
 		}
 	}
 	return nil
@@ -492,19 +508,23 @@ func compatTypes(types typeDefs, left, right []TypeName) bool {
 
 // superTypes returns a slice of the parent types
 // of the given type, including the type itself.
-func superTypes(types typeDefs, t TypeName) (supers []*TypedIdentifier) {
+func superTypes(types typeDefs, t TypeName) (supers []*Type) {
 	seen := make([]bool, len(types))
-	cur := t.Definition
-	for !seen[cur.Num] {
-		seen[cur.Num] = true
-		supers = append(supers, cur)
-		if len(cur.Types) > 1 {
-			// This should have been caught already
-			panic(cur.Str + " has more than one parent type")
+	stk := []*Type{ t.Definition }
+	for len(stk) > 0 {
+		t := stk[len(stk)-1]
+		stk = stk[:len(stk)-1]
+		if seen[t.Num] {
+			continue
 		}
-		if len(cur.Types) > 0 {
-			cur = cur.Types[0].Definition
+		seen[t.Num] = true
+		supers = append(supers, t)
+		for _, s := range t.Types {
+			stk = append(stk, s.Definition)
 		}
+	}
+	if obj := types["object"]; !seen[obj.Num] {
+		supers = append(supers, obj)
 	}
 	return
 }

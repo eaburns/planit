@@ -77,10 +77,14 @@ func parseReqsDef(p *parser) (reqs []Identifier, err error) {
 	return
 }
 
-func parseTypesDef(p *parser) (types []TypedIdentifier, err error) {
+func parseTypesDef(p *parser) (types []Type, err error) {
 	if p.acceptNamedList(":types") {
-		if types, err = parseTypedListString(p, tokId); err != nil {
+		var tlist []TypedIdentifier
+		if tlist, err = parseTypedListString(p, tokId); err != nil {
 			return
+		}
+		for _, t := range tlist {
+			types = append(types, Type{ TypedIdentifier: t })
 		}
 		_, err = p.expect(tokClose)
 	}

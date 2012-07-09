@@ -101,19 +101,10 @@ func Check(d *Domain, p *Problem) (err error) {
 		return fmt.Errorf("problem %s expects domain %s, but got %s",
 			p.Identifier, p.Domain, d.Identifier)
 	}
-	for _, r := range p.Requirements {
-		if defs.reqs[r.Str] {
-			return makeError(r, "requirement %s is already a domain requirement", r)
-		}
-	}
-	reqs, err := checkReqsDef(p.Requirements)
-	if err != nil {
+	if err = checkReqsDef(defs.reqs, p.Requirements); err != nil {
 		return
 	}
-	for req := range reqs {
-		defs.reqs[req] = true
-	}
-	if err := checkObjsDef(&defs, p.Objects); err != nil {
+	if err := checkConstsDef(&defs, p.Objects); err != nil {
 		return err
 	}
 	addObjectsToTypes(defs.types, p.Objects)
@@ -134,16 +125,16 @@ func Check(d *Domain, p *Problem) (err error) {
 // all definitions are numbered and indentifiers
 // are linked to their definition.
 func CheckDomain(d *Domain) (defs defs, err error) {
-	defs.reqs, err = checkReqsDef(d.Requirements)
-	if err != nil {
+	defs.reqs = reqDefs{}
+	if err = checkReqsDef(defs.reqs, d.Requirements); err != nil {
 		return
 	}
 	defs.types, err = checkTypesDef(d, defs.reqs)
 	if err != nil {
 		return
 	}
-	defs.consts, err = checkConstsDef(defs.reqs, defs.types, d.Constants)
-	if err != nil {
+	defs.consts = constDefs{}
+	if err = checkConstsDef(&defs, d.Constants); err != nil {
 		return
 	}
 	addObjectsToTypes(defs.types, d.Constants)
@@ -179,22 +170,6 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 	return
 }
 
-// checkObjsDef adds to the map from constant
-// names to their definition.
-func checkObjsDef(defs *defs, cs []TypedIdentifier) error {
-	for i, c := range cs {
-		if defs.consts[c.Str] != nil {
-			return makeError(c, "object %s is already a domain constant", c)
-		}
-		if defs.consts[c.Str] != nil {
-			return makeError(c, "%s is defined multiple times", c)
-		}
-		defs.consts[c.Str] = &cs[i]
-		cs[i].Num = i
-	}
-	return checkTypedIdentifiers(defs.reqs, defs.types, cs)
-}
-
 func addObjectsToTypes(types typeDefs, objs []TypedIdentifier) {
 	for i := range objs {
 		obj := &objs[i]
@@ -221,14 +196,13 @@ func (t *Type)  addObject(obj *TypedIdentifier) {
 // checkReqsDef checks requirement definitions.
 // On success, a set of requirements is returned,
 // else an error is returned.
-func checkReqsDef(rs []Identifier) (reqDefs, error) {
-	reqs := reqDefs{}
+func checkReqsDef(reqs reqDefs, rs []Identifier) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
-			return reqs, makeError(r, "%s is not a supported requirement", r)
+			return makeError(r, "%s is not a supported requirement", r)
 		}
 		if reqs[r.Str] {
-			return reqs, makeError(r, "%s is defined multiple times", r)
+			return makeError(r, "%s is defined multiple times", r)
 		}
 		reqs[r.Str] = true
 	}
@@ -245,7 +219,7 @@ func checkReqsDef(rs []Identifier) (reqDefs, error) {
 		reqs[":existential-preconditions"] = true
 		reqs[":universal-preconditions"] = true
 	}
-	return reqs, nil
+	return nil
 }
 
 // checkTypesDef returns a mapping from type names
@@ -284,19 +258,17 @@ func checkTypesDef(d *Domain, reqs reqDefs) (typeDefs, error) {
 	return types, nil
 }
 
-// checkConstsDef returns the map from constant
-// names to their definition if there are no semantic
-// errors, otherwise an error is returned.
-func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedIdentifier) (constDefs, error) {
-	consts := constDefs{}
+// checkConstsDef adds to the map from constant
+// names to their definition.
+func checkConstsDef(defs *defs, cs []TypedIdentifier) error {
 	for i, c := range cs {
-		if consts[c.Str] != nil {
-			return consts, makeError(c, "%s is defined multiple times", c)
+		if defs.consts[c.Str] != nil {
+			return makeError(c, "%s is defined multiple times", c)
 		}
-		consts[c.Str] = &cs[i]
-		cs[i].Num = i
+		cs[i].Num = len(defs.consts)
+		defs.consts[c.Str] = &cs[i]
 	}
-	return consts, checkTypedIdentifiers(reqs, types, cs)
+	return checkTypedIdentifiers(defs.reqs, defs.types, cs)
 }
 
 // checkPredsDef returns a map from a predicate

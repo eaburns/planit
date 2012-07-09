@@ -101,24 +101,28 @@ func Check(d *Domain, p *Problem) (err error) {
 		return fmt.Errorf("problem %s expects domain %s, but got %s",
 			p.Name, p.Domain, d.Name)
 	}
+	for _, r := range p.Requirements {
+		if defs.reqs[r.Str] {
+			return makeError(r, "requirement %s is already a domain requirement", r)
+		}
+	}
 	reqs, err := checkReqsDef(p.Requirements)
 	if err != nil {
 		return
 	}
 	for req := range reqs {
-		if defs.reqs[req] {
-			return fmt.Errorf("problem requirement %s is already a domain requirement", req)
-		}
 		defs.reqs[req] = true
+	}
+	for _, o := range p.Objects {
+		if defs.consts[o.Str] != nil {
+			return makeError(o, "object %s is already a domain constant", o)
+		}
 	}
 	objs, err := checkConstsDef(defs.reqs, defs.types, p.Objects)
 	if err != nil {
 		return
 	}
 	for o, def := range objs {
-		if defs.consts[o] != nil {
-			return makeError(def, "problem object %s is already a domain constant", o)
-		}
 		def.Num = len(defs.consts)
 		defs.consts[o] = def
 	}

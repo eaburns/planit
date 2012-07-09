@@ -190,10 +190,10 @@ func checkReqsDef(rs []Name) (reqDefs, error) {
 	reqs := reqDefs{}
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
-			return reqs, makeError(r, "%s is not a supported requirement", r.Str)
+			return reqs, makeError(r, "%s is not a supported requirement", r)
 		}
 		if reqs[r.Str] {
-			return reqs, makeError(r, "%s is defined multiple times", r.Str)
+			return reqs, makeError(r, "%s is defined multiple times", r)
 		}
 		reqs[r.Str] = true
 	}
@@ -226,7 +226,7 @@ func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 			return types, makeError(t, "'either' supertypes are not semantically defined")
 		}
 		if types[t.Str] != nil {
-			return types, makeError(t, "%s is defined multiple times", t.Str)
+			return types, makeError(t, "%s is defined multiple times", t)
 		}
 		types[t.Str] = &ts[i]
 		ts[i].Num = i
@@ -247,7 +247,7 @@ func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, er
 	consts := constDefs{}
 	for i, c := range cs {
 		if consts[c.Str] != nil {
-			return consts, makeError(c, "%s is defined multiple times", c.Str)
+			return consts, makeError(c, "%s is defined multiple times", c)
 		}
 		consts[c.Str] = &cs[i]
 		cs[i].Num = i
@@ -262,7 +262,7 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 	preds := predDefs{}
 	for i, p := range ps {
 		if preds[p.Str] != nil {
-			return preds, makeError(p, "%s is defined multiple times", p.Str)
+			return preds, makeError(p, "%s is defined multiple times", p)
 		}
 		if err := checkTypedNames(reqs, types, p.Parameters); err != nil {
 			return preds, err
@@ -293,7 +293,7 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 	}
 	for i, f := range fs {
 		if funcs[f.Str] != nil {
-			return funcs, makeError(f, "%s is defined multiple times", f.Str)
+			return funcs, makeError(f, "%s is defined multiple times", f)
 		}
 		if f.Str != "total-cost" || len(f.Parameters) > 0 {
 			return funcs, makeError(f, ":action-costs only allows a 0-ary total-cost function")
@@ -315,7 +315,7 @@ func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
 		for j, typ := range ent.Types {
 			switch def := types[typ.Str]; def {
 			case nil:
-				return makeError(typ, "undefined type: %s", typ.Str)
+				return makeError(typ, "undefined type: %s", typ)
 			default:
 				lst[i].Types[j].Definition = def
 			}
@@ -425,7 +425,7 @@ func (p *PropositionNode) check(defs *defs) error {
 			arg = arg[:len(arg)-1]
 		}
 		return makeError(p, "predicate %s requires %d %s",
-			p.Definition.Str, len(p.Definition.Parameters), arg)
+			p.Definition, len(p.Definition.Parameters), arg)
 	}
 	for i := range p.Arguments {
 		kind := "constant"
@@ -436,7 +436,7 @@ func (p *PropositionNode) check(defs *defs) error {
 		}
 		if arg == nil {
 			return makeError(p.Arguments[i], "undefined %s: %s",
-				kind, p.Arguments[i].Str)
+				kind, p.Arguments[i])
 		}
 		p.Arguments[i].Definition = arg
 
@@ -444,8 +444,7 @@ func (p *PropositionNode) check(defs *defs) error {
 		if !compatTypes(defs.types, parm.Types, arg.Types) {
 			return makeError(p.Arguments[i],
 				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
-				arg.Str, typeString(arg.Types), parm.Str,
-				typeString(parm.Types), p.Definition.Str)
+				arg, typeString(arg.Types), parm, typeString(parm.Types), p.Definition)
 		}
 	}
 	return nil
@@ -456,7 +455,7 @@ func (a *AssignNode) check(defs *defs) error {
 	case !defs.reqs[":action-costs"]:
 		return makeError(a, "%s used but :action-costs is not required", a.Op)
 	case defs.funcs[a.Lval.Str] == nil:
-		return makeError(a.Lval, "undefined function: %s", a.Lval.Str)
+		return makeError(a.Lval, "undefined function: %s", a.Lval)
 	}
 	return nil
 }

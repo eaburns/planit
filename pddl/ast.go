@@ -5,46 +5,6 @@ import (
 	"io"
 )
 
-// Locer wraps the Loc method.
-type Locer interface {
-	Loc() Location
-}
-
-// A Location is a location in a PDDL input file.
-type Location struct {
-	File string
-	Line int
-}
-
-func (l Location) Loc() Location {
-	return l
-}
-
-func (l Location) String() string {
-	if l.Line < 0 {
-		return l.File
-	}
-	return fmt.Sprintf("%s:%d", l.File, l.Line)
-}
-
-// An Error holds information about errors
-// assocated with locations in a PDDL file.
-type Error struct {
-	Location
-	msg string
-}
-
-func (e Error) Error() string {
-	return e.Location.String() + ": " + e.msg
-}
- 
-// makeError returns an error at a location
-// in a PDDL file with the message set  by a
-// format string.
-func makeError(l Locer, f string, vls ...interface{}) Error {
-	return Error{ l.Loc(), fmt.Sprintf(f, vls...) }
-}
-
 type Domain struct {
 	Identifier
 	Requirements []Identifier
@@ -207,4 +167,44 @@ type AssignNode struct {
 	Lval Identifier   // Just total-cost for now.
 	Rval string // Just a number
 	Node
+}
+
+// Locer wraps the Loc method.
+type Locer interface {
+	Loc() Location
+}
+
+// A Location is a location in a PDDL input file.
+type Location struct {
+	File string
+	Line int
+}
+
+func (l Location) Loc() Location {
+	return l
+}
+
+func (l Location) String() string {
+	if l.Line < 0 {
+		return l.File
+	}
+	return fmt.Sprintf("%s:%d", l.File, l.Line)
+}
+
+// An Error holds information about errors
+// assocated with locations in a PDDL file.
+type Error struct {
+	Location
+	msg string
+}
+
+func (e Error) Error() string {
+	return e.Location.String() + ": " + e.msg
+}
+ 
+// makeError returns an error at a location
+// in a PDDL file with the message set  by a
+// format string.
+func makeError(l Locer, f string, vls ...interface{}) Error {
+	return Error{ l.Loc(), fmt.Sprintf(f, vls...) }
 }

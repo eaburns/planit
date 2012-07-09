@@ -235,7 +235,7 @@ func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 		types[t.Str] = &ts[i]
 		ts[i].Num = i
 	}
-	if reqs[":typing"] && types["object"] == nil {
+	if types["object"] == nil {
 		types["object"] = &TypedName{Name: Name{Str: "object"}, Num: len(types)}
 	}
 	if err := checkTypedNames(reqs, types, ts); err != nil {
@@ -312,11 +312,14 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 // type are used when :typing is not required, or
 // if there is an undeclared type in the list.
 func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
-	for i, ent := range lst {
-		if len(ent.Types) > 0 && !reqs[":typing"] {
-			return makeError(ent, "types used but :typing is not required")
+	for i := range lst {
+		if len(lst[i].Types) > 0 && !reqs[":typing"] {
+			return makeError(lst[i], "types used but :typing is not required")
 		}
-		for j, typ := range ent.Types {
+		if len(lst[i].Types) == 0 {
+			lst[i].Types = []Type{{ Name: Name{ "object", lst[i].Loc() } }}
+		}
+		for j, typ := range lst[i].Types {
 			switch def := types[typ.Str]; def {
 			case nil:
 				return makeError(typ, "undefined type: %s", typ)

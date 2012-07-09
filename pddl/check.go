@@ -117,7 +117,7 @@ func Check(d *Domain, p *Problem) (err error) {
 	}
 	for o, def := range objs {
 		if defs.consts[o] != nil {
-			return errorf(def.Loc, "problem object %s is already a domain constant", o)
+			return makeError(def, "problem object %s is already a domain constant", o)
 		}
 		def.Num = len(defs.consts)
 		defs.consts[o] = def
@@ -190,10 +190,10 @@ func checkReqsDef(rs []Name) (reqDefs, error) {
 	reqs := reqDefs{}
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
-			return reqs, errorf(r.Loc, "%s is not a supported requirement", r.Str)
+			return reqs, makeError(r, "%s is not a supported requirement", r.Str)
 		}
 		if reqs[r.Str] {
-			return reqs, errorf(r.Loc, "%s is defined multiple times", r.Str)
+			return reqs, makeError(r, "%s is defined multiple times", r.Str)
 		}
 		reqs[r.Str] = true
 	}
@@ -219,14 +219,14 @@ func checkReqsDef(rs []Name) (reqDefs, error) {
 func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 	types := typeDefs{}
 	if len(ts) > 0 && !reqs[":typing"] {
-		return types, errorf(ts[0].Loc, ":types requires :typing")
+		return types, makeError(ts[0], ":types requires :typing")
 	}
 	for i, t := range ts {
 		if len(t.Types) > 1 {
-			return types, errorf(t.Loc, "'either' supertypes are not semantically defined")
+			return types, makeError(t, "'either' supertypes are not semantically defined")
 		}
 		if types[t.Str] != nil {
-			return types, errorf(t.Loc, "%s is defined multiple times", t.Str)
+			return types, makeError(t, "%s is defined multiple times", t.Str)
 		}
 		types[t.Str] = &ts[i]
 		ts[i].Num = i
@@ -247,7 +247,7 @@ func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, er
 	consts := constDefs{}
 	for i, c := range cs {
 		if consts[c.Str] != nil {
-			return consts, errorf(c.Loc, "%s is defined multiple times", c.Str)
+			return consts, makeError(c, "%s is defined multiple times", c.Str)
 		}
 		consts[c.Str] = &cs[i]
 		cs[i].Num = i
@@ -262,7 +262,7 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 	preds := predDefs{}
 	for i, p := range ps {
 		if preds[p.Str] != nil {
-			return preds, errorf(p.Loc, "%s is defined multiple times", p.Str)
+			return preds, makeError(p, "%s is defined multiple times", p.Str)
 		}
 		if err := checkTypedNames(reqs, types, p.Parameters); err != nil {
 			return preds, err
@@ -289,14 +289,14 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error) {
 	funcs := funcDefs{}
 	if len(fs) > 0 && !reqs[":action-costs"] {
-		return funcs, errorf(fs[0].Loc, ":functions requires :action-costs")
+		return funcs, makeError(fs[0], ":functions requires :action-costs")
 	}
 	for i, f := range fs {
 		if funcs[f.Str] != nil {
-			return funcs, errorf(f.Loc, "%s is defined multiple times", f.Str)
+			return funcs, makeError(f, "%s is defined multiple times", f.Str)
 		}
 		if f.Str != "total-cost" || len(f.Parameters) > 0 {
-			return funcs, errorf(f.Loc, ":action-costs only allows a 0-ary total-cost function")
+			return funcs, makeError(f, ":action-costs only allows a 0-ary total-cost function")
 		}
 		funcs[f.Str] = &fs[i]
 		fs[i].Num = i
@@ -310,24 +310,18 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
 	for i, ent := range lst {
 		if len(ent.Types) > 0 && !reqs[":typing"] {
-			return errorf(ent.Loc, "types used but :typing is not required")
+			return makeError(ent, "types used but :typing is not required")
 		}
 		for j, typ := range ent.Types {
 			switch def := types[typ.Str]; def {
 			case nil:
-				return errorf(typ.Loc, "undefined type: %s", typ.Str)
+				return makeError(typ, "undefined type: %s", typ.Str)
 			default:
 				lst[i].Types[j].Definition = def
 			}
 		}
 	}
 	return nil
-}
-
-// errorf returns an error with the string
-// based on a formate and a location.
-func errorf(loc Loc, f string, vs ...interface{}) error {
-	return fmt.Errorf("%s: %s", loc.String(), fmt.Sprintf(f, vs...))
 }
 
 func (u *UnaryNode) check(defs *defs) error {
@@ -369,7 +363,7 @@ func (q *QuantNode) check(defs *defs) error {
 
 func (n *OrNode) check(defs *defs) error {
 	if !defs.reqs[":disjunctive-preconditions"] {
-		return errorf(n.Loc, "or used but :disjunctive-preconditions is not required")
+		return makeError(n, "or used but :disjunctive-preconditions is not required")
 	}
 	return n.MultiNode.check(defs)
 }
@@ -377,16 +371,16 @@ func (n *OrNode) check(defs *defs) error {
 func (n *NotNode) check(defs *defs) error {
 	switch _, ok := n.Formula.(*PropositionNode); {
 	case ok && !defs.reqs[":negative-preconditions"]:
-		return errorf(n.Loc, "negative literal used but :negative-preconditions is not required")
+		return makeError(n, "negative literal used but :negative-preconditions is not required")
 	case !ok && !defs.reqs[":disjunctive-preconditions"]:
-		return errorf(n.Loc, "not used but :disjunctive-preconditions is not required")
+		return makeError(n, "not used but :disjunctive-preconditions is not required")
 	}
 	return n.UnaryNode.check(defs)
 }
 
 func (i *ImplyNode) check(defs *defs) error {
 	if !defs.reqs[":disjunctive-preconditions"] {
-		return errorf(i.Loc, "imply used but :disjunctive-preconditions is not required")
+		return makeError(i, "imply used but :disjunctive-preconditions is not required")
 	}
 	return i.BinaryNode.check(defs)
 }
@@ -394,23 +388,23 @@ func (i *ImplyNode) check(defs *defs) error {
 func (f *ForallNode) check(defs *defs) error {
 	switch {
 	case !f.Effect && !defs.reqs[":universal-preconditions"]:
-		return errorf(f.Loc, "forall used but :universal-preconditions is not required")
+		return makeError(f, "forall used but :universal-preconditions is not required")
 	case f.Effect && !defs.reqs[":conditional-effects"]:
-		return errorf(f.Loc, "forall used but :conditional-effects is not required")
+		return makeError(f, "forall used but :conditional-effects is not required")
 	}
 	return f.QuantNode.check(defs)
 }
 
 func (e *ExistsNode) check(defs *defs) error {
 	if !defs.reqs[":existential-preconditions"] {
-		return errorf(e.Loc, "exists used but :existential-preconditions is not required")
+		return makeError(e, "exists used but :existential-preconditions is not required")
 	}
 	return e.QuantNode.check(defs)
 }
 
 func (w *WhenNode) check(defs *defs) error {
 	if !defs.reqs[":conditional-effects"] {
-		return errorf(w.Loc, "when used but :conditional-effects is not required")
+		return makeError(w, "when used but :conditional-effects is not required")
 	}
 	if err := w.Condition.check(defs); err != nil {
 		return err
@@ -421,7 +415,7 @@ func (w *WhenNode) check(defs *defs) error {
 func (p *PropositionNode) check(defs *defs) error {
 	switch pred := defs.preds[p.Predicate]; {
 	case pred == nil:
-		return errorf(p.Loc, "undefined predicate: %s", p.Predicate)
+		return makeError(p, "undefined predicate: %s", p.Predicate)
 	default:
 		p.Definition = pred
 	}
@@ -430,7 +424,7 @@ func (p *PropositionNode) check(defs *defs) error {
 		if len(p.Definition.Parameters) == 1 {
 			arg = arg[:len(arg)-1]
 		}
-		return errorf(p.Loc, "predicate %s requires %d %s",
+		return makeError(p, "predicate %s requires %d %s",
 			p.Definition.Str, len(p.Definition.Parameters), arg)
 	}
 	for i := range p.Arguments {
@@ -441,14 +435,14 @@ func (p *PropositionNode) check(defs *defs) error {
 			kind = "variable"
 		}
 		if arg == nil {
-			return errorf(p.Arguments[i].Loc, "undefined %s: %s",
+			return makeError(p.Arguments[i], "undefined %s: %s",
 				kind, p.Arguments[i].Str)
 		}
 		p.Arguments[i].Definition = arg
 
 		parm := p.Definition.Parameters[i]
 		if !compatTypes(defs.types, parm.Types, arg.Types) {
-			return errorf(p.Arguments[i].Loc,
+			return makeError(p.Arguments[i],
 				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
 				arg.Str, typeString(arg.Types), parm.Str,
 				typeString(parm.Types), p.Definition.Str)
@@ -460,9 +454,9 @@ func (p *PropositionNode) check(defs *defs) error {
 func (a *AssignNode) check(defs *defs) error {
 	switch {
 	case !defs.reqs[":action-costs"]:
-		return errorf(a.Loc, "%s used but :action-costs is not required", a.Op)
+		return makeError(a, "%s used but :action-costs is not required", a.Op)
 	case defs.funcs[a.Lval.Str] == nil:
-		return errorf(a.Lval.Loc, "undefined function: %s", a.Lval.Str)
+		return makeError(a.Lval, "undefined function: %s", a.Lval.Str)
 	}
 	return nil
 }

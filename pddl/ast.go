@@ -5,6 +5,46 @@ import (
 	"io"
 )
 
+// Locer wraps the Loc method.
+type Locer interface {
+	Loc() Location
+}
+
+// A Location is a location in a PDDL input file.
+type Location struct {
+	File string
+	Line int
+}
+
+func (l Location) Loc() Location {
+	return l
+}
+
+func (l Location) String() string {
+	if l.Line < 0 {
+		return l.File
+	}
+	return fmt.Sprintf("%s:%d", l.File, l.Line)
+}
+
+// An Error holds information about errors
+// assocated with locations in a PDDL file.
+type Error struct {
+	Location
+	msg string
+}
+
+func (e Error) Error() string {
+	return e.Location.String() + ": " + e.msg
+}
+ 
+// makeError returns an error at a location
+// in a PDDL file with the message set  by a
+// format string.
+func makeError(l Locer, f string, vls ...interface{}) Error {
+	return Error{ l.Loc(), fmt.Sprintf(f, vls...) }
+}
+
 type Domain struct {
 	Name         string
 	Requirements []Name
@@ -34,19 +74,7 @@ const (
 
 type Name struct {
 	Str string
-	Loc Loc
-}
-
-type Loc struct {
-	File string
-	Line int
-}
-
-func (l Loc) String() string {
-	if l.Line < 0 {
-		return l.File
-	}
-	return fmt.Sprintf("%s:%d", l.File, l.Line)
+	Location
 }
 
 type Action struct {
@@ -93,7 +121,7 @@ type Formula interface {
 	check(*defs) error
 }
 
-type Node struct{ Loc Loc }
+type Node struct{ Location }
 
 type UnaryNode struct {
 	Node

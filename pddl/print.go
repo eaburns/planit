@@ -148,7 +148,7 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 		if tcur != tprev {
 			if tprev == "" {
 				// Should be impossible.
-				panic(n.Loc.String() + ": untyped declarations in the middle of a typed list")
+				panic(n.Location.String() + ": untyped declarations in the middle of a typed list")
 			}
 			fmt.Fprintf(w, " - %s", tprev)
 			tprev = tcur

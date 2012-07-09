@@ -34,8 +34,8 @@ func (p *parser) next() token {
 	return t
 }
 
-func (p *parser) loc() Loc {
-	return Loc{p.lex.name, p.lex.lineno}
+func (p *parser) Loc() Location {
+	return Location{p.lex.name, p.lex.lineno}
 }
 
 // parseErrors are panicked by the parser
@@ -47,7 +47,7 @@ func (e parseError) Error() string {
 }
 
 func (p *parser) errorf(format string, args ...interface{}) {
-	panic(parseError(fmt.Sprintf("%s: %s", p.loc(), fmt.Sprintf(format, args...))))
+	panic(parseError(fmt.Sprintf("%s: %s", p.Loc(), fmt.Sprintf(format, args...))))
 }
 
 // peek at the nth token

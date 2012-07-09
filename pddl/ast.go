@@ -46,20 +46,20 @@ func makeError(l Locer, f string, vls ...interface{}) Error {
 }
 
 type Domain struct {
-	Name
-	Requirements []Name
-	Types        []TypedName
-	Constants    []TypedName
+	Identifier
+	Requirements []Identifier
+	Types        []TypedIdentifier
+	Constants    []TypedIdentifier
 	Predicates   []Predicate
 	Functions    []Function
 	Actions      []Action
 }
 
 type Problem struct {
-	Name
-	Domain       Name
-	Requirements []Name
-	Objects      []TypedName
+	Identifier
+	Domain       Identifier
+	Requirements []Identifier
+	Objects      []TypedIdentifier
 	Init         []Formula
 	Goal         Formula
 	Metric       Metric
@@ -72,45 +72,45 @@ const (
 	MetricMinCost
 )
 
-type Name struct {
+type Identifier struct {
 	Str string
 	Location
 }
 
-func (n Name) String() string {
+func (n Identifier) String() string {
 	return n.Str
 }
 
 type Action struct {
-	Name
-	Parameters   []TypedName
+	Identifier
+	Parameters   []TypedIdentifier
 	Precondition Formula
 	Effect       Formula
 }
 
-type TypedName struct {
-	Name
+type TypedIdentifier struct {
+	Identifier
 	Num int
 	// A disjunction of types.
-	Types []Type
+	Types []TypeName
 }
 
-type Type struct {
-	Name
-	Definition *TypedName
+type TypeName struct {
+	Identifier
+	Definition *TypedIdentifier
 }
 
 type Predicate struct {
-	Name
+	Identifier
 	Num        int
-	Parameters []TypedName
+	Parameters []TypedIdentifier
 }
 
 type Function struct {
-	Name
+	Identifier
 	Num        int
-	Types      []Type
-	Parameters []TypedName
+	Types      []TypeName
+	Parameters []TypedIdentifier
 }
 
 type Formula interface {
@@ -143,22 +143,22 @@ type MultiNode struct {
 }
 
 type QuantNode struct {
-	Variables []TypedName
+	Variables []TypedIdentifier
 	UnaryNode
 }
 
 type PropositionNode struct {
-	Predicate Name
+	Predicate Identifier
 	Definition *Predicate
 	Arguments  []Term
 	Node
 }
 
 type Term struct {
-	Name
+	Identifier
 	// Definition points to the variable
 	// or constant definition for this term.
-	Definition *TypedName
+	Definition *TypedIdentifier
 	Variable   bool
 }
 
@@ -197,8 +197,8 @@ var (
 )
 
 type AssignNode struct {
-	Op   Name
-	Lval Name   // Just total-cost for now.
+	Op   Identifier
+	Lval Identifier   // Just total-cost for now.
 	Rval string // Just a number
 	Node
 }

@@ -29,11 +29,11 @@ type (
 	reqDefs map[string]bool
 
 	// typeDefs maps a type name to its definition.
-	typeDefs map[string]*TypedName
+	typeDefs map[string]*TypedIdentifier
 
 	// constDefs maps a constant or object name to
 	// its definition.
-	constDefs map[string]*TypedName
+	constDefs map[string]*TypedIdentifier
 
 	// predDefs maps a predicate name to its definition.
 	predDefs map[string]*Predicate
@@ -45,7 +45,7 @@ type (
 	varDefs struct {
 		up         *varDefs
 		name       string
-		definition *TypedName
+		definition *TypedIdentifier
 	}
 
 	// defs aggregates all of the different definition
@@ -62,7 +62,7 @@ type (
 
 // find returns the definition of the variable
 // or nil if it was undefined.
-func (v *varDefs) find(n string) *TypedName {
+func (v *varDefs) find(n string) *TypedIdentifier {
 	if v == nil {
 		return nil
 	}
@@ -74,7 +74,7 @@ func (v *varDefs) find(n string) *TypedName {
 
 // push returns a new varDefs with the given
 // definitions defined.
-func (v *varDefs) push(d *TypedName) *varDefs {
+func (v *varDefs) push(d *TypedIdentifier) *varDefs {
 	return &varDefs{
 		up:         v,
 		name:       d.Str,
@@ -97,9 +97,9 @@ func Check(d *Domain, p *Problem) (err error) {
 	if err != nil {
 		return
 	}
-	if p.Domain.Str != d.Name.Str {
+	if p.Domain.Str != d.Str {
 		return fmt.Errorf("problem %s expects domain %s, but got %s",
-			p.Name, p.Domain, d.Name)
+			p.Identifier, p.Domain, d.Identifier)
 	}
 	for _, r := range p.Requirements {
 		if defs.reqs[r.Str] {
@@ -165,7 +165,7 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 	}
 	for _, act := range d.Actions {
 		parms := act.Parameters
-		if err = checkTypedNames(defs.reqs, defs.types, parms); err != nil {
+		if err = checkTypedIdentifiers(defs.reqs, defs.types, parms); err != nil {
 			return
 		}
 		for i := range act.Parameters {
@@ -190,7 +190,7 @@ func CheckDomain(d *Domain) (defs defs, err error) {
 // checkReqsDef checks requirement definitions.
 // On success, a set of requirements is returned,
 // else an error is returned.
-func checkReqsDef(rs []Name) (reqDefs, error) {
+func checkReqsDef(rs []Identifier) (reqDefs, error) {
 	reqs := reqDefs{}
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
@@ -220,7 +220,7 @@ func checkReqsDef(rs []Name) (reqDefs, error) {
 // checkTypesDef returns a mapping from type names
 // to their definition, or an error if there is a semantic
 // error in the type definitions.
-func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
+func checkTypesDef(reqs reqDefs, ts []TypedIdentifier) (typeDefs, error) {
 	types := typeDefs{}
 	if len(ts) > 0 && !reqs[":typing"] {
 		return types, makeError(ts[0], ":types requires :typing")
@@ -236,9 +236,12 @@ func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 		ts[i].Num = i
 	}
 	if types["object"] == nil {
-		types["object"] = &TypedName{Name: Name{Str: "object"}, Num: len(types)}
+		types["object"] = &TypedIdentifier{
+			Identifier: Identifier{Str: "object"},
+			Num: len(types),
+		}
 	}
-	if err := checkTypedNames(reqs, types, ts); err != nil {
+	if err := checkTypedIdentifiers(reqs, types, ts); err != nil {
 		return types, err
 	}
 	return types, nil
@@ -247,7 +250,7 @@ func checkTypesDef(reqs reqDefs, ts []TypedName) (typeDefs, error) {
 // checkConstsDef returns the map from constant
 // names to their definition if there are no semantic
 // errors, otherwise an error is returned.
-func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, error) {
+func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedIdentifier) (constDefs, error) {
 	consts := constDefs{}
 	for i, c := range cs {
 		if consts[c.Str] != nil {
@@ -256,7 +259,7 @@ func checkConstsDef(reqs reqDefs, types typeDefs, cs []TypedName) (constDefs, er
 		consts[c.Str] = &cs[i]
 		cs[i].Num = i
 	}
-	return consts, checkTypedNames(reqs, types, cs)
+	return consts, checkTypedIdentifiers(reqs, types, cs)
 }
 
 // checkPredsDef returns a map from a predicate
@@ -268,7 +271,7 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 		if preds[p.Str] != nil {
 			return preds, makeError(p, "%s is defined multiple times", p)
 		}
-		if err := checkTypedNames(reqs, types, p.Parameters); err != nil {
+		if err := checkTypedIdentifiers(reqs, types, p.Parameters); err != nil {
 			return preds, err
 		}
 		preds[p.Str] = &ps[i]
@@ -276,11 +279,11 @@ func checkPredsDef(reqs reqDefs, types typeDefs, ps []Predicate) (predDefs, erro
 	}
 	if reqs[":equality"] && preds["="] == nil {
 		preds["="] = &Predicate{
-			Name: Name{Str: "="},
+			Identifier: Identifier{Str: "="},
 			Num:  len(preds),
-			Parameters: []TypedName{
-				{Name: Name{Str: "a"}},
-				{Name: Name{Str: "b"}},
+			Parameters: []TypedIdentifier{
+				{Identifier: Identifier{Str: "a"}},
+				{Identifier: Identifier{Str: "b"}},
 			},
 		}
 	}
@@ -308,16 +311,16 @@ func checkFuncsDef(reqs reqDefs, types typeDefs, fs []Function) (funcDefs, error
 	return funcs, nil
 }
 
-// checkTypedNames returns an error if there is
+// checkTypedIdentifiers returns an error if there is
 // type are used when :typing is not required, or
 // if there is an undeclared type in the list.
-func checkTypedNames(reqs reqDefs, types typeDefs, lst []TypedName) error {
+func checkTypedIdentifiers(reqs reqDefs, types typeDefs, lst []TypedIdentifier) error {
 	for i := range lst {
 		if len(lst[i].Types) > 0 && !reqs[":typing"] {
 			return makeError(lst[i], "types used but :typing is not required")
 		}
 		if len(lst[i].Types) == 0 {
-			lst[i].Types = []Type{{ Name: Name{ "object", lst[i].Loc() } }}
+			lst[i].Types = []TypeName{{ Identifier: Identifier{ "object", lst[i].Loc() } }}
 		}
 		for j, typ := range lst[i].Types {
 			switch def := types[typ.Str]; def {
@@ -352,7 +355,7 @@ func (m *MultiNode) check(defs *defs) error {
 }
 
 func (q *QuantNode) check(defs *defs) error {
-	if err := checkTypedNames(defs.reqs, defs.types, q.Variables); err != nil {
+	if err := checkTypedIdentifiers(defs.reqs, defs.types, q.Variables); err != nil {
 		return err
 	}
 	for i := range q.Variables {
@@ -468,7 +471,7 @@ func (a *AssignNode) check(defs *defs) error {
 }
 
 // compatTypes returns true r is convertable to l via widening.
-func compatTypes(types typeDefs, left, right []Type) bool {
+func compatTypes(types typeDefs, left, right []TypeName) bool {
 	if len(right) == 1 {
 		for _, l := range left {
 			for _, s := range superTypes(types, l) {
@@ -480,7 +483,7 @@ func compatTypes(types typeDefs, left, right []Type) bool {
 		return false
 	}
 	for _, r := range right {
-		if !compatTypes(types, left, []Type{r}) {
+		if !compatTypes(types, left, []TypeName{r}) {
 			return false
 		}
 	}
@@ -489,7 +492,7 @@ func compatTypes(types typeDefs, left, right []Type) bool {
 
 // superTypes returns a slice of the parent types
 // of the given type, including the type itself.
-func superTypes(types typeDefs, t Type) (supers []*TypedName) {
+func superTypes(types typeDefs, t TypeName) (supers []*TypedIdentifier) {
 	seen := make([]bool, len(types))
 	cur := t.Definition
 	for !seen[cur.Num] {

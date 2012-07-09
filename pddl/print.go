@@ -9,7 +9,7 @@ const indent = "\t"
 
 // PrintDomain prints the domain in valid PDDL to the given writer.
 func PrintDomain(w io.Writer, d *Domain) {
-	fmt.Fprintf(w, "(define (domain %s)\n", d.Name)
+	fmt.Fprintf(w, "(define (domain %s)\n", d.Identifier)
 	printRequirements(w, d.Requirements)
 
 	if len(d.Types) > 0 {
@@ -54,7 +54,7 @@ func PrintDomain(w io.Writer, d *Domain) {
 	}
 
 	for _, act := range d.Actions {
-		fmt.Fprintf(w, "%s(:action %s\n", indent, act.Name)
+		fmt.Fprintf(w, "%s(:action %s\n", indent, act.Identifier)
 		fmt.Fprintf(w, "%s:parameters (", indent+indent+indent)
 		printTypedNames(w, "", act.Parameters)
 		fmt.Fprint(w, ")")
@@ -76,7 +76,7 @@ func PrintDomain(w io.Writer, d *Domain) {
 
 // PrintProblem prints the problem in valid PDDL to the given writer.
 func PrintProblem(w io.Writer, p *Problem) {
-	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n", p.Name, indent, p.Domain)
+	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n", p.Identifier, indent, p.Domain)
 	printRequirements(w, p.Requirements)
 
 	if len(p.Objects) > 0 {
@@ -98,7 +98,7 @@ func PrintProblem(w io.Writer, p *Problem) {
 	fmt.Fprintln(w, ")\n)")
 }
 
-func printRequirements(w io.Writer, reqs []Name) {
+func printRequirements(w io.Writer, reqs []Identifier) {
 	if len(reqs) > 0 {
 		fmt.Fprintf(w, "%s(:requirements\n", indent)
 		for i, r := range reqs {
@@ -137,7 +137,7 @@ func (t declGroups) Swap(i, j int) {
 // printTypedNames prints a slice of TypedNames
 // in their given order. The prefix is printed before
 // each group.
-func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
+func printTypedNames(w io.Writer, prefix string, ns []TypedIdentifier) {
 	if len(ns) == 0 {
 		return
 	}
@@ -166,7 +166,7 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedName) {
 }
 
 // typeString returns the string representation of a type.
-func typeString(t []Type) (str string) {
+func typeString(t []TypeName) (str string) {
 	switch len(t) {
 	case 0:
 		break
@@ -186,7 +186,7 @@ func (p *PropositionNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(", prefix)
 	fmt.Fprint(w, p.Predicate)
 	for _, t := range p.Arguments {
-		fmt.Fprintf(w, " %s", t.Name.Str)
+		fmt.Fprintf(w, " %s", t.Identifier)
 	}
 	fmt.Fprint(w, ")")
 }

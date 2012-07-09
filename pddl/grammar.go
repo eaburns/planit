@@ -4,8 +4,7 @@ import (
 	"io"
 )
 
-// Parse returns either a domain, a problem or
-// a parse error.
+// Parse returns either a domain, a problem or a parse error.
 func Parse(file string, r io.Reader) (dom *Domain, prob *Problem, err error) {
 	var p *parser
 	if p, err = newParser(file, r); err != nil {
@@ -19,7 +18,6 @@ func Parse(file string, r io.Reader) (dom *Domain, prob *Problem, err error) {
 	return
 }
 
-// parseDomain parses a domain.
 func parseDomain(p *parser) (d *Domain, err error) {
 	if _, err = p.expect(tokOpen, "define"); err != nil {
 		return
@@ -573,7 +571,6 @@ func parseFexp(p *parser) (string, error) {
 	return n[0].text, nil
 }
 
-// parseProblem parses a problem
 func parseProblem(p *parser) (prob *Problem, err error) {
 	if _, err = p.expect(tokOpen, "define"); err != nil {
 		return

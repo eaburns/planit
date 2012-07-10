@@ -25,38 +25,21 @@ var (
 )
 
 type (
-	// reqDefs is a requirement definition set.
-	reqDefs map[string]bool
-
-	// typeDefs maps a type name to its definition.
-	typeDefs map[string]*Type
-
-	// constDefs maps a constant or object name to
-	// its definition.
-	constDefs map[string]*TypedIdentifier
-
-	// predDefs maps a predicate name to its definition.
-	predDefs map[string]*Predicate
-
-	// funcDefs maps a function name to its definition.
-	funcDefs map[string]*Function
+	// defs aggregates all of the different definition classes.
+	defs struct {
+		reqs   map[string]bool
+		types  map[string]*Type
+		consts map[string]*TypedIdentifier
+		preds  map[string]*Predicate
+		funcs  map[string]*Function
+		vars   *varDefs
+	}
 
 	// varDefs is a linked list of variable definitions.
 	varDefs struct {
 		up         *varDefs
 		name       string
 		definition *TypedIdentifier
-	}
-
-	// defs aggregates all of the different definition
-	// classes.
-	defs struct {
-		reqs   reqDefs
-		types  typeDefs
-		consts constDefs
-		preds  predDefs
-		funcs  funcDefs
-		vars   *varDefs
 	}
 )
 
@@ -110,7 +93,7 @@ func Check(d *Domain, p *Problem) (err error) {
 	if err := checkConstsDef(defs, p.Objects); err != nil {
 		return err
 	}
-	addObjectsToTypes(defs.types, p.Objects)
+	addObjectsToTypes(defs, p.Objects)
 	for i := range p.Init {
 		if err := p.Init[i].check(defs); err != nil {
 			return err
@@ -129,11 +112,11 @@ func Check(d *Domain, p *Problem) (err error) {
 // are linked to their definition.
 func checkDomain(d *Domain) (defs, error) {
 	defs := defs{
-		reqs: make(reqDefs),
-		types: make(typeDefs),
-		consts: make(constDefs),
-		preds: make(predDefs),
-		funcs: make(funcDefs),
+		reqs: make(map[string]bool),
+		types: make(map[string]*Type),
+		consts: make(map[string]*TypedIdentifier),
+		preds: make(map[string]*Predicate),
+		funcs: make(map[string]*Function),
 	}
 	if err := checkReqsDef(defs, d.Requirements); err != nil {
 		return defs, err
@@ -144,7 +127,7 @@ func checkDomain(d *Domain) (defs, error) {
 	if err := checkConstsDef(defs, d.Constants); err != nil {
 		return defs, err
 	}
-	addObjectsToTypes(defs.types, d.Constants)
+	addObjectsToTypes(defs, d.Constants)
 	if err := checkPredsDef(defs, d.Predicates); err != nil {
 		return defs, err
 	}
@@ -176,11 +159,11 @@ func checkDomain(d *Domain) (defs, error) {
 	return defs, nil
 }
 
-func addObjectsToTypes(types typeDefs, objs []TypedIdentifier) {
+func addObjectsToTypes(defs defs, objs []TypedIdentifier) {
 	for i := range objs {
 		obj := &objs[i]
 		for _, t := range obj.Types {
-			for _, s := range superTypes(types, t) {
+			for _, s := range superTypes(defs, t) {
 				s.addObject(obj)
 			}
 		}
@@ -467,7 +450,7 @@ func (p *PropositionNode) check(defs defs) error {
 		p.Arguments[i].Definition = arg
 
 		parm := p.Definition.Parameters[i]
-		if !compatTypes(defs.types, parm.Types, arg.Types) {
+		if !compatTypes(defs, parm.Types, arg.Types) {
 			return makeError(p.Arguments[i],
 				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
 				arg, typeString(arg.Types), parm, typeString(parm.Types), p.Definition)
@@ -487,10 +470,10 @@ func (a *AssignNode) check(defs defs) error {
 }
 
 // compatTypes returns true r is convertable to l via widening.
-func compatTypes(types typeDefs, left, right []TypeName) bool {
+func compatTypes(defs defs, left, right []TypeName) bool {
 	if len(right) == 1 {
 		for _, l := range left {
-			for _, s := range superTypes(types, l) {
+			for _, s := range superTypes(defs, l) {
 				if s == right[0].Definition {
 					return true
 				}
@@ -499,7 +482,7 @@ func compatTypes(types typeDefs, left, right []TypeName) bool {
 		return false
 	}
 	for _, r := range right {
-		if !compatTypes(types, left, []TypeName{r}) {
+		if !compatTypes(defs, left, []TypeName{r}) {
 			return false
 		}
 	}
@@ -508,8 +491,8 @@ func compatTypes(types typeDefs, left, right []TypeName) bool {
 
 // superTypes returns a slice of the parent types
 // of the given type, including the type itself.
-func superTypes(types typeDefs, t TypeName) (supers []*Type) {
-	seen := make([]bool, len(types))
+func superTypes(defs defs, t TypeName) (supers []*Type) {
+	seen := make([]bool, len(defs.types))
 	stk := []*Type{ t.Definition }
 	for len(stk) > 0 {
 		t := stk[len(stk)-1]
@@ -523,7 +506,7 @@ func superTypes(types typeDefs, t TypeName) (supers []*Type) {
 			stk = append(stk, s.Definition)
 		}
 	}
-	if obj := types["object"]; !seen[obj.Num] {
+	if obj := defs.types["object"]; !seen[obj.Num] {
 		supers = append(supers, obj)
 	}
 	return

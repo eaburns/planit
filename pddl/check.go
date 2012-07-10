@@ -106,10 +106,6 @@ func Check(d *Domain, p *Problem) (err error) {
 	return
 }
 
-// checkDomain returns an error if there are
-// any semantic errors in the domain, otherwise
-// all definitions are numbered and indentifiers
-// are linked to their definition.
 func checkDomain(d *Domain) (defs, error) {
 	defs := defs{
 		reqs: make(map[string]bool),
@@ -170,9 +166,6 @@ func addObjectsToTypes(defs defs, objs []TypedIdentifier) {
 	}
 }
 
-// addObject adds an object definition to the list
-// of all objects for the receiver type if it is not
-// already there.
 func (t *Type)  addObject(obj *TypedIdentifier) {
 	for _, o := range t.Objects {
 		if o == obj {
@@ -182,9 +175,6 @@ func (t *Type)  addObject(obj *TypedIdentifier) {
 	t.Objects = append(t.Objects, obj)
 }
 
-// checkReqsDef checks requirement definitions.
-// On success, a set of requirements is returned,
-// else an error is returned.
 func checkReqsDef(defs defs, rs []Identifier) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
@@ -243,8 +233,6 @@ func checkTypesDef(defs defs, d *Domain) error {
 	return nil
 }
 
-// checkConstsDef adds to the map from constant
-// names to their definition.
 func checkConstsDef(defs defs, cs []TypedIdentifier) error {
 	for i, c := range cs {
 		if defs.consts[c.Str] != nil {
@@ -280,9 +268,6 @@ func checkPredsDef(defs defs, ps []Predicate) error {
 	return nil
 }
 
-// checkFuncs returns a map from a function name
-// to its definition, or an error if there is a semantic
-// error.
 func checkFuncsDef(defs defs, fs []Function) error {
 	if len(fs) > 0 && !defs.reqs[":action-costs"] {
 		return makeError(fs[0], ":functions requires :action-costs")
@@ -300,9 +285,6 @@ func checkFuncsDef(defs defs, fs []Function) error {
 	return nil
 }
 
-// checkTypedIdentifiers returns an error if there is
-// type are used when :typing is not required, or
-// if there is an undeclared type in the list.
 func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
 	for i := range lst {
 		if err := checkTypeNames(defs, lst[i].Types); err != nil {

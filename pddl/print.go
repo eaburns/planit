@@ -8,7 +8,7 @@ import (
 // PrintDomain prints the domain in valid PDDL to the given writer.
 func PrintDomain(w io.Writer, d *Domain) {
 	fmt.Fprintf(w, "(define (domain %s)\n", d.Identifier)
-	printRequirements(w, d.Requirements)
+	printReqsDef(w, d.Requirements)
 	printTypesDef(w, d.Types)
 	printConstsDef(w, ":constants", d.Constants)
 	printPredsDef(w, d.Predicates)
@@ -17,6 +17,19 @@ func PrintDomain(w io.Writer, d *Domain) {
 		printAction(w, act)
 	}
 	fmt.Fprintln(w, ")")
+}
+
+func printReqsDef(w io.Writer, reqs []Identifier) {
+	if len(reqs) > 0 {
+		fmt.Fprintf(w, "%s(:requirements\n", indent(1))
+		for i, r := range reqs {
+			s := r.Str
+			if i == len(reqs)-1 {
+				s += ")"
+			}
+			fmt.Fprintln(w, indent(2), s)
+		}
+	}
 }
 
 func printTypesDef(w io.Writer, ts []Type) {
@@ -106,8 +119,7 @@ func printAction(w io.Writer, act Action) {
 func PrintProblem(w io.Writer, p *Problem) {
 	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n",
 		p.Identifier, indent(1), p.Domain)
-	printRequirements(w, p.Requirements)
-
+	printReqsDef(w, p.Requirements)
 	printConstsDef(w, ":objects", p.Objects)
 
 	fmt.Fprintf(w, "%s(:init", indent(1))
@@ -121,19 +133,6 @@ func PrintProblem(w io.Writer, p *Problem) {
 	p.Goal.print(w, indent(2))
 
 	fmt.Fprintln(w, ")\n)")
-}
-
-func printRequirements(w io.Writer, reqs []Identifier) {
-	if len(reqs) > 0 {
-		fmt.Fprintf(w, "%s(:requirements\n", indent(1))
-		for i, r := range reqs {
-			s := r.Str
-			if i == len(reqs)-1 {
-				s += ")"
-			}
-			fmt.Fprintln(w, indent(2), s)
-		}
-	}
 }
 
 // declGroup is a group of declarators along

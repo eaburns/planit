@@ -20,15 +20,16 @@ func PrintDomain(w io.Writer, d *Domain) {
 }
 
 func printReqsDef(w io.Writer, reqs []Identifier) {
-	if len(reqs) > 0 {
-		fmt.Fprintf(w, "%s(:requirements\n", indent(1))
-		for i, r := range reqs {
-			s := r.Str
-			if i == len(reqs)-1 {
-				s += ")"
-			}
-			fmt.Fprintln(w, indent(2), s)
+	if len(reqs) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "%s(:requirements\n", indent(1))
+	for i, r := range reqs {
+		s := r.Str
+		if i == len(reqs)-1 {
+			s += ")"
 		}
+		fmt.Fprintln(w, indent(2), s)
 	}
 }
 

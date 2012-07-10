@@ -57,7 +57,7 @@ type Action struct {
 
 type TypedIdentifier struct {
 	Identifier
-	Num int
+	Num   int
 	Types []TypeName
 }
 
@@ -114,7 +114,7 @@ type QuantNode struct {
 }
 
 type PropositionNode struct {
-	Predicate Identifier
+	Predicate  Identifier
 	Definition *Predicate
 	Arguments  []Term
 	Node
@@ -164,8 +164,8 @@ var (
 
 type AssignNode struct {
 	Op   Identifier
-	Lval Identifier   // Just total-cost for now.
-	Rval string // Just a number
+	Lval Identifier // Just total-cost for now.
+	Rval string     // Just a number
 	Node
 }
 
@@ -201,10 +201,10 @@ type Error struct {
 func (e Error) Error() string {
 	return e.Location.String() + ": " + e.msg
 }
- 
+
 // makeError returns an error at a location
 // in a PDDL file with the message set  by a
 // format string.
 func makeError(l Locer, f string, vls ...interface{}) Error {
-	return Error{ l.Loc(), fmt.Sprintf(f, vls...) }
+	return Error{l.Loc(), fmt.Sprintf(f, vls...)}
 }

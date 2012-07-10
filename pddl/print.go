@@ -20,9 +20,9 @@ func PrintDomain(w io.Writer, d *Domain) {
 			if len(t.Types) > 0 {
 				parent = []TypeName{t.Types[0]}
 			}
-			tid := TypedIdentifier {
+			tid := TypedIdentifier{
 				Identifier: t.Identifier,
-				Types: parent,
+				Types:      parent,
 			}
 			ids = append(ids, tid)
 		}

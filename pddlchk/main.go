@@ -1,9 +1,9 @@
 package main
 
 import (
-	"os"
-	"fmt"
 	"errors"
+	"fmt"
+	"os"
 	"planit/pddl"
 )
 
@@ -16,7 +16,7 @@ func main() {
 		panic(err)
 	}
 
-	if len(os.Args) > 2 {	
+	if len(os.Args) > 2 {
 		switch d, p, err := parseFile(os.Args[2]); {
 		case err != nil:
 			errorExit(err)

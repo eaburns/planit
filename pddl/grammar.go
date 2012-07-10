@@ -84,7 +84,7 @@ func parseTypesDef(p *parser) (types []Type, err error) {
 			return
 		}
 		for _, t := range tlist {
-			types = append(types, Type{ TypedIdentifier: t })
+			types = append(types, Type{TypedIdentifier: t})
 		}
 		_, err = p.expect(tokClose)
 	}
@@ -126,7 +126,7 @@ func parseAtomicFormSkele(p *parser) (pred Predicate, err error) {
 	if pred.Identifier, err = parseIdentifier(p, tokId); err != nil {
 		return
 	}
- 	if pred.Parameters, err = parseTypedListString(p, tokQid); err != nil {
+	if pred.Parameters, err = parseTypedListString(p, tokQid); err != nil {
 		return
 	}
 	_, err = p.expect(tokClose)
@@ -135,7 +135,7 @@ func parseAtomicFormSkele(p *parser) (pred Predicate, err error) {
 
 func parseAtomicFuncSkele(p *parser) (fun Function, err error) {
 	if _, err = p.expect(tokOpen); err != nil {
-		return 
+		return
 	}
 	if fun.Identifier, err = parseIdentifier(p, tokId); err != nil {
 		return
@@ -144,7 +144,7 @@ func parseAtomicFuncSkele(p *parser) (fun Function, err error) {
 		return
 	}
 	_, err = p.expect(tokClose)
- 	return
+	return
 }
 
 func parseFuncsDef(p *parser) (funs []Function, err error) {
@@ -186,7 +186,7 @@ func parseType(p *parser) (typ []TypeName, err error) {
 		if ids, err = parseIdentifiersPlus(p, tokId); err != nil {
 			return
 		}
-		for _, id := range ids  {
+		for _, id := range ids {
 			typ = append(typ, TypeName{Identifier: id})
 		}
 		_, err = p.expect(tokClose)
@@ -258,7 +258,7 @@ func parseActionDef(p *parser) (act Action, err error) {
 		if p.peek().typ == tokOpen && p.peekn(2).typ == tokClose {
 			p.junk(2)
 		} else {
-			if act.Effect, err= parseEffect(p); err != nil {
+			if act.Effect, err = parseEffect(p); err != nil {
 				return
 			}
 		}
@@ -335,11 +335,11 @@ func parseTerms(p *parser) (lst []Term) {
 	for {
 		l := p.Loc()
 		if t, ok := p.accept(tokId); ok {
-			lst = append(lst, Term{Identifier: Identifier{ t.text, l }})
+			lst = append(lst, Term{Identifier: Identifier{t.text, l}})
 			continue
 		}
 		if t, ok := p.accept(tokQid); ok {
-			lst = append(lst, Term{Identifier: Identifier{ t.text, l }, Variable: true})
+			lst = append(lst, Term{Identifier: Identifier{t.text, l}, Variable: true})
 			continue
 		}
 		break
@@ -498,7 +498,7 @@ func parseForallEffect(p *parser, nested nested) (form Formula, err error) {
 	}
 	form = &ForallNode{QuantNode{vars, UnaryNode{nd, n}}, true}
 	_, err = p.expect(tokClose)
-	return 
+	return
 }
 
 func parseWhen(p *parser, nested nested) (form Formula, err error) {
@@ -580,7 +580,7 @@ func parseProblem(p *parser) (prob *Problem, err error) {
 		return
 	}
 	prob = new(Problem)
-	if prob.Identifier, err  = parseProbName(p); err != nil {
+	if prob.Identifier, err = parseProbName(p); err != nil {
 		return
 	}
 	if prob.Domain, err = parseProbDomain(p); err != nil {
@@ -656,7 +656,7 @@ func parseInitEl(p *parser) (form Formula, err error) {
 	switch {
 	case p.acceptNamedList("="):
 		nd := Node{p.Loc()}
-		asn := &AssignNode{ Op:   Identifier{"=", nd.Loc() }, Node: nd }
+		asn := &AssignNode{Op: Identifier{"=", nd.Loc()}, Node: nd}
 		if asn.Lval, err = parseFhead(p); err != nil {
 			return
 		}
@@ -705,7 +705,7 @@ func parseIdentifiersPlus(p *parser, typ tokenType) (ids []Identifier, err error
 	if id, err = parseIdentifier(p, typ); err != nil {
 		return
 	}
-	ids = []Identifier{ id }
+	ids = []Identifier{id}
 	ids = append(ids, parseIdentifiers(p, typ)...)
 	return
 }
@@ -713,7 +713,7 @@ func parseIdentifiersPlus(p *parser, typ tokenType) (ids []Identifier, err error
 func parseIdentifiers(p *parser, typ tokenType) (ids []Identifier) {
 	for t, ok := p.accept(typ); ok; t, ok = p.accept(typ) {
 		l := p.Loc()
-		ids = append(ids, Identifier{ t.text, l })
+		ids = append(ids, Identifier{t.text, l})
 	}
 	return
 }
@@ -724,5 +724,5 @@ func parseIdentifier(p *parser, typ tokenType) (Identifier, error) {
 	if err != nil {
 		return Identifier{}, err
 	}
-	return Identifier{ id[0].text, l }, nil
+	return Identifier{id[0].text, l}, nil
 }

@@ -108,11 +108,11 @@ func Check(d *Domain, p *Problem) (err error) {
 
 func checkDomain(d *Domain) (defs, error) {
 	defs := defs{
-		reqs: make(map[string]bool),
-		types: make(map[string]*Type),
+		reqs:   make(map[string]bool),
+		types:  make(map[string]*Type),
 		consts: make(map[string]*TypedIdentifier),
-		preds: make(map[string]*Predicate),
-		funcs: make(map[string]*Function),
+		preds:  make(map[string]*Predicate),
+		funcs:  make(map[string]*Function),
 	}
 	if err := checkReqsDef(defs, d.Requirements); err != nil {
 		return defs, err
@@ -166,7 +166,7 @@ func addObjectsToTypes(defs defs, objs []TypedIdentifier) {
 	}
 }
 
-func (t *Type)  addObject(obj *TypedIdentifier) {
+func (t *Type) addObject(obj *TypedIdentifier) {
 	for _, o := range t.Objects {
 		if o == obj {
 			return
@@ -218,8 +218,8 @@ func checkTypesDef(defs defs, d *Domain) error {
 	if defs.types["object"] == nil {
 		obj := Type{
 			TypedIdentifier: TypedIdentifier{
-				Identifier: Identifier{Str:"object"},
-				Num: len(d.Types),
+				Identifier: Identifier{Str: "object"},
+				Num:        len(d.Types),
 			},
 		}
 		d.Types = append(d.Types, obj)
@@ -258,7 +258,7 @@ func checkPredsDef(defs defs, ps []Predicate) error {
 	if defs.reqs[":equality"] && defs.preds["="] == nil {
 		defs.preds["="] = &Predicate{
 			Identifier: Identifier{Str: "="},
-			Num:  len(defs.preds),
+			Num:        len(defs.preds),
 			Parameters: []TypedIdentifier{
 				{Identifier: Identifier{Str: "a"}},
 				{Identifier: Identifier{Str: "b"}},
@@ -292,9 +292,9 @@ func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
 		}
 		if len(lst[i].Types) == 0 {
 			lst[i].Types = []TypeName{{
-				Identifier: Identifier{ Str:"object" },
+				Identifier: Identifier{Str: "object"},
 				Definition: defs.types["object"],
-			 }}
+			}}
 		}
 	}
 	return nil
@@ -475,7 +475,7 @@ func compatTypes(defs defs, left, right []TypeName) bool {
 // of the given type, including the type itself.
 func superTypes(defs defs, t TypeName) (supers []*Type) {
 	seen := make([]bool, len(defs.types))
-	stk := []*Type{ t.Definition }
+	stk := []*Type{t.Definition}
 	for len(stk) > 0 {
 		t := stk[len(stk)-1]
 		stk = stk[:len(stk)-1]

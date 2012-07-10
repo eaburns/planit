@@ -159,9 +159,9 @@ func (t declGroups) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// printTypedNames prints a slice of TypedNames
-// in their given order. The prefix is printed before
-// each group.
+// printTypedNames prints a slice of TypedNames.
+// Adjacent items with the same type are all printed
+// in a group.  Each group is preceeded by the prefix.
 func printTypedNames(w io.Writer, prefix string, ns []TypedIdentifier) {
 	if len(ns) == 0 {
 		return

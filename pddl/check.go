@@ -323,6 +323,7 @@ func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
 			return err
 		}
 		if len(lst[i].Types) == 0 {
+			log.Printf("Broken!")
 			lst[i].Types = []TypeName{{
 				Identifier: Identifier{ Str:"object" },
 				Definition: defs.types["object"],

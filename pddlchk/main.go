@@ -1,57 +1,52 @@
 package main
 
 import (
-	"log"
 	"os"
+	"fmt"
+	"errors"
 	"planit/pddl"
 )
 
 func main() {
-	doms := map[string]*pddl.Domain{}
-	probs := []*pddl.Problem{}
+	var dom *pddl.Domain
+	var prob *pddl.Problem
 
-	for i := 1; i < len(os.Args); i++ {
-		f := os.Args[i]
-		in, err := os.Open(f)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		d, p, err := pddl.Parse(f, in)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if d != nil {
-			if doms[d.Name] != nil {
-				log.Printf("domain %s: specified multiple times\n", d.Name)
-				continue
+	dom, prob, err := parseFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+
+	if len(os.Args) > 2 {	
+		switch d, p, err := parseFile(os.Args[2]); {
+		case err != nil:
+			errorExit(err)
+		case d != nil:
+			if dom != nil {
+				errorExit(errors.New("two domains specified"))
 			}
-			doms[d.Name] = d
-		} else {
-			probs = append(probs, p)
+			dom = d
+		case p != nil:
+			if prob != nil {
+				errorExit(errors.New("two problems specified"))
+			}
+			prob = p
 		}
 	}
-	chkd := map[string]bool{}
-	for _, p := range probs {
-		d := doms[p.Domain]
-		if d == nil {
-			log.Printf("problem %s: missing domain %s\n", p.Name, p.Domain)
-			continue
-		}
-		log.Printf("checking %s and %s", d.Name, p.Name)
-		if err := pddl.Check(d, p); err != nil {
-			log.Println(err)
-		}
-		chkd[d.Name] = true
+	if err := pddl.Check(dom, prob); err != nil {
+		errorExit(err)
 	}
-	for _, d := range doms {
-		if chkd[d.Name] {
-			continue
-		}
-		log.Printf("checking %s", d.Name)
-		if _, err := pddl.CheckDomain(d); err != nil {
-			log.Println(err)
-		}
+}
+
+func errorExit(e error) {
+	fmt.Println(e.Error())
+	os.Exit(1)
+}
+
+func parseFile(path string) (*pddl.Domain, *pddl.Problem, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, nil, err
 	}
+	defer file.Close()
+	return pddl.Parse(path, file)
 }

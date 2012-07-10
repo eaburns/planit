@@ -16,9 +16,11 @@ func PrintDomain(w io.Writer, d *Domain) {
 		fmt.Fprintf(w, "%s(:types", indent)
 		var ids []TypedIdentifier
 		for _, t := range d.Types {
-			if t.Location.Line > 0 {
-				ids = append(ids, t.TypedIdentifier)
+			if t.Location.Line == 0 {
+				// skip undeclared implicit types like object
+				continue
 			}
+			ids = append(ids, t.TypedIdentifier)
 		}
 		printTypedNames(w, "\n"+indent+indent, ids)
 		fmt.Fprintln(w, ")")
@@ -33,6 +35,10 @@ func PrintDomain(w io.Writer, d *Domain) {
 	if len(d.Predicates) > 0 {
 		fmt.Fprintf(w, "%s(:predicates\n", indent)
 		for i, p := range d.Predicates {
+			if p.Location.Line == 0 {
+				// skip undefined implicit predicates like =
+				continue
+			}
 			fmt.Fprintf(w, "%s(%s", indent+indent, p.Str)
 			printTypedNames(w, " ", p.Parameters)
 			fmt.Fprint(w, ")")

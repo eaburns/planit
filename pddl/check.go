@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+const (
+	objectTypeName = "object"
+)
+
 var (
 	// supportedReqs is a list of the requirement
 	// flags that are supported by planit.
@@ -42,34 +46,6 @@ type (
 		definition *TypedIdentifier
 	}
 )
-
-// find returns the definition of the variable
-// or nil if it was undefined.
-func (v *varDefs) find(n string) *TypedIdentifier {
-	if v == nil {
-		return nil
-	}
-	if v.name == n {
-		return v.definition
-	}
-	return v.up.find(n)
-}
-
-// push returns a new varDefs with the given
-// definitions defined.
-func (v *varDefs) push(d *TypedIdentifier) *varDefs {
-	return &varDefs{
-		up:         v,
-		name:       d.Str,
-		definition: d,
-	}
-}
-
-// pop returns a varDefs with the latest definition
-// removed.
-func (v *varDefs) pop() *varDefs {
-	return v.up
-}
 
 // Check returns an error if there are any
 // semantic errors in a domain or problem,
@@ -122,7 +98,7 @@ func checkDomain(d *Domain) (defs, error) {
 	if err := checkConstsDef(defs, d.Constants); err != nil {
 		return defs, err
 	}
-	if err := checkPredsDef(defs, d.Predicates); err != nil {
+	if err := checkPredsDef(defs, d); err != nil {
 		return defs, err
 	}
 	if err := checkFuncsDef(defs, d.Functions); err != nil {
@@ -153,26 +129,6 @@ func checkDomain(d *Domain) (defs, error) {
 	return defs, nil
 }
 
-func addObjectsToTypes(defs defs, objs []TypedIdentifier) {
-	for i := range objs {
-		obj := &objs[i]
-		for _, t := range obj.Types {
-			for _, s := range t.Definition.Supers {
-				s.addObject(obj)
-			}
-		}
-	}
-}
-
-func (t *Type) addObject(obj *TypedIdentifier) {
-	for _, o := range t.Objects {
-		if o == obj {
-			return
-		}
-	}
-	t.Objects = append(t.Objects, obj)
-}
-
 func checkReqsDef(defs defs, rs []Identifier) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
@@ -199,25 +155,27 @@ func checkReqsDef(defs defs, rs []Identifier) error {
 	return nil
 }
 
+// checkTypesDef checks a list of type definitions
+// and maps type names to their definitions, and
+// builds the list of all super types of each type. 
+// If the implicit object type was not defined then
+// it is added.
 func checkTypesDef(defs defs, d *Domain) error {
 	if len(d.Types) > 0 && !defs.reqs[":typing"] {
 		return makeError(d.Types[0], ":types requires :typing")
 	}
-	obj := false
-	for _, t := range d.Types {
-		if t.Str == "object" {
-			obj = true
-			break
-		}
-	}
-	if !obj {
+
+	// Ensure that object is defined
+	if !objectDefined(d.Types) {
 		d.Types = append(d.Types, Type{
 			TypedIdentifier: TypedIdentifier{
-				Identifier: Identifier{Str: "object"},
+				Identifier: Identifier{Str: objectTypeName},
 				Num:        len(d.Types),
 			},
 		})
 	}
+
+	// Map type names to their definitions
 	for i, t := range d.Types {
 		if len(t.Types) > 1 {
 			return makeError(t, "either super types are not semantically defined")
@@ -228,11 +186,15 @@ func checkTypesDef(defs defs, d *Domain) error {
 		defs.types[t.Str] = &d.Types[i]
 		d.Types[i].Num = i
 	}
+
+	// Link parent types to their definitions
 	for i := range d.Types {
 		if err := checkTypeNames(defs, d.Types[i].Types); err != nil {
 			return err
 		}
 	}
+
+	// Build super type lists
 	for i := range d.Types {
 		d.Types[i].Supers = superTypes(defs, &d.Types[i])
 		if len(d.Types[i].Supers) <= 0 {
@@ -240,6 +202,17 @@ func checkTypesDef(defs defs, d *Domain) error {
 		}
 	}
 	return nil
+}
+
+// objectDefined returns true if the object type
+// is in the list of defined types.
+func objectDefined(ts []Type) bool {
+	for _, t := range ts {
+		if t.Str == objectTypeName {
+			return true
+		}
+	}
+	return false
 }
 
 // superTypes returns a slice of the parent types
@@ -259,51 +232,93 @@ func superTypes(defs defs, t *Type) (supers []*Type) {
 			stk = append(stk, s.Definition)
 		}
 	}
-	if obj := defs.types["object"]; !seen[obj.Num] {
+	if obj := defs.types[objectTypeName]; !seen[obj.Num] {
 		supers = append(supers, obj)
 	}
 	return
 }
 
-func checkConstsDef(defs defs, cs []TypedIdentifier) error {
-	for i, c := range cs {
-		if defs.consts[c.Str] != nil {
-			return makeError(c, "%s is defined multiple times", c)
+// checkConstsDef checks a list of constant or
+// object definitions and maps names to their
+// definitions.
+func checkConstsDef(defs defs, objs []TypedIdentifier) error {
+	for i, obj := range objs {
+		if defs.consts[obj.Str] != nil {
+			return makeError(obj, "%s is defined multiple times", obj)
 		}
-		cs[i].Num = len(defs.consts)
-		defs.consts[c.Str] = &cs[i]
+		objs[i].Num = len(defs.consts)
+		defs.consts[obj.Str] = &objs[i]
 	}
-	if err := checkTypedIdentifiers(defs, cs); err != nil {
+	if err := checkTypedIdentifiers(defs, objs); err != nil {
 		return err
 	}
-	addObjectsToTypes(defs, cs)
+
+	// Add the object to the list of objects for its type
+	for i := range objs {
+		obj := &objs[i]
+		for _, t := range obj.Types {
+			for _, s := range t.Definition.Supers {
+				s.addObject(obj)
+			}
+		}
+	}
 	return nil
 }
 
-func checkPredsDef(defs defs, ps []Predicate) error {
-	for i, p := range ps {
+// addObject adds an object to the list of all
+// objects of the given type.  If the object has
+// already been added then it is not added
+// again.
+func (t *Type) addObject(obj *TypedIdentifier) {
+	for _, o := range t.Objects {
+		if o == obj {
+			return
+		}
+	}
+	t.Objects = append(t.Objects, obj)
+}
+
+// checkPredsDef checks a list of predicate definitions
+// and maps predicate names to their definitions.
+// If :equality is required and the implicit = predicate
+// was not defined then it is added.
+func checkPredsDef(defs defs, d *Domain) error {
+	if defs.reqs[":equality"] && !equalDefined(d.Predicates) {
+		d.Predicates = append(d.Predicates, Predicate{
+			Identifier: Identifier{Str: "="},
+			Num:        len(defs.preds),
+			Parameters: []TypedIdentifier{
+				{Identifier: Identifier{Str: "?x"}},
+				{Identifier: Identifier{Str: "?y"}},
+			},
+		})
+	}
+	for i, p := range d.Predicates {
 		if defs.preds[p.Str] != nil {
 			return makeError(p, "%s is defined multiple times", p)
 		}
 		if err := checkTypedIdentifiers(defs, p.Parameters); err != nil {
 			return err
 		}
-		defs.preds[p.Str] = &ps[i]
-		ps[i].Num = i
-	}
-	if defs.reqs[":equality"] && defs.preds["="] == nil {
-		defs.preds["="] = &Predicate{
-			Identifier: Identifier{Str: "="},
-			Num:        len(defs.preds),
-			Parameters: []TypedIdentifier{
-				{Identifier: Identifier{Str: "a"}},
-				{Identifier: Identifier{Str: "b"}},
-			},
-		}
+		defs.preds[p.Str] = &d.Predicates[i]
+		d.Predicates[i].Num = i
 	}
 	return nil
 }
 
+// equalDefined returns true if the = predicate
+// is in the list of defined predicates.
+func equalDefined(ps []Predicate) bool {
+	for _, p := range ps {
+		if p.Str == "=" {
+			return true
+		}
+	}
+	return false
+}
+
+// checkFuncsDef checks a list of function definitions,
+// and maps function names to their definitions.
 func checkFuncsDef(defs defs, fs []Function) error {
 	if len(fs) > 0 && !defs.reqs[":action-costs"] {
 		return makeError(fs[0], ":functions requires :action-costs")
@@ -321,6 +336,11 @@ func checkFuncsDef(defs defs, fs []Function) error {
 	return nil
 }
 
+// checkTypedIdentifiers ensures that the types
+// of a list of typed indentifiers are valid.  If they
+// are valid then they are linked to their type
+// definitions.  All identifiers that have no declared
+// type are linked to the object type.
 func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
 	for i := range lst {
 		if err := checkTypeNames(defs, lst[i].Types); err != nil {
@@ -328,17 +348,20 @@ func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
 		}
 		if len(lst[i].Types) == 0 {
 			lst[i].Types = []TypeName{{
-				Identifier: Identifier{Str: "object"},
-				Definition: defs.types["object"],
+				Identifier: Identifier{Str: objectTypeName},
+				Definition: defs.types[objectTypeName],
 			}}
 		}
 	}
 	return nil
 }
 
+// checkTypeNames checks that all of the type
+// names are defined.  Each defined type name
+// is linked to its type definition.
 func checkTypeNames(defs defs, ts []TypeName) error {
 	if len(ts) > 0 && !defs.reqs[":typing"] {
-		return makeError(ts[0], "types used but :typing is not required")
+		return badReq(ts[0], "types", ":typing")
 	}
 	for j, t := range ts {
 		switch def := defs.types[t.Str]; def {
@@ -388,9 +411,25 @@ func (q *QuantNode) check(defs defs) error {
 	return err
 }
 
+// push returns a new varDefs with the given
+// definitions defined.
+func (v *varDefs) push(d *TypedIdentifier) *varDefs {
+	return &varDefs{
+		up:         v,
+		name:       d.Str,
+		definition: d,
+	}
+}
+
+// pop returns a varDefs with the latest definition
+// removed.
+func (v *varDefs) pop() *varDefs {
+	return v.up
+}
+
 func (n *OrNode) check(defs defs) error {
 	if !defs.reqs[":disjunctive-preconditions"] {
-		return makeError(n, "or used but :disjunctive-preconditions is not required")
+		return badReq(n, "or", ":disjunctive-preconditions")
 	}
 	return n.MultiNode.check(defs)
 }
@@ -398,16 +437,16 @@ func (n *OrNode) check(defs defs) error {
 func (n *NotNode) check(defs defs) error {
 	switch _, ok := n.Formula.(*PropositionNode); {
 	case ok && !defs.reqs[":negative-preconditions"]:
-		return makeError(n, "negative literal used but :negative-preconditions is not required")
+		return badReq(n, "negative literal", ":negative-preconditions")
 	case !ok && !defs.reqs[":disjunctive-preconditions"]:
-		return makeError(n, "not used but :disjunctive-preconditions is not required")
+		return badReq(n, "not", ":disjunctive-preconditions")
 	}
 	return n.UnaryNode.check(defs)
 }
 
 func (i *ImplyNode) check(defs defs) error {
 	if !defs.reqs[":disjunctive-preconditions"] {
-		return makeError(i, "imply used but :disjunctive-preconditions is not required")
+		return badReq(i, "imply", ":disjunctive-preconditions")
 	}
 	return i.BinaryNode.check(defs)
 }
@@ -415,23 +454,23 @@ func (i *ImplyNode) check(defs defs) error {
 func (f *ForallNode) check(defs defs) error {
 	switch {
 	case !f.Effect && !defs.reqs[":universal-preconditions"]:
-		return makeError(f, "forall used but :universal-preconditions is not required")
+		return badReq(f, "forall",  ":universal-preconditions")
 	case f.Effect && !defs.reqs[":conditional-effects"]:
-		return makeError(f, "forall used but :conditional-effects is not required")
+		return badReq(f, "forall", ":conditional-effects")
 	}
 	return f.QuantNode.check(defs)
 }
 
 func (e *ExistsNode) check(defs defs) error {
 	if !defs.reqs[":existential-preconditions"] {
-		return makeError(e, "exists used but :existential-preconditions is not required")
+		return badReq(e, "exists", ":existential-preconditions")
 	}
 	return e.QuantNode.check(defs)
 }
 
 func (w *WhenNode) check(defs defs) error {
 	if !defs.reqs[":conditional-effects"] {
-		return makeError(w, "when used but :conditional-effects is not required")
+		return badReq(w, "when",  ":conditional-effects")
 	}
 	if err := w.Condition.check(defs); err != nil {
 		return err
@@ -466,47 +505,76 @@ func (p *PropositionNode) check(defs defs) error {
 				kind, p.Arguments[i])
 		}
 		p.Arguments[i].Definition = arg
-
 		parm := p.Definition.Parameters[i]
 		if !compatTypes(parm.Types, arg.Types) {
-			return makeError(p.Arguments[i],
-				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
-				arg, typeString(arg.Types), parm, typeString(parm.Types), p.Definition)
+			return incompatTypes(p, i)
 		}
 	}
 	return nil
 }
 
-func (a *AssignNode) check(defs defs) error {
-	switch {
-	case !defs.reqs[":action-costs"]:
-		return makeError(a, "%s used but :action-costs is not required", a.Op)
-	case defs.funcs[a.Lval.Str] == nil:
-		return makeError(a.Lval, "undefined function: %s", a.Lval)
+// find returns the definition of the variable
+// or nil if it was undefined.
+func (v *varDefs) find(n string) *TypedIdentifier {
+	if v == nil {
+		return nil
 	}
-	return nil
+	if v.name == n {
+		return v.definition
+	}
+	return v.up.find(n)
 }
 
-// compatTypes returns true right is convertable to left via widening.
+// compatTypes returns true if each type on the right
+// is convertable to each type on the left.
 func compatTypes(left, right []TypeName) bool {
-	if len(right) == 1 {
+	for _, r := range right {
+		ok := false
 		for _, l := range left {
-			if len(l.Definition.Supers) == 0 {
-				panic(fmt.Sprintf("%p No supers", l.Definition))
-			}
-			for _, s := range l.Definition.Supers {
-				if s == right[0].Definition {
-					return true
+			for _, s := range r.Definition.Supers {
+				if s == l.Definition {
+					ok = true
+					break
 				}
 			}
+			if ok {
+				break
+			}
 		}
-		return false
-	}
-	for _, r := range right {
-		if !compatTypes(left, []TypeName{r}) {
+		if !ok {
 			return false
 		}
 	}
 	return true
 }
 
+func (a *AssignNode) check(defs defs) error {
+	switch {
+	case !defs.reqs[":action-costs"]:
+		return badReq(a, a.Op.Str, ":action-costs")
+	case defs.funcs[a.Lval.Str] == nil:
+		return makeError(a.Lval, "undefined function: %s", a.Lval)
+	}
+	return nil
+}
+
+// badReq returns a requirement error for the case
+// when something was used but its requirement
+// was not defined.
+func badReq(l Locer, used, reqd string) error {
+	return makeError(l, "%s used but %s is not required", used, reqd)
+}
+
+// incompatTypes returns an error for the case that
+// the ith argument of a proposition is of an
+// incompatible type with the ith parameter of its
+// predicate definition.
+func incompatTypes(prop *PropositionNode, i int) error {
+	arg := prop.Arguments[i].Definition
+	pred := prop.Definition
+	parm := pred.Parameters[i]
+	return makeError(arg,
+		"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
+		arg, typeString(arg.Types), parm, typeString(parm.Types), pred)
+}
+		

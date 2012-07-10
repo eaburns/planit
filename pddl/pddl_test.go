@@ -49,7 +49,7 @@ func checkPddlDomain(tests []test, t *testing.T) {
 			t.Error("not a domain")
 			continue
 		}
-		_, err = CheckDomain(d)
+		err = Check(d, nil)
 		if test.errMsg == "" {
 			if err != nil {
 				t.Errorf("%s\nunexpected error message: %s",

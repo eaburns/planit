@@ -92,9 +92,12 @@ func (v *varDefs) pop() *varDefs {
 // semantic errors in a domain or problem,
 // otherwise all definitions are numbered and
 // indentifiers are linked to their definition.
+//
+// If the problem is nil then only the domain
+// is checked.  The domain must not be nil.
 func Check(d *Domain, p *Problem) (err error) {
-	defs, err := CheckDomain(d)
-	if err != nil {
+	defs, err := checkDomain(d)
+	if err != nil || p == nil {
 		return
 	}
 	if p.Domain.Str != d.Str {
@@ -120,11 +123,11 @@ func Check(d *Domain, p *Problem) (err error) {
 	return
 }
 
-// CheckDomain returns an error if there are
+// checkDomain returns an error if there are
 // any semantic errors in the domain, otherwise
 // all definitions are numbered and indentifiers
 // are linked to their definition.
-func CheckDomain(d *Domain) (defs, error) {
+func checkDomain(d *Domain) (defs, error) {
 	defs := defs{
 		reqs: make(reqDefs),
 		types: make(typeDefs),

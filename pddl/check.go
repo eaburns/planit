@@ -454,7 +454,7 @@ func (i *ImplyNode) check(defs defs) error {
 func (f *ForallNode) check(defs defs) error {
 	switch {
 	case !f.Effect && !defs.reqs[":universal-preconditions"]:
-		return badReq(f, "forall",  ":universal-preconditions")
+		return badReq(f, "forall", ":universal-preconditions")
 	case f.Effect && !defs.reqs[":conditional-effects"]:
 		return badReq(f, "forall", ":conditional-effects")
 	}
@@ -470,7 +470,7 @@ func (e *ExistsNode) check(defs defs) error {
 
 func (w *WhenNode) check(defs defs) error {
 	if !defs.reqs[":conditional-effects"] {
-		return badReq(w, "when",  ":conditional-effects")
+		return badReq(w, "when", ":conditional-effects")
 	}
 	if err := w.Condition.check(defs); err != nil {
 		return err
@@ -577,4 +577,3 @@ func incompatTypes(prop *PropositionNode, i int) error {
 		"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
 		arg, typeString(arg.Types), parm, typeString(parm.Types), pred)
 }
-		

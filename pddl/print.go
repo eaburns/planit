@@ -183,6 +183,9 @@ func typeString(t []TypeName) (str string) {
 	case 0:
 		break
 	case 1:
+		if t[0].Location.Line == 0 {
+			break
+		}
 		str = t[0].Str
 	default:
 		str = "(either"

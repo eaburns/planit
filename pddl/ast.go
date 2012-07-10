@@ -43,6 +43,11 @@ func (n Identifier) String() string {
 
 type Type struct {
 	TypedIdentifier
+
+	// Supers is all of the predecessor types, including
+	// this current type.
+	Supers []*Type
+
 	// Objects is a pointer to the definition
 	// of each object of this type.
 	Objects []*TypedIdentifier

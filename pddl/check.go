@@ -93,7 +93,6 @@ func Check(d *Domain, p *Problem) (err error) {
 	if err := checkConstsDef(defs, p.Objects); err != nil {
 		return err
 	}
-	addObjectsToTypes(defs, p.Objects)
 	for i := range p.Init {
 		if err := p.Init[i].check(defs); err != nil {
 			return err
@@ -123,7 +122,6 @@ func checkDomain(d *Domain) (defs, error) {
 	if err := checkConstsDef(defs, d.Constants); err != nil {
 		return defs, err
 	}
-	addObjectsToTypes(defs, d.Constants)
 	if err := checkPredsDef(defs, d.Predicates); err != nil {
 		return defs, err
 	}
@@ -159,7 +157,7 @@ func addObjectsToTypes(defs defs, objs []TypedIdentifier) {
 	for i := range objs {
 		obj := &objs[i]
 		for _, t := range obj.Types {
-			for _, s := range superTypes(defs, t) {
+			for _, s := range t.Definition.Supers {
 				s.addObject(obj)
 			}
 		}
@@ -205,6 +203,21 @@ func checkTypesDef(defs defs, d *Domain) error {
 	if len(d.Types) > 0 && !defs.reqs[":typing"] {
 		return makeError(d.Types[0], ":types requires :typing")
 	}
+	obj := false
+	for _, t := range d.Types {
+		if t.Str == "object" {
+			obj = true
+			break
+		}
+	}
+	if !obj {
+		d.Types = append(d.Types, Type{
+			TypedIdentifier: TypedIdentifier{
+				Identifier: Identifier{Str: "object"},
+				Num:        len(d.Types),
+			},
+		})
+	}
 	for i, t := range d.Types {
 		if len(t.Types) > 1 {
 			return makeError(t, "either super types are not semantically defined")
@@ -215,22 +228,41 @@ func checkTypesDef(defs defs, d *Domain) error {
 		defs.types[t.Str] = &d.Types[i]
 		d.Types[i].Num = i
 	}
-	if defs.types["object"] == nil {
-		obj := Type{
-			TypedIdentifier: TypedIdentifier{
-				Identifier: Identifier{Str: "object"},
-				Num:        len(d.Types),
-			},
-		}
-		d.Types = append(d.Types, obj)
-		defs.types["object"] = &d.Types[len(d.Types)-1]
-	}
 	for i := range d.Types {
 		if err := checkTypeNames(defs, d.Types[i].Types); err != nil {
 			return err
 		}
 	}
+	for i := range d.Types {
+		d.Types[i].Supers = superTypes(defs, &d.Types[i])
+		if len(d.Types[i].Supers) <= 0 {
+			panic("no supers!")
+		}
+	}
 	return nil
+}
+
+// superTypes returns a slice of the parent types
+// of the given type, including the type itself.
+func superTypes(defs defs, t *Type) (supers []*Type) {
+	seen := make([]bool, len(defs.types))
+	stk := []*Type{t}
+	for len(stk) > 0 {
+		t := stk[len(stk)-1]
+		stk = stk[:len(stk)-1]
+		if seen[t.Num] {
+			continue
+		}
+		seen[t.Num] = true
+		supers = append(supers, t)
+		for _, s := range t.Types {
+			stk = append(stk, s.Definition)
+		}
+	}
+	if obj := defs.types["object"]; !seen[obj.Num] {
+		supers = append(supers, obj)
+	}
+	return
 }
 
 func checkConstsDef(defs defs, cs []TypedIdentifier) error {
@@ -241,7 +273,11 @@ func checkConstsDef(defs defs, cs []TypedIdentifier) error {
 		cs[i].Num = len(defs.consts)
 		defs.consts[c.Str] = &cs[i]
 	}
-	return checkTypedIdentifiers(defs, cs)
+	if err := checkTypedIdentifiers(defs, cs); err != nil {
+		return err
+	}
+	addObjectsToTypes(defs, cs)
+	return nil
 }
 
 func checkPredsDef(defs defs, ps []Predicate) error {
@@ -432,7 +468,7 @@ func (p *PropositionNode) check(defs defs) error {
 		p.Arguments[i].Definition = arg
 
 		parm := p.Definition.Parameters[i]
-		if !compatTypes(defs, parm.Types, arg.Types) {
+		if !compatTypes(parm.Types, arg.Types) {
 			return makeError(p.Arguments[i],
 				"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
 				arg, typeString(arg.Types), parm, typeString(parm.Types), p.Definition)
@@ -451,11 +487,14 @@ func (a *AssignNode) check(defs defs) error {
 	return nil
 }
 
-// compatTypes returns true r is convertable to l via widening.
-func compatTypes(defs defs, left, right []TypeName) bool {
+// compatTypes returns true right is convertable to left via widening.
+func compatTypes(left, right []TypeName) bool {
 	if len(right) == 1 {
 		for _, l := range left {
-			for _, s := range superTypes(defs, l) {
+			if len(l.Definition.Supers) == 0 {
+				panic(fmt.Sprintf("%p No supers", l.Definition))
+			}
+			for _, s := range l.Definition.Supers {
 				if s == right[0].Definition {
 					return true
 				}
@@ -464,32 +503,10 @@ func compatTypes(defs defs, left, right []TypeName) bool {
 		return false
 	}
 	for _, r := range right {
-		if !compatTypes(defs, left, []TypeName{r}) {
+		if !compatTypes(left, []TypeName{r}) {
 			return false
 		}
 	}
 	return true
 }
 
-// superTypes returns a slice of the parent types
-// of the given type, including the type itself.
-func superTypes(defs defs, t TypeName) (supers []*Type) {
-	seen := make([]bool, len(defs.types))
-	stk := []*Type{t.Definition}
-	for len(stk) > 0 {
-		t := stk[len(stk)-1]
-		stk = stk[:len(stk)-1]
-		if seen[t.Num] {
-			continue
-		}
-		seen[t.Num] = true
-		supers = append(supers, t)
-		for _, s := range t.Types {
-			stk = append(stk, s.Definition)
-		}
-	}
-	if obj := defs.types["object"]; !seen[obj.Num] {
-		supers = append(supers, obj)
-	}
-	return
-}

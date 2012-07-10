@@ -104,7 +104,8 @@ func printAction(w io.Writer, act Action) {
 
 // PrintProblem prints the problem in valid PDDL to the given writer.
 func PrintProblem(w io.Writer, p *Problem) {
-	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n", p.Identifier, indent(1), p.Domain)
+	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n",
+		p.Identifier, indent(1), p.Domain)
 	printRequirements(w, p.Requirements)
 
 	printConstsDef(w, ":objects", p.Objects)

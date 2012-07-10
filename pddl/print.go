@@ -5,7 +5,8 @@ import (
 	"io"
 )
 
-// PrintDomain prints the domain in valid PDDL to the given writer.
+// PrintDomain prints the domain in valid
+// PDDL to a writer.
 func PrintDomain(w io.Writer, d *Domain) {
 	fmt.Fprintf(w, "(define (domain %s)\n", d.Identifier)
 	printReqsDef(w, d.Requirements)
@@ -41,7 +42,7 @@ func printTypesDef(w io.Writer, ts []Type) {
 	var ids []TypedIdentifier
 	for _, t := range ts {
 		if t.Location.Line == 0 {
-			// skip undeclared implicit types like object
+			// Skip undeclared implicit types like object.
 			continue
 		}
 		ids = append(ids, t.TypedIdentifier)
@@ -50,6 +51,9 @@ func printTypesDef(w io.Writer, ts []Type) {
 	fmt.Fprintln(w, ")")
 }
 
+// printConstsDef prints a constant definition with
+// the given definition name (should be either
+// :constants or :objects).
 func printConstsDef(w io.Writer, def string, cs []TypedIdentifier) {
 	if len(cs) == 0 {
 		return
@@ -66,7 +70,7 @@ func printPredsDef(w io.Writer, ps []Predicate) {
 	fmt.Fprintf(w, "%s(:predicates\n", indent(1))
 	for i, p := range ps {
 		if p.Location.Line == 0 {
-			// skip undefined implicit predicates like =
+			// Skip undefined implicit predicates like =.
 			continue
 		}
 		fmt.Fprintf(w, "%s(%s", indent(2), p.Str)
@@ -197,6 +201,8 @@ func typeString(t []TypeName) (str string) {
 		break
 	case 1:
 		if t[0].Location.Line == 0 {
+			// Use the empty string for undeclared
+			// implicit types (such as object).
 			break
 		}
 		str = t[0].Str
@@ -279,6 +285,8 @@ func (n *AssignNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(%s %s %s)", prefix, n.Op, n.Lval.Str, n.Rval)
 }
 
+// indent returns a string containing a given
+// number of indentations.
 func indent(n int) (s string) {
 	for i := 0; i < n; i++ {
 		s += "\t"

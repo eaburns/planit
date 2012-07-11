@@ -435,7 +435,7 @@ func (n *OrNode) check(defs defs) error {
 }
 
 func (n *NotNode) check(defs defs) error {
-	switch _, ok := n.Formula.(*PropositionNode); {
+	switch _, ok := n.Formula.(*LiteralNode); {
 	case ok && !defs.reqs[":negative-preconditions"]:
 		return badReq(n, "negative literal", ":negative-preconditions")
 	case !ok && !defs.reqs[":disjunctive-preconditions"]:
@@ -478,36 +478,36 @@ func (w *WhenNode) check(defs defs) error {
 	return w.UnaryNode.check(defs)
 }
 
-func (p *PropositionNode) check(defs defs) error {
-	switch pred := defs.preds[p.Predicate.Str]; {
+func (lit *LiteralNode) check(defs defs) error {
+	switch pred := defs.preds[lit.Predicate.Str]; {
 	case pred == nil:
-		return makeError(p, "undefined predicate: %s", p.Predicate)
+		return makeError(lit, "undefined predicate: %s", lit.Predicate)
 	default:
-		p.Definition = pred
+		lit.Definition = pred
 	}
-	if len(p.Arguments) != len(p.Definition.Parameters) {
+	if len(lit.Arguments) != len(lit.Definition.Parameters) {
 		var arg = "arguments"
-		if len(p.Definition.Parameters) == 1 {
+		if len(lit.Definition.Parameters) == 1 {
 			arg = arg[:len(arg)-1]
 		}
-		return makeError(p, "predicate %s requires %d %s",
-			p.Definition, len(p.Definition.Parameters), arg)
+		return makeError(lit, "predicate %s requires %d %s",
+			lit.Definition, len(lit.Definition.Parameters), arg)
 	}
-	for i := range p.Arguments {
+	for i := range lit.Arguments {
 		kind := "constant"
-		arg := defs.consts[p.Arguments[i].Str]
-		if p.Arguments[i].Variable {
-			arg = defs.vars.find(p.Arguments[i].Str)
+		arg := defs.consts[lit.Arguments[i].Str]
+		if lit.Arguments[i].Variable {
+			arg = defs.vars.find(lit.Arguments[i].Str)
 			kind = "variable"
 		}
 		if arg == nil {
-			return makeError(p.Arguments[i], "undefined %s: %s",
-				kind, p.Arguments[i])
+			return makeError(lit.Arguments[i], "undefined %s: %s",
+				kind, lit.Arguments[i])
 		}
-		p.Arguments[i].Definition = arg
-		parm := p.Definition.Parameters[i]
+		lit.Arguments[i].Definition = arg
+		parm := lit.Definition.Parameters[i]
 		if !compatTypes(parm.Types, arg.Types) {
-			return incompatTypes(p, i)
+			return incompatTypes(lit, i)
 		}
 	}
 	return nil
@@ -569,9 +569,9 @@ func badReq(l Locer, used, reqd string) error {
 // the ith argument of a proposition is of an
 // incompatible type with the ith parameter of its
 // predicate definition.
-func incompatTypes(prop *PropositionNode, i int) error {
-	arg := prop.Arguments[i].Definition
-	pred := prop.Definition
+func incompatTypes(lit *LiteralNode, i int) error {
+	arg := lit.Arguments[i].Definition
+	pred := lit.Definition
 	parm := pred.Parameters[i]
 	return makeError(arg,
 		"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",

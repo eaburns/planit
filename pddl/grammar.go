@@ -302,6 +302,13 @@ func parseGd(p *parser) (form Formula, err error) {
 		form, err = parseOrGd(p, parseGd)
 	case p.acceptNamedList("not"):
 		form, err = parseNotGd(p)
+		if err != nil {
+			return
+		}
+		if lit, ok := form.(*LiteralNode); ok {
+			lit.Negative = !lit.Negative
+			form = lit
+		}
 	case p.acceptNamedList("imply"):
 		form, err = parseImplyGd(p)
 	case p.acceptNamedList("exists"):
@@ -309,25 +316,32 @@ func parseGd(p *parser) (form Formula, err error) {
 	case p.acceptNamedList("forall"):
 		form, err = parseForallGd(p, parseGd)
 	default:
-		form, err = parseProposition(p)
+		form, err = parseLiteral(p)
 	}
 	return
 }
 
-func parseProposition(p *parser) (prop *PropositionNode, err error) {
+func parseLiteral(p *parser) (lit *LiteralNode, err error) {
+	lit = new(LiteralNode)
+	if p.acceptNamedList("not") {
+		lit.Negative = true
+	}
 	if _, err = p.expect(tokOpen); err != nil {
 		return
 	}
-	prop = new(PropositionNode)
-	prop.Node = Node{p.Loc()}
+	lit.Node = Node{p.Loc()}
 	var id Identifier
 	if id, err = parseIdentifier(p, tokId); err != nil {
 		return
 	}
-	prop.Predicate = id
-	prop.Arguments = parseTerms(p)
-
-	_, err = p.expect(tokClose)
+	lit.Predicate = id
+	lit.Arguments = parseTerms(p)
+	if _, err = p.expect(tokClose); err != nil {
+		return
+	}
+	if lit.Negative {
+		_, err = p.expect(tokClose)
+	}
 	return
 }
 
@@ -519,16 +533,7 @@ func parsePeffect(p *parser) (form Formula, err error) {
 	if _, ok := AssignOps[p.peekn(2).text]; ok && p.peek().typ == tokOpen {
 		return parseAssign(p)
 	}
-	if p.acceptNamedList("not") {
-		nd := Node{p.Loc()}
-		var prop *PropositionNode
-		if prop, err = parseProposition(p); err != nil {
-			return
-		}
-		form = &NotNode{UnaryNode{nd, prop}}
-		_, err = p.expect(tokClose)
-	}
-	return parseProposition(p)
+	return parseLiteral(p)
 }
 
 func parseAssign(p *parser) (a *AssignNode, err error) {
@@ -653,8 +658,7 @@ func parseInit(p *parser) (els []Formula, err error) {
 }
 
 func parseInitEl(p *parser) (form Formula, err error) {
-	switch {
-	case p.acceptNamedList("="):
+	if p.acceptNamedList("=") {
 		nd := Node{p.Loc()}
 		asn := &AssignNode{Op: Identifier{"=", nd.Loc()}, Node: nd}
 		if asn.Lval, err = parseFhead(p); err != nil {
@@ -667,18 +671,9 @@ func parseInitEl(p *parser) (form Formula, err error) {
 		asn.Rval = t[0].text
 		form = asn
 		_, err = p.expect(tokClose)
-	case p.acceptNamedList("not"):
-		nd := Node{p.Loc()}
-		var prop *PropositionNode
-		if prop, err = parseProposition(p); err != nil {
-			return
-		}
-		form = &NotNode{UnaryNode{nd, prop}}
-		_, err = p.expect(tokClose)
-	default:
-		form, err = parseProposition(p)
+		return
 	}
-	return
+	return parseLiteral(p)
 }
 
 func parseGoal(p *parser) (form Formula, err error) {

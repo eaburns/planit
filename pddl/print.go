@@ -216,13 +216,20 @@ func typeString(t []TypeName) (str string) {
 	return
 }
 
-func (p *PropositionNode) print(w io.Writer, prefix string) {
+func (lit *LiteralNode) print(w io.Writer, prefix string) {
+	if lit.Negative {
+		fmt.Fprintln(w, "(not")
+		prefix += indent(1)
+	}
 	fmt.Fprintf(w, "%s(", prefix)
-	fmt.Fprint(w, p.Predicate)
-	for _, t := range p.Arguments {
+	fmt.Fprint(w, lit.Predicate)
+	for _, t := range lit.Arguments {
 		fmt.Fprintf(w, " %s", t.Identifier)
 	}
 	fmt.Fprint(w, ")")
+	if lit.Negative {
+		fmt.Fprint(w, ")")
+	}
 }
 
 func (n *AndNode) print(w io.Writer, prefix string) {

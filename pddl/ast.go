@@ -118,8 +118,9 @@ type QuantNode struct {
 	UnaryNode
 }
 
-type PropositionNode struct {
+type LiteralNode struct {
 	Predicate  Identifier
+	Negative bool
 	Definition *Predicate
 	Arguments  []Term
 	Node

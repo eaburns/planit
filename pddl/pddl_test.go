@@ -70,19 +70,12 @@ func checkPddlDomain(tests []test, t *testing.T) {
 	}
 }
 
-func TestRequirementDef(t *testing.T) {
-	checkPddlDomain([]test{
-		{`(define (domain x) (:requirements :strips))`, ""},
-
-		{`(define (domain x) (:requirements :foobar))`,
-			":foobar is not a supported requirement"},
-	}, t)
-}
-
 func TestCheckTypesDef(t *testing.T) {
 	checkPddlDomain([]test{
 		{`(define (domain x) (:types t))`,
 			":types requires :typing"},
+		{`(define (domain x) (:requirements :typing) (:types t t))`,
+			"multiple"},
 		{`(define (domain x) (:requirements :typing) (:types t))`, ""},
 		{`(define (domain x) (:requirements :typing) (:types t - undecl))`,
 			"undefined type: undecl"},
@@ -96,6 +89,8 @@ func TestCheckTypesDef(t *testing.T) {
 
 func TestCheckConstantsDef(t *testing.T) {
 	checkPddlDomain([]test{
+		{`(define (domain x) (:requirements :typing) (:constants c c))`,
+			"multiple"},
 		{`(define (domain x) (:requirements :typing) (:constants c - undecl))`,
 			"undefined type: undecl"},
 		{`(define (domain x) (:requirements :typing) (:constants c - object))`, ""},

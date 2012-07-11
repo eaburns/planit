@@ -142,7 +142,7 @@ func (v *varDefs) push(d *TypedIdentifier) *varDefs {
 func checkReqsDef(defs defs, rs []Identifier) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
-			return makeError(r, "%s is not a supported requirement", r)
+			return makeError(r, "requirement %s is not supported", r)
 		}
 		if defs.reqs[r.Str] {
 			return makeError(r, "%s is defined multiple times", r)
@@ -494,13 +494,13 @@ func (lit *LiteralNode) check(defs defs) error {
 
 // checkInst checks the arguments match the parameters
 // of a predicate or function instantiation.
-func checkInst(defs defs, name Identifier, args []Term, parms []TypedIdentifier) error {
+func checkInst(defs defs, n Identifier, args []Term, parms []TypedIdentifier) error {
 	if len(args) != len(parms) {
 		var argStr = "arguments"
 		if len(parms) == 1 {
 			argStr = argStr[:len(argStr)-1]
 		}
-		return makeError(name, "%s requires %d %s", name, len(parms), argStr)
+		return makeError(n, "%s requires %d %s", n, len(parms), argStr)
 	}
 
 	for i := range args {
@@ -517,7 +517,7 @@ func checkInst(defs defs, name Identifier, args []Term, parms []TypedIdentifier)
 			return makeError(args[i],
 				"%s [type %s] is incompatible with parameter %s [type %s] of %s",
 				args[i], typeString(args[i].Definition.Types),
-				parms[i], typeString(parms[i].Types), name)
+				parms[i], typeString(parms[i].Types), n)
 		}
 	}
 	return nil
@@ -568,7 +568,11 @@ func (a *AssignNode) check(defs defs) error {
 	if a.Lval.Definition.Str != totalCostName || len(a.Lval.Definition.Parameters) > 0 {
 		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of an assignments")
 	}
-	if !a.IsNumber {
+	if a.IsNumber {
+		if a.Number[0] == '-' {
+			return makeError(a, ":action-costs disallows negative numbers as the right-hand-side of an assignment")
+		}
+	} else {
 		if a.Fhead.Identifier.Str == "total-cost" {
 			return makeError(a.Fhead, ":action-costs does not allow total-cost as the right-hand-side of an assignment")
 		}

@@ -7,13 +7,6 @@ import (
 	"testing"
 )
 
-func TestParseDomain(t *testing.T) {
-	_, _, err := Parse("", strings.NewReader(dom))
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func TestPrintDomain(t *testing.T) {
 	ast, _, err := Parse("", strings.NewReader(dom))
 	if err != nil {
@@ -68,23 +61,6 @@ func checkPddlDomain(tests []test, t *testing.T) {
 				test.pddl, test.errMsg, err.Error())
 		}
 	}
-}
-
-func TestCheckTypesDef(t *testing.T) {
-	checkPddlDomain([]test{
-		{`(define (domain x) (:types t))`,
-			":types requires :typing"},
-		{`(define (domain x) (:requirements :typing) (:types t t))`,
-			"multiple"},
-		{`(define (domain x) (:requirements :typing) (:types t))`, ""},
-		{`(define (domain x) (:requirements :typing) (:types t - undecl))`,
-			"undefined type: undecl"},
-		{`(define (domain x) (:requirements :typing) (:types s t - s))`, ""},
-		{`(define (domain x) (:requirements :typing) (:types t - u u))`, ""},
-		{`(define (domain x) (:requirements :typing) (:types t - object))`, ""},
-		{`(define (domain x) (:requirements :typing) (:types u - (either s t) s t))`,
-			"not semantically defined"},
-	}, t)
 }
 
 func TestCheckConstantsDef(t *testing.T) {
@@ -199,13 +175,6 @@ func TestCheckProposition(t *testing.T) {
 			(:action a :parameters () :precondition (p c)))`,
 			""},
 	}, t)
-}
-
-func TestParseProblem(t *testing.T) {
-	_, _, err := Parse("", strings.NewReader(prob))
-	if err != nil {
-		t.Error(err)
-	}
 }
 
 func TestPrintProblem(t *testing.T) {

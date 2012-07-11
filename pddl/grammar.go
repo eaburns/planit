@@ -332,7 +332,9 @@ func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
 	}
 	lit.Node = Node{p.Loc()}
 	var id Identifier
-	if id, err = parseIdentifier(p, tokId); err != nil {
+	if eq, ok := p.accept(tokEq); ok {
+		id = Identifier{ eq.text, lit.Node.Loc() }
+	} else if id, err = parseIdentifier(p, tokId); err != nil {
 		return
 	}
 	lit.Predicate = id

@@ -64,14 +64,17 @@ var requirementsTests = []checkDomainTest{
 		(:predicates (p))
 		(:action a :parameters () :precondition (not (and (p) (p)))))`,
 		"", nil },
-/*
+
 	// equality
-	// This doesn't parse since = is not allowed as an identifier…
 	{ `(define (domain d)
 		(:constants c)
 		(:action a :parameters () :precondition (=  c c)))`,
+		"undefined", nil },
+	{ `(define (domain d)
+		(:requirements :equality)
+		(:constants c)
+		(:action a :parameters () :precondition (=  c c)))`,
 		"", nil },
-*/
 
 	// universal-preconditions
 	{ `(define (domain d)

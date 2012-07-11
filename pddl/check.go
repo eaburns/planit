@@ -566,7 +566,7 @@ func (a *AssignNode) check(defs defs) error {
 		return err
 	}
 	if a.Lval.Definition.Str != totalCostName || len(a.Lval.Definition.Parameters) > 0 {
-		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of assignments")
+		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of an assignments")
 	}
 	if !a.IsNumber {
 		if a.Fhead.Identifier.Str == "total-cost" {

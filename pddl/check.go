@@ -569,7 +569,7 @@ func (a *AssignNode) check(defs defs) error {
 		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of an assignments")
 	}
 	if a.IsNumber {
-		if a.Number[0] == '-' {
+		if negative(a.Number) {
 			return makeError(a, ":action-costs disallows negative numbers as the right-hand-side of an assignment")
 		}
 	} else {
@@ -581,6 +581,18 @@ func (a *AssignNode) check(defs defs) error {
 		}
 	}
 	return nil
+}
+
+// negative returns true if the string is a negative number.
+func negative(n string) bool {
+	neg := false
+	for _, s := range n {
+		if s != '-' {
+			break
+		}
+		neg = !neg
+	}
+	return neg
 }
 
 func (h *Fhead) check(defs defs) error {

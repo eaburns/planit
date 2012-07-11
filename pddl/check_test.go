@@ -64,9 +64,9 @@ var requirementsTests = []checkDomainTest{
 		(:predicates (p))
 		(:action a :parameters () :precondition (not (and (p) (p)))))`,
 		"", nil },
-
+/*
 	// equality
-/*	// This doesn't parse since = is not allowed as an identifier…
+	// This doesn't parse since = is not allowed as an identifier…
 	{ `(define (domain d)
 		(:constants c)
 		(:action a :parameters () :precondition (=  c c)))`,
@@ -143,14 +143,21 @@ var requirementsTests = []checkDomainTest{
 		(:functions (foo-bar))
 		(:action a :parameters (?x) :effect (increase foo-bar 1)))`,
 		"0-ary total-cost", nil },
-/*
-	// Why does the parser reject a negative number?
 	{ `(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost))
 		(:action a :parameters (?x) :effect (increase total-cost -1)))`,
 		"negative", nil },
-*/
+	{ `(define (domain d)
+		(:requirements :action-costs)
+		(:functions (total-cost))
+		(:action a :parameters (?x) :effect (increase total-cost -5)))`,
+		"negative", nil },
+	{ `(define (domain d)
+		(:requirements :action-costs)
+		(:functions (total-cost))
+		(:action a :parameters (?x) :effect (increase total-cost --1)))`,
+		"", nil },
 	{ `(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost))

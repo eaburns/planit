@@ -92,6 +92,7 @@ func (p *parser) expect(vls ...interface{}) ([]token, error) {
 		switch v := vls[i].(type) {
 		case tokenType:
 			if t.typ != v {
+				panic("foo")
 				return nil, makeError(p, "expected %v, got %v", v, t.typ)
 			}
 		case string:

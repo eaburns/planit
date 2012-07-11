@@ -165,6 +165,10 @@ func (l *lexer) errorf(format string, args ...interface{}) token {
 func (l *lexer) token() token {
 	for {
 		r := l.next()
+		// '-' may be a number, not a minus beginning a type
+		if r == '-' && (unicode.IsDigit(l.peek()) || l.peek() == '-') {
+			return l.lexNum()
+		}
 		if typ, ok := runeToks[r]; ok {
 			return l.makeToken(typ)
 		}
@@ -202,6 +206,7 @@ func (l *lexer) lexIdent(t tokenType) token {
 }
 
 func (l *lexer) lexNum() token {
+	l.acceptRun("-")
 	digits := "0123456789"
 	l.acceptRun(digits)
 	l.accept(".")

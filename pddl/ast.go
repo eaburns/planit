@@ -189,8 +189,11 @@ type AssignNode struct {
 	Op   Identifier
 	Lval Fhead
 
-	// IsNumber, is the right-hand-side a number,
-	// if not, it's a function head.
+	// IsNumber is true if the right-hand-side
+	// is a number, in which case the Number
+	// field is valid and the Fhead field is not.
+	// If IsNumber is false, then the opposite
+	// is the case.
 	IsNumber bool
 	Number string
 	Fhead Fhead

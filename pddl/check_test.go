@@ -6,38 +6,6 @@ import (
 	"regexp"
 )
 
-type checkDomainTest struct {
-	pddl string
-	errorRegexp string
-	test func(string, *Domain, *testing.T)
-}
-
-func (c checkDomainTest) run(t *testing.T) {
-	d, p, err := Parse("", strings.NewReader(c.pddl))
-	if p != nil {
-		t.Fatalf("%s\nis a problem, not a domain", c.pddl)
-	}
-	if err != nil {
-		t.Fatalf("%s\nparse error: %s", c.pddl, err)
-	}
-	switch err := Check(d, nil); {
-	case err == nil && c.errorRegexp == "":
-		if c.test != nil {
-			c.test(c.pddl, d, t)
-		}
-	case err == nil && c.errorRegexp != "":
-		t.Errorf("%s\nexpected error matching '%s'", c.pddl, c.errorRegexp)
-	case err != nil && c.errorRegexp == "":
-		t.Errorf("%s\nunexpected error '%s'", c.pddl, err)
-	case err != nil && c.errorRegexp != "":
-		re := regexp.MustCompile(c.errorRegexp)
-		if !re.Match([]byte(err.Error())) {
-			t.Errorf("%s\nexpected error matching '%s', got '%s'",
-				c.pddl, c.errorRegexp, err.Error())
-		}
-	}
-}
-
 var reqsDefTests = []checkDomainTest{
 	{ `(define (domain d) (:requirements :strips))`, "", nil },
 	{ `(define (domain d) (:requirements :foo))`, "not supported", nil },
@@ -226,87 +194,130 @@ func TestRequirements(t *testing.T) {
 
 var typesDefTests = []checkDomainTest{
 	{ `(define (domain d) (:requirements :typing) (:types t - s))`, "undefined", nil },
+	{ `(define (domain d) (:requirements :typing) (:types t t))`, "multiple", nil },
+	{ `(define (domain d) (:requirements :typing) (:types t s t))`, "multiple", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t s))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t s - object))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t - s s - object))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types object))`, "",
-		func(pddl string, d *Domain, t *testing.T) {
-			if len(d.Types) == 1 {
-				return
-			}
-			t.Errorf("%s\nexpected 1 type (object), got %d", pddl, len(d.Types))
-		},
-	},
+		checkTypes([]string{"object"}) },
+	{ `(define (domain d) (:requirements :typing))`, "",
+		checkTypes([]string{"object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t))`, "",
-		func(pddl string, d *Domain, t *testing.T) {
-			if len(d.Types) == 2 {
-				return
-			}
-			t.Errorf("%s\nexpected 2 type (object), got %d", pddl, len(d.Types))
-		},
-	},
+		checkTypes([]string{"object", "t"}) },
 	{ `(define (domain d))`, "",
-		checkSupers("object", []string{"object"}),
-	},
+		checkSupers("object", []string{"object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types object))`, "",
-		checkSupers("object", []string{"object"}),
-	},
+		checkSupers("object", []string{"object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t))`, "",
-		checkSupers("t", []string{"t", "object"}),
-	},
+		checkSupers("t", []string{"t", "object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t - s s))`, "",
-		checkSupers("t", []string{"t", "s", "object"}),
-	},
+		checkSupers("t", []string{"t", "s", "object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t - s s - t))`, "",
-		checkSupers("t", []string{"t", "s", "object"}),
-	},
+		checkSupers("t", []string{"t", "s", "object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t - s s - u u))`, "",
-		checkSupers("t", []string{"t", "s", "u", "object"}),
-	},
+		checkSupers("t", []string{"t", "s", "u", "object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t - s s - u u))`, "",
-		checkSupers("s", []string{"s", "u", "object"}),
-	},
+		checkSupers("s", []string{"s", "u", "object"}) },
+}
+
+// checkTypes returns a function that scans through
+// a domain's type list looking for each type in the
+// given slice.
+func checkTypes(types []string) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		if len(types) != len(d.Types) {
+			t.Errorf("%s\nexpected %d types, got %d: %v",
+				pddl, len(types), len(d.Types), d.Types)
+			return
+		}
+		for _, typ := range types {
+			if findType(typ, d.Types) != nil {
+				continue
+			}
+			t.Errorf("%s\nexpected type %s: %v", pddl, typ, d.Types)
+			return
+		}
+	}
 }
 
 // checkSupers returns a function that checks
 // that the supers of the named type match
 // the list of super types.
-func checkSupers(typName string, supers []string) func(string, *Domain, *testing.T) {
+func checkSupers(name string, supers []string) func(string, *Domain, *testing.T) {
 	return func(pddl string, d *Domain, t *testing.T) {
-		typ := (*Type)(nil)
-		for i := range d.Types {
-			if d.Types[i].Str == typName {
-				typ = &d.Types[i]
-				break
-			}
-		}
+		typ := findType(name, d.Types)
 		if typ == nil {
-			t.Fatalf("%s\ntype %s not found", pddl, typName)
+			t.Fatalf("%s\ntype %s not found", pddl, name)
 		}
-		expect := map[string]bool{}
+		if len(typ.Supers) != len(supers) {
+			t.Errorf("%s\nincorrect number of super types, expected %d: %v",
+				pddl, len(supers), typ.Supers)
+			return
+		}
 		for _, s := range supers {
-			expect[s] = true
-		}
-		seen := map[string]bool{}
-		for _, s := range typ.Supers {
-			if !expect[s.Str] {
-				t.Errorf("%s\nunexpected super type %s: %v",
-					pddl, s.Str, typ.Supers)
+			if findTypePtr(s, typ.Supers) == nil {
+				t.Errorf("%s\nexpected super type %s: %v",
+					pddl, s, typ.Supers)
 				return
 			}
-			if seen[s.Str] {
-				t.Errorf("%s\nsuper type %s seen multiple times: %v",
-					pddl, s.Str, typ.Supers)
-				return
-			}
-			seen[s.Str] = true
 		}
 	}
+}
+
+func findType(name string, ts []Type) *Type {
+	for i := range ts {
+		if ts[i].Str == name {
+			return &ts[i]
+		}
+	}
+	return nil
+}
+
+func findTypePtr(name string, ts []*Type) *Type {
+	for i := range ts {
+		if ts[i].Str == name {
+			return ts[i]
+		}
+	}
+	return nil
 }
 
 func TestCheckTypessDef(t *testing.T) {
 	for _, test := range typesDefTests {
 		test.run(t)
+	}
+}
+
+type checkDomainTest struct {
+	pddl string
+	errorRegexp string
+	test func(string, *Domain, *testing.T)
+}
+
+func (c checkDomainTest) run(t *testing.T) {
+	d, p, err := Parse("", strings.NewReader(c.pddl))
+	if p != nil {
+		t.Fatalf("%s\nis a problem, not a domain", c.pddl)
+	}
+	if err != nil {
+		t.Fatalf("%s\nparse error: %s", c.pddl, err)
+	}
+	switch err := Check(d, nil); {
+	case err == nil && c.errorRegexp == "":
+		if c.test != nil {
+			c.test(c.pddl, d, t)
+		}
+	case err == nil && c.errorRegexp != "":
+		t.Errorf("%s\nexpected error matching '%s'", c.pddl, c.errorRegexp)
+	case err != nil && c.errorRegexp == "":
+		t.Errorf("%s\nunexpected error '%s'", c.pddl, err)
+	case err != nil && c.errorRegexp != "":
+		re := regexp.MustCompile(c.errorRegexp)
+		if !re.Match([]byte(err.Error())) {
+			t.Errorf("%s\nexpected error matching '%s', got '%s'",
+				c.pddl, c.errorRegexp, err.Error())
+		}
 	}
 }

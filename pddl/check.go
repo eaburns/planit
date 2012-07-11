@@ -6,6 +6,7 @@ import (
 
 const (
 	objectTypeName = "object"
+	totalCostName = "total-cost"
 )
 
 var (
@@ -105,8 +106,7 @@ func checkDomain(d *Domain) (defs, error) {
 		return defs, err
 	}
 	for _, act := range d.Actions {
-		parms := act.Parameters
-		if err := checkTypedIdentifiers(defs, parms); err != nil {
+		if err := checkTypedIdentifiers(defs, act.Parameters); err != nil {
 			return defs, err
 		}
 		for i := range act.Parameters {
@@ -127,6 +127,16 @@ func checkDomain(d *Domain) (defs, error) {
 		}
 	}
 	return defs, nil
+}
+
+// push returns a new varDefs with the given
+// definitions defined.
+func (v *varDefs) push(d *TypedIdentifier) *varDefs {
+	return &varDefs{
+		up:         v,
+		name:       d.Str,
+		definition: d,
+	}
 }
 
 func checkReqsDef(defs defs, rs []Identifier) error {
@@ -327,8 +337,8 @@ func checkFuncsDef(defs defs, fs []Function) error {
 		if defs.funcs[f.Str] != nil {
 			return makeError(f, "%s is defined multiple times", f)
 		}
-		if f.Str != "total-cost" || len(f.Parameters) > 0 {
-			return makeError(f, ":action-costs only allows a 0-ary total-cost function")
+		if err := checkTypedIdentifiers(defs, f.Parameters); err != nil {
+			return err
 		}
 		defs.funcs[f.Str] = &fs[i]
 		fs[i].Num = i
@@ -411,16 +421,6 @@ func (q *QuantNode) check(defs defs) error {
 	return err
 }
 
-// push returns a new varDefs with the given
-// definitions defined.
-func (v *varDefs) push(d *TypedIdentifier) *varDefs {
-	return &varDefs{
-		up:         v,
-		name:       d.Str,
-		definition: d,
-	}
-}
-
 // pop returns a varDefs with the latest definition
 // removed.
 func (v *varDefs) pop() *varDefs {
@@ -479,41 +479,45 @@ func (w *WhenNode) check(defs defs) error {
 }
 
 func (lit *LiteralNode) check(defs defs) error {
-	pred := defs.preds[lit.Predicate.Str]
-	if pred == nil {
+	if lit.Definition = defs.preds[lit.Predicate.Str]; lit.Definition == nil {
 		return makeError(lit, "undefined predicate: %s", lit.Predicate)
-	}
-	lit.Definition = pred
-	if len(lit.Arguments) != len(lit.Definition.Parameters) {
-		var arg = "arguments"
-		if len(lit.Definition.Parameters) == 1 {
-			arg = arg[:len(arg)-1]
-		}
-		return makeError(lit, "predicate %s requires %d %s",
-			lit.Definition, len(lit.Definition.Parameters), arg)
-	}
-	for i := range lit.Arguments {
-		kind := "constant"
-		arg := defs.consts[lit.Arguments[i].Str]
-		if lit.Arguments[i].Variable {
-			arg = defs.vars.find(lit.Arguments[i].Str)
-			kind = "variable"
-		}
-		if arg == nil {
-			return makeError(lit.Arguments[i], "undefined %s: %s",
-				kind, lit.Arguments[i])
-		}
-		lit.Arguments[i].Definition = arg
-		parm := lit.Definition.Parameters[i]
-		if !compatTypes(parm.Types, arg.Types) {
-			return incompatTypes(lit, i)
-		}
 	}
 	if lit.IsEffect {
 		if lit.Negative {
 			lit.Definition.NegEffect = true
 		} else {
 			lit.Definition.PosEffect = true
+		}
+	}
+	return checkInst(defs, lit.Predicate, lit.Arguments, lit.Definition.Parameters)
+}
+
+// checkInst checks the arguments match the parameters
+// of a predicate or function instantiation.
+func checkInst(defs defs, name Identifier, args []Term, parms []TypedIdentifier) error {
+	if len(args) != len(parms) {
+		var argStr = "arguments"
+		if len(parms) == 1 {
+			argStr = argStr[:len(argStr)-1]
+		}
+		return makeError(name, "%s requires %d %s", name, len(parms), argStr)
+	}
+
+	for i := range args {
+		kind := "constant"
+		args[i].Definition = defs.consts[args[i].Str]
+		if args[i].Variable {
+			args[i].Definition = defs.vars.find(args[i].Str)
+			kind = "variable"
+		}
+		if args[i].Definition == nil {
+			return makeError(args[i], "undefined %s: %s", kind, args[i])
+		}
+		if !compatTypes(parms[i].Types, args[i].Definition.Types) {	
+			return makeError(args[i],
+				"%s [type %s] is incompatible with parameter %s [type %s] of %s",
+				args[i], typeString(args[i].Definition.Types),
+				parms[i], typeString(parms[i].Types), name)
 		}
 	}
 	return nil
@@ -555,13 +559,31 @@ func compatTypes(left, right []TypeName) bool {
 }
 
 func (a *AssignNode) check(defs defs) error {
-	switch {
-	case !defs.reqs[":action-costs"]:
+	if !defs.reqs[":action-costs"] {
 		return badReq(a, a.Op.Str, ":action-costs")
-	case defs.funcs[a.Lval.Str] == nil:
-		return makeError(a.Lval, "undefined function: %s", a.Lval)
+	}
+	if err := a.Lval.check(defs); err != nil {
+		return err
+	}
+	if a.Lval.Definition.Str != totalCostName || len(a.Lval.Definition.Parameters) > 0 {
+		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of assignments")
+	}
+	if !a.IsNumber {
+		if a.Fhead.Identifier.Str == "total-cost" {
+			return makeError(a.Fhead, ":action-costs does not allow total-cost as the right-hand-side of an assignment")
+		}
+		if err := a.Fhead.check(defs); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (h *Fhead) check(defs defs) error {
+	if h.Definition = defs.funcs[h.Str]; h.Definition == nil {
+		return makeError(h, "undefined function: %s", h)
+	}
+	return checkInst(defs, h.Identifier, h.Arguments, h.Definition.Parameters)
 }
 
 // badReq returns a requirement error for the case
@@ -569,17 +591,4 @@ func (a *AssignNode) check(defs defs) error {
 // was not defined.
 func badReq(l Locer, used, reqd string) error {
 	return makeError(l, "%s used but %s is not required", used, reqd)
-}
-
-// incompatTypes returns an error for the case that
-// the ith argument of a proposition is of an
-// incompatible type with the ith parameter of its
-// predicate definition.
-func incompatTypes(lit *LiteralNode, i int) error {
-	arg := lit.Arguments[i].Definition
-	pred := lit.Definition
-	parm := pred.Parameters[i]
-	return makeError(arg,
-		"%s [type %s] is incompatible with parameter %s [type %s] of predicate %s",
-		arg, typeString(arg.Types), parm, typeString(parm.Types), pred)
 }

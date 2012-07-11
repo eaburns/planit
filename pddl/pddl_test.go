@@ -141,22 +141,6 @@ func TestCheckActionDefs(t *testing.T) {
 	}, t)
 }
 
-func TestCheckFunctionsDef(t *testing.T) {
-	checkPddlDomain([]test{
-		{`(define (domain x) (:functions (total-cost)))`,
-			"requires :action-costs"},
-		{`(define (domain x) (:requirements :action-costs)))`, ""},
-		{`(define (domain x) (:requirements :action-costs) (:functions (total-cost)))`, ""},
-		{`(define (domain x) (:requirements :action-costs) (:functions (total-cost) - number))`, ""},
-		{`(define (domain x) (:requirements :action-costs) (:functions (total-cost ?foo)))`,
-			"0-ary total-cost function"},
-		{`(define (domain x) (:requirements :action-costs) (:functions (afunc ?foo)))`,
-			"0-ary total-cost function"},
-		{`(define (domain x) (:requirements :action-costs) (:functions (afunc)))`,
-			"0-ary total-cost function"},
-	}, t)
-}
-
 func TestCheckQuantifiers(t *testing.T) {
 	checkPddlDomain([]test{
 		{`(define (domain x) (:requirements :universal-preconditions)

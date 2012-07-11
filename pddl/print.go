@@ -289,7 +289,27 @@ func (n *WhenNode) print(w io.Writer, prefix string) {
 }
 
 func (n *AssignNode) print(w io.Writer, prefix string) {
-	fmt.Fprintf(w, "%s(%s %s %s)", prefix, n.Op, n.Lval.Str, n.Rval)
+	fmt.Fprintf(w, "%s(%s ", prefix, n.Op)
+	n.Lval.print(w)
+	if n.IsNumber {
+		fmt.Fprintf(w, " %s", n.Number)
+	} else {
+		fmt.Fprint(w, " ")
+		n.Fhead.print(w)
+	}
+	fmt.Fprintf(w, ")")
+}
+
+func (h *Fhead) print(w io.Writer) {	
+	if len(h.Arguments) == 0 {
+		fmt.Fprintf(w, "(%s)", h.Identifier)
+		return
+	}
+	fmt.Fprintf(w, "(%s", h.Identifier)
+	for _, t := range h.Arguments {
+		fmt.Fprintf(w, " %s", t.Identifier)
+	}
+	fmt.Fprint(w, ")")
 }
 
 // indent returns a string containing a given

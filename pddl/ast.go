@@ -187,9 +187,21 @@ var (
 
 type AssignNode struct {
 	Op   Identifier
-	Lval Identifier // Just total-cost for now.
-	Rval string     // Just a number
+	Lval Fhead
+
+	// IsNumber, is the right-hand-side a number,
+	// if not, it's a function head.
+	IsNumber bool
+	Number string
+	Fhead Fhead
+
 	Node
+}
+
+type Fhead struct {
+	Identifier
+	Definition *Function
+	Arguments []Term
 }
 
 // Locer wraps the Loc method.

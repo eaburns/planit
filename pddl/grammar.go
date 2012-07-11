@@ -548,8 +548,22 @@ func parseAssign(p *parser) (a *AssignNode, err error) {
 	if a.Lval, err = parseFhead(p); err != nil {
 		return
 	}
-	if a.Rval, err = parseFexp(p); err != nil {
-		return
+
+	// f-exp:
+	// We support :action-costs, which means that
+	// an Fexp can be either a non-negative number
+	// (non-negativity is checked during semantic
+	// analysis) or it can be of the form:
+	// 	(<function-symbol> <term>*)
+	// i.e., an f-head
+
+	if n, ok := p.accept(tokNum); ok {
+		a.IsNumber = true
+		a.Number = n.text
+	} else {
+		if a.Fhead, err = parseFhead(p); err != nil {
+			return
+		}
 	}
 	_, err = p.expect(tokClose)
 	return
@@ -562,23 +576,16 @@ func parseCondEffect(p *parser) (Formula, error) {
 	return parsePeffect(p)
 }
 
-func parseFhead(p *parser) (id Identifier, err error) {
+func parseFhead(p *parser) (head Fhead, err error) {
 	_, open := p.accept(tokOpen)
-	if id, err = parseIdentifier(p, tokId); err != nil {
+	if head.Identifier, err = parseIdentifier(p, tokId); err != nil {
 		return
 	}
 	if open {
+		head.Arguments = parseTerms(p)
 		_, err = p.expect(tokClose)
 	}
 	return
-}
-
-func parseFexp(p *parser) (string, error) {
-	n, err := p.expect(tokNum)
-	if err != nil {
-		return "", err
-	}
-	return n[0].text, nil
 }
 
 func parseProblem(p *parser) (prob *Problem, err error) {
@@ -669,7 +676,8 @@ func parseInitEl(p *parser) (form Formula, err error) {
 		if t, err = p.expect(tokNum); err != nil {
 			return
 		}
-		asn.Rval = t[0].text
+		asn.IsNumber = true
+		asn.Number = t[0].text
 		form = asn
 		_, err = p.expect(tokClose)
 		return

@@ -29,9 +29,9 @@ var (
 		tokErr:   "error",
 		tokOpen:  "'('",
 		tokClose: "')'",
-		tokAtom:    "identifier",
-		tokQAtom:   "?identifier",
-		tokCAtom:   ":identifier",
+		tokAtom:    "atom",
+		tokQAtom:   "?atom",
+		tokCAtom:   ":atom",
 		tokNum:   "number",
 	}
 )

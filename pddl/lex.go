@@ -17,12 +17,10 @@ const (
 	tokEof   tokenType = eof
 	tokOpen  tokenType = '('
 	tokClose tokenType = ')'
-	tokMinus tokenType = '-'
-	tokEq    tokenType = '='
 	tokErr   tokenType = iota + 255
-	tokId
-	tokQid
-	tokCid
+	tokAtom
+	tokQAtom
+	tokCAtom
 	tokNum
 )
 
@@ -31,19 +29,10 @@ var (
 		tokErr:   "error",
 		tokOpen:  "'('",
 		tokClose: "')'",
-		tokMinus: "'-'",
-		tokEq:    "'='",
-		tokId:    "identifier",
-		tokQid:   "?identifier",
-		tokCid:   ":identifier",
+		tokAtom:    "identifier",
+		tokQAtom:   "?identifier",
+		tokCAtom:   ":identifier",
 		tokNum:   "number",
-	}
-
-	runeToks = map[rune]tokenType{
-		'(': tokOpen,
-		')': tokClose,
-		'-': tokMinus,
-		'=': tokEq,
 	}
 )
 
@@ -58,9 +47,6 @@ type token struct {
 }
 
 func (t token) String() string {
-	if _, ok := runeToks[rune(t.typ)]; ok {
-		return fmt.Sprintf("%v", t.typ)
-	}
 	if len(t.text) > 10 {
 		return fmt.Sprintf("%v [%10q...]", t.typ, t.text)
 	}
@@ -165,57 +151,57 @@ func (l *lexer) errorf(format string, args ...interface{}) token {
 func (l *lexer) token() token {
 	for {
 		r := l.next()
-		// '-' may be a number, not a minus beginning a type
-		if r == '-' && (unicode.IsDigit(l.peek()) || l.peek() == '-') {
-			return l.lexNum()
-		}
-		if typ, ok := runeToks[r]; ok {
-			return l.makeToken(typ)
-		}
 		switch {
 		case r == eof:
 			return l.makeToken(eof)
 		case unicode.IsSpace(r):
 			l.junk()
 			continue
+		case r == '(':
+			return l.makeToken(tokOpen)
+		case r == ')':
+			return l.makeToken(tokClose)
 		case r == ';':
 			l.lexComment()
 			continue
-		case r == '_' || unicode.IsLetter(r):
-			return l.lexIdent(tokId)
-		case r == '?':
-			return l.lexIdent(tokQid)
-		case r == ':':
-			return l.lexIdent(tokCid)
-		case unicode.IsDigit(r):
-			return l.lexNum()
 		default:
-			return l.errorf("unexpected token in input: %c", r)
+			return l.lexAtom()
 		}
 	}
 	panic("Unreachable")
 }
 
-func (l *lexer) lexIdent(t tokenType) token {
+func (l *lexer) lexAtom() token {
 	r := l.next()
 	for !unicode.IsSpace(r) && r != ')' {
 		r = l.next()
 	}
 	l.backup()
-	return l.makeToken(t)
+	tok := l.makeToken(tokAtom)
+	if tok.text[0] == '?' {
+		tok.typ = tokQAtom
+	} else if tok.text[0] == ':' {
+		tok.typ = tokCAtom
+	} else if isNumber(tok.text) {
+		tok.typ = tokNum
+	}
+	return tok
 }
 
-func (l *lexer) lexNum() token {
-	l.acceptRun("-")
-	digits := "0123456789"
-	l.acceptRun(digits)
-	l.accept(".")
-	l.acceptRun(digits)
-	if l.accept("eE") {
-		l.accept("-")
-		l.acceptRun(digits)
+func isNumber(s string) bool {
+	i := 0
+	for ; i < len(s) && s[i] == '-'; i++ {
 	}
-	return l.makeToken(tokNum)
+	for ; i < len(s) && (s[i] == '.' || unicode.IsDigit(rune(s[i]))); i++ {
+	}
+	if i == 'e' || i == 'E' {
+		i++
+		for ; i < len(s) && s[i] == '-'; i++ {
+		}
+		for ; i < len(s) && unicode.IsDigit(rune(s[i])); i++ {
+		}
+	}
+	return i == len(s)
 }
 
 func (l *lexer) lexComment() {

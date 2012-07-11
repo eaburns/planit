@@ -59,10 +59,18 @@ func (p *parser) junk(n int) {
 	}
 }
 
-func (p *parser) accept(typ tokenType) (t token, ok bool) {
-	if p.peek().typ == typ {
-		t = p.next()
-		ok = true
+func (p *parser) accept(spec interface{}) (t token, ok bool) {
+	switch s := spec.(type) {
+	case tokenType:
+		if p.peek().typ == s {
+			t = p.next()
+			ok = true
+		}
+	case string:
+		if p.peek().text == s {
+			t = p.next()
+			ok = true
+		}
 	}
 	return
 }
@@ -82,9 +90,10 @@ func (p *parser) acceptNamedList(name string) bool {
 //
 // The arguments can be either tokenTypes or strings.
 // A tokenType matches a token on its type, and a
-// string matches either a tokQid, tokCid, or tokId
-// if the first character of the string is a '?', ':', or
-// anything else respectively.
+// string matches either a tokOpen, tokClose, tokQAtom,
+// tokCAtom, or tokAtom if the string is "(" or ")" or if the
+// first character of the string is a '?', ':', or anything else
+// respectively.
 func (p *parser) expect(vls ...interface{}) ([]token, error) {
 	var toks []token
 	for i := range vls {
@@ -95,12 +104,16 @@ func (p *parser) expect(vls ...interface{}) ([]token, error) {
 				return nil, makeError(p, "expected %v, got %v", v, t.typ)
 			}
 		case string:
-			var typ tokenType = tokId
+			var typ tokenType = tokAtom
 			switch v[0] {
+			case '(':
+				typ = tokOpen
+			case ')':
+				typ = tokClose
 			case '?':
-				typ = tokQid
+				typ = tokQAtom
 			case ':':
-				typ = tokCid
+				typ = tokCAtom
 			}
 			if t.typ != typ {
 				return nil, makeError(p, "expected %v, got %v", typ, t.typ)

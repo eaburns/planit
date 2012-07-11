@@ -193,19 +193,31 @@ func TestRequirements(t *testing.T) {
 }
 
 var typesDefTests = []checkDomainTest{
+	// undefined type
 	{ `(define (domain d) (:requirements :typing) (:types t - s))`, "undefined", nil },
+
+	// object is not undefined
+	{ `(define (domain d) (:requirements :typing) (:types t - object))`, "", nil },
+
+	// multiple type definitions
 	{ `(define (domain d) (:requirements :typing) (:types t t))`, "multiple", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t s t))`, "multiple", nil },
+
+	// Everything's OK
 	{ `(define (domain d) (:requirements :typing) (:types t))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t s))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t s - object))`, "", nil },
 	{ `(define (domain d) (:requirements :typing) (:types t - s s - object))`, "", nil },
+
+	// OK, but make sure we only have the types we expect.
 	{ `(define (domain d) (:requirements :typing) (:types object))`, "",
 		checkTypes([]string{"object"}) },
 	{ `(define (domain d) (:requirements :typing))`, "",
 		checkTypes([]string{"object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types t))`, "",
 		checkTypes([]string{"object", "t"}) },
+
+	// OK, but make sure we only have the super typse we expect.
 	{ `(define (domain d))`, "",
 		checkSupers("object", []string{"object"}) },
 	{ `(define (domain d) (:requirements :typing) (:types object))`, "",
@@ -284,7 +296,7 @@ func findTypePtr(name string, ts []*Type) *Type {
 	return nil
 }
 
-func TestCheckTypessDef(t *testing.T) {
+func TestCheckTypesDef(t *testing.T) {
 	for _, test := range typesDefTests {
 		test.run(t)
 	}

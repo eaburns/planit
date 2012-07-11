@@ -73,8 +73,12 @@ type TypeName struct {
 
 type Predicate struct {
 	Identifier
-	Num        int
-	Parameters []TypedIdentifier
+	Num int
+	// PosEffect and NegEffect are true if the predicate
+	// appears positively or negatively (respectively)
+	// in an effect.
+	PosEffect, NegEffect bool
+	Parameters           []TypedIdentifier
 }
 
 type Function struct {
@@ -119,8 +123,14 @@ type QuantNode struct {
 }
 
 type LiteralNode struct {
-	Predicate  Identifier
-	Negative bool
+	Predicate Identifier
+	Negative  bool
+	// Effect is true if the literal is appearing
+	// in an unconditional effect or as a
+	// consequence of a conditional effect.
+	// This is used to determine inertia for
+	// the literal's predicate.
+	Effect     bool
 	Definition *Predicate
 	Arguments  []Term
 	Node

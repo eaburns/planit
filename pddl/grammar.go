@@ -316,13 +316,14 @@ func parseGd(p *parser) (form Formula, err error) {
 	case p.acceptNamedList("forall"):
 		form, err = parseForallGd(p, parseGd)
 	default:
-		form, err = parseLiteral(p)
+		form, err = parseLiteral(p, false)
 	}
 	return
 }
 
-func parseLiteral(p *parser) (lit *LiteralNode, err error) {
+func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
 	lit = new(LiteralNode)
+	lit.Effect = eff
 	if p.acceptNamedList("not") {
 		lit.Negative = true
 	}
@@ -533,7 +534,7 @@ func parsePeffect(p *parser) (form Formula, err error) {
 	if _, ok := AssignOps[p.peekn(2).text]; ok && p.peek().typ == tokOpen {
 		return parseAssign(p)
 	}
-	return parseLiteral(p)
+	return parseLiteral(p, true)
 }
 
 func parseAssign(p *parser) (a *AssignNode, err error) {
@@ -673,7 +674,7 @@ func parseInitEl(p *parser) (form Formula, err error) {
 		_, err = p.expect(tokClose)
 		return
 	}
-	return parseLiteral(p)
+	return parseLiteral(p, false)
 }
 
 func parseGoal(p *parser) (form Formula, err error) {

@@ -479,12 +479,11 @@ func (w *WhenNode) check(defs defs) error {
 }
 
 func (lit *LiteralNode) check(defs defs) error {
-	switch pred := defs.preds[lit.Predicate.Str]; {
-	case pred == nil:
+	pred := defs.preds[lit.Predicate.Str]
+	if pred == nil {
 		return makeError(lit, "undefined predicate: %s", lit.Predicate)
-	default:
-		lit.Definition = pred
 	}
+	lit.Definition = pred
 	if len(lit.Arguments) != len(lit.Definition.Parameters) {
 		var arg = "arguments"
 		if len(lit.Definition.Parameters) == 1 {
@@ -508,6 +507,13 @@ func (lit *LiteralNode) check(defs defs) error {
 		parm := lit.Definition.Parameters[i]
 		if !compatTypes(parm.Types, arg.Types) {
 			return incompatTypes(lit, i)
+		}
+	}
+	if lit.Effect {
+		if lit.Negative {
+			lit.Definition.NegEffect = true
+		} else {
+			lit.Definition.PosEffect = true
 		}
 	}
 	return nil

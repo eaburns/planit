@@ -323,7 +323,7 @@ func parseGd(p *parser) (form Formula, err error) {
 
 func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
 	lit = new(LiteralNode)
-	lit.Effect = eff
+	lit.IsEffect = eff
 	if p.acceptNamedList("not") {
 		lit.Negative = true
 	}

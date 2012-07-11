@@ -68,18 +68,20 @@ type TypedIdentifier struct {
 
 type TypeName struct {
 	Identifier
+
 	Definition *Type
 }
 
 type Predicate struct {
 	Identifier
 	Num int
+	Parameters           []TypedIdentifier
+
 	// PosEffect and NegEffect are true if the predicate
 	// appears positively or negatively (respectively)
 	// in an unconditional effect or as the consequence
 	// of a conditional effect.
 	PosEffect, NegEffect bool
-	Parameters           []TypedIdentifier
 }
 
 type Function struct {
@@ -126,23 +128,25 @@ type QuantNode struct {
 type LiteralNode struct {
 	Predicate Identifier
 	Negative  bool
-	// Effect is true if the literal is appearing
+	Definition *Predicate
+	Arguments  []Term
+	Node
+
+	// IsEffect is true if the literal is appearing
 	// in an unconditional effect or as a
 	// consequence of a conditional effect.
 	// This is used to determine inertia for
 	// the literal's predicate.
-	Effect     bool
-	Definition *Predicate
-	Arguments  []Term
-	Node
+	IsEffect     bool
 }
 
 type Term struct {
 	Identifier
+	Variable   bool
+
 	// Definition points to the variable
 	// or constant definition for this term.
 	Definition *TypedIdentifier
-	Variable   bool
 }
 
 type AndNode struct{ MultiNode }
@@ -155,13 +159,14 @@ type ImplyNode struct{ BinaryNode }
 
 type ForallNode struct {
 	QuantNode
-	// Effect is true if the literal is appearing
+
+	// IsEffect is true if the literal is appearing
 	// in an unconditional effect or as a
 	// consequence of a conditional effect.
 	// This is used to distinguish between
 	// the need to require :universal-preconditions
 	// and :conditional-effects.
-	Effect bool
+	IsEffect bool
 }
 
 type ExistsNode struct{ QuantNode }

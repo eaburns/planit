@@ -453,9 +453,9 @@ func (i *ImplyNode) check(defs defs) error {
 
 func (f *ForallNode) check(defs defs) error {
 	switch {
-	case !f.Effect && !defs.reqs[":universal-preconditions"]:
+	case !f.IsEffect && !defs.reqs[":universal-preconditions"]:
 		return badReq(f, "forall", ":universal-preconditions")
-	case f.Effect && !defs.reqs[":conditional-effects"]:
+	case f.IsEffect && !defs.reqs[":conditional-effects"]:
 		return badReq(f, "forall", ":conditional-effects")
 	}
 	return f.QuantNode.check(defs)
@@ -509,7 +509,7 @@ func (lit *LiteralNode) check(defs defs) error {
 			return incompatTypes(lit, i)
 		}
 	}
-	if lit.Effect {
+	if lit.IsEffect {
 		if lit.Negative {
 			lit.Definition.NegEffect = true
 		} else {

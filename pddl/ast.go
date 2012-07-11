@@ -79,7 +79,7 @@ type Predicate struct {
 
 	// PosEffect and NegEffect are true if the predicate
 	// appears positively or negatively (respectively)
-	// in an unconditional effect or as the consequence
+	// in an unconditional effect or as the consequent
 	// of a conditional effect.
 	PosEffect, NegEffect bool
 }
@@ -134,7 +134,7 @@ type LiteralNode struct {
 
 	// IsEffect is true if the literal is appearing
 	// in an unconditional effect or as a
-	// consequence of a conditional effect.
+	// consequent of a conditional effect.
 	// This is used to determine inertia for
 	// the literal's predicate.
 	IsEffect bool
@@ -162,7 +162,7 @@ type ForallNode struct {
 
 	// IsEffect is true if the literal is appearing
 	// in an unconditional effect or as a
-	// consequence of a conditional effect.
+	// consequent of a conditional effect.
 	// This is used to distinguish between
 	// the need to require :universal-preconditions
 	// and :conditional-effects.

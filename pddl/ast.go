@@ -76,7 +76,8 @@ type Predicate struct {
 	Num int
 	// PosEffect and NegEffect are true if the predicate
 	// appears positively or negatively (respectively)
-	// in an effect.
+	// in an unconditional effect or as the consequence
+	// of a conditional effect.
 	PosEffect, NegEffect bool
 	Parameters           []TypedIdentifier
 }

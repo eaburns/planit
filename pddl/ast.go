@@ -154,8 +154,9 @@ type ImplyNode struct{ BinaryNode }
 
 type ForallNode struct {
 	QuantNode
-
-	// Effect is true if this node is an effect.
+	// Effect is true if the literal is appearing
+	// in an unconditional effect or as a
+	// consequence of a conditional effect.
 	// This is used to distinguish between
 	// the need to require :universal-preconditions
 	// and :conditional-effects.

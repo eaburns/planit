@@ -8,7 +8,7 @@ import (
 // PrintDomain prints the domain in valid
 // PDDL to a writer.
 func PrintDomain(w io.Writer, d *Domain) {
-	fmt.Fprintf(w, "(define (domain %s)\n", d.Identifier)
+	fmt.Fprintf(w, "(define (domain %s)\n", d.Name)
 	printReqsDef(w, d.Requirements)
 	printTypesDef(w, d.Types)
 	printConstsDef(w, ":constants", d.Constants)
@@ -20,7 +20,7 @@ func PrintDomain(w io.Writer, d *Domain) {
 	fmt.Fprintln(w, ")")
 }
 
-func printReqsDef(w io.Writer, reqs []Identifier) {
+func printReqsDef(w io.Writer, reqs []Name) {
 	if len(reqs) == 0 {
 		return
 	}
@@ -39,13 +39,13 @@ func printTypesDef(w io.Writer, ts []Type) {
 		return
 	}
 	fmt.Fprintf(w, "%s(:types", indent(1))
-	var ids []TypedIdentifier
+	var ids []TypedEntry
 	for _, t := range ts {
 		if t.Location.Line == 0 {
 			// Skip undeclared implicit types like object.
 			continue
 		}
-		ids = append(ids, t.TypedIdentifier)
+		ids = append(ids, t.TypedEntry)
 	}
 	printTypedNames(w, "\n"+indent(2), ids)
 	fmt.Fprintln(w, ")")
@@ -54,7 +54,7 @@ func printTypesDef(w io.Writer, ts []Type) {
 // printConstsDef prints a constant definition with
 // the given definition name (should be either
 // :constants or :objects).
-func printConstsDef(w io.Writer, def string, cs []TypedIdentifier) {
+func printConstsDef(w io.Writer, def string, cs []TypedEntry) {
 	if len(cs) == 0 {
 		return
 	}
@@ -103,7 +103,7 @@ func printFuncsDef(w io.Writer, fs []Function) {
 }
 
 func printAction(w io.Writer, act Action) {
-	fmt.Fprintf(w, "%s(:action %s\n", indent(1), act.Identifier)
+	fmt.Fprintf(w, "%s(:action %s\n", indent(1), act.Name)
 	fmt.Fprintf(w, "%s:parameters (", indent(3))
 	printTypedNames(w, "", act.Parameters)
 	fmt.Fprint(w, ")")
@@ -123,7 +123,7 @@ func printAction(w io.Writer, act Action) {
 // PrintProblem prints the problem in valid PDDL to the given writer.
 func PrintProblem(w io.Writer, p *Problem) {
 	fmt.Fprintf(w, "(define (problem %s)\n%s(:domain %s)\n",
-		p.Identifier, indent(1), p.Domain)
+		p.Name, indent(1), p.Domain)
 	printReqsDef(w, p.Requirements)
 	printConstsDef(w, ":objects", p.Objects)
 
@@ -166,7 +166,7 @@ func (t declGroups) Swap(i, j int) {
 // printTypedNames prints a slice of TypedNames.
 // Adjacent items with the same type are all printed
 // in a group.  Each group is preceeded by the prefix.
-func printTypedNames(w io.Writer, prefix string, ns []TypedIdentifier) {
+func printTypedNames(w io.Writer, prefix string, ns []TypedEntry) {
 	if len(ns) == 0 {
 		return
 	}
@@ -224,7 +224,7 @@ func (lit *LiteralNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, "%s(", prefix)
 	fmt.Fprint(w, lit.Predicate)
 	for _, t := range lit.Arguments {
-		fmt.Fprintf(w, " %s", t.Identifier)
+		fmt.Fprintf(w, " %s", t.Name)
 	}
 	fmt.Fprint(w, ")")
 	if lit.Negative {
@@ -300,14 +300,14 @@ func (n *AssignNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, ")")
 }
 
-func (h *Fhead) print(w io.Writer) {	
+func (h *Fhead) print(w io.Writer) {
 	if len(h.Arguments) == 0 {
-		fmt.Fprintf(w, "(%s)", h.Identifier)
+		fmt.Fprintf(w, "(%s)", h.Name)
 		return
 	}
-	fmt.Fprintf(w, "(%s", h.Identifier)
+	fmt.Fprintf(w, "(%s", h.Name)
 	for _, t := range h.Arguments {
-		fmt.Fprintf(w, " %s", t.Identifier)
+		fmt.Fprintf(w, " %s", t.Name)
 	}
 	fmt.Fprint(w, ")")
 }

@@ -1,7 +1,6 @@
 package pddl
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 )
@@ -59,59 +58,56 @@ func (p *parser) junk(n int) {
 	}
 }
 
-func (p *parser) accept(typ tokenType) (t token, ok bool) {
-	if p.peek().typ == typ {
-		t = p.next()
-		ok = true
+// acceptTokens consumes and returns a slice of
+// tokens and true if the next tokens in the stream
+// match the pattern elements (see token.match).
+// Otherwise, nothing is consumed and false is
+// returned.
+func (p *parser) acceptTokens(vls ...interface{}) ([]token, bool) {
+	if len(vls) > cap(p.peeks) {
+		panic("too many peeks in accept")
 	}
-	return
+	var toks []token
+	for i := range vls {
+		if !p.peekn(i + 1).matches(vls[i]) {
+			return nil, false
+		}
+		toks = append(toks, p.peekn(i+1))
+	}
+	p.junk(len(vls))
+	return toks, true
 }
 
-func (p *parser) acceptNamedList(name string) bool {
-	if p.peek().typ != tokOpen || p.peekn(2).text != name {
-		return false
-	}
-	p.junk(2)
-	return true
+// accept is just like acceptTokens except that it
+// only returns the boolean value.
+func (p *parser) accept(vls ...interface{}) bool {
+	_, ok := p.acceptTokens(vls...)
+	return ok
 }
 
-// expect expects the next tokens to match
+// expectTokens expects the next tokens to match
 // the arguments.  If the tokens match then
 // they are returned and the error is nil, otherwise
 // an error is returned.
 //
 // The arguments can be either tokenTypes or strings.
 // A tokenType matches a token on its type, and a
-// string matches either a tokQid, tokCid, or tokId
-// if the first character of the string is a '?', ':', or
-// anything else respectively.
-func (p *parser) expect(vls ...interface{}) ([]token, error) {
+// string matches on its text.
+func (p *parser) expectTokens(vls ...interface{}) ([]token, error) {
 	var toks []token
 	for i := range vls {
 		t := p.peek()
-		switch v := vls[i].(type) {
-		case tokenType:
-			if t.typ != v {
-				return nil, makeError(p, "expected %v, got %v", v, t.typ)
-			}
-		case string:
-			var typ tokenType = tokId
-			switch v[0] {
-			case '?':
-				typ = tokQid
-			case ':':
-				typ = tokCid
-			}
-			if t.typ != typ {
-				return nil, makeError(p, "expected %v, got %v", typ, t.typ)
-			}
-			if t.text != v {
-				return nil, makeError(p, "expected %s, get %s", v, t.text)
-			}
-		default:
-			panic(fmt.Sprintf("Unsupported type in expect: %T (%#v)", vls[i], vls[i]))
+		if !p.peek().matches(vls[i]) {
+			return nil, makeError(p, "expected %s, got %s", vls[i], t)
 		}
 		toks = append(toks, p.next())
 	}
 	return toks, nil
+}
+
+// except is just like expectTokens except that it
+// only returns the error value.
+func (p *parser) expect(vls ...interface{}) error {
+	_, err := p.expectTokens(vls...)
+	return err
 }

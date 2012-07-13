@@ -6,7 +6,7 @@ import (
 
 const (
 	objectTypeName = "object"
-	totalCostName = "total-cost"
+	totalCostName  = "total-cost"
 )
 
 var (
@@ -180,7 +180,7 @@ func checkTypesDef(defs defs, d *Domain) error {
 		d.Types = append(d.Types, Type{
 			TypedEntry: TypedEntry{
 				Name: Name{Str: objectTypeName},
-				Num:        len(d.Types),
+				Num:  len(d.Types),
 			},
 		})
 	}
@@ -296,7 +296,7 @@ func checkPredsDef(defs defs, d *Domain) error {
 	if defs.reqs[":equality"] && !equalDefined(d.Predicates) {
 		d.Predicates = append(d.Predicates, Predicate{
 			Name: Name{Str: "="},
-			Num:        len(defs.preds),
+			Num:  len(defs.preds),
 			Parameters: []TypedEntry{
 				{Name: Name{Str: "?x"}},
 				{Name: Name{Str: "?y"}},
@@ -358,7 +358,7 @@ func checkTypedEntries(defs defs, lst []TypedEntry) error {
 		}
 		if len(lst[i].Types) == 0 {
 			lst[i].Types = []TypeName{{
-				Name: Name{Str: objectTypeName},
+				Name:       Name{Str: objectTypeName},
 				Definition: defs.types[objectTypeName],
 			}}
 		}
@@ -513,7 +513,7 @@ func checkInst(defs defs, name Name, args []Term, parms []TypedEntry) error {
 		if args[i].Definition == nil {
 			return makeError(args[i], "undefined %s: %s", kind, args[i])
 		}
-		if !compatTypes(parms[i].Types, args[i].Definition.Types) {	
+		if !compatTypes(parms[i].Types, args[i].Definition.Types) {
 			return makeError(args[i],
 				"%s [type %s] is incompatible with parameter %s [type %s] of %s",
 				args[i], typeString(args[i].Definition.Types),

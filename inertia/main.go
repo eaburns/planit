@@ -7,11 +7,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"planit/pddl"
 	"text/tabwriter"
-	"fmt"
 )
 
 func main() {

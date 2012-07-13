@@ -300,7 +300,7 @@ func (n *AssignNode) print(w io.Writer, prefix string) {
 	fmt.Fprintf(w, ")")
 }
 
-func (h *Fhead) print(w io.Writer) {	
+func (h *Fhead) print(w io.Writer) {
 	if len(h.Arguments) == 0 {
 		fmt.Fprintf(w, "(%s)", h.Name)
 		return

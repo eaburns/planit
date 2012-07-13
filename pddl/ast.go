@@ -195,8 +195,8 @@ type AssignNode struct {
 	// If IsNumber is false, then the opposite
 	// is the case.
 	IsNumber bool
-	Number string
-	Fhead Fhead
+	Number   string
+	Fhead    Fhead
 
 	Node
 }
@@ -204,7 +204,7 @@ type AssignNode struct {
 type Fhead struct {
 	Name
 	Definition *Function
-	Arguments []Term
+	Arguments  []Term
 }
 
 // Locer wraps the Loc method.

@@ -69,7 +69,7 @@ func (p *parser) acceptTokens(vls ...interface{}) ([]token, bool) {
 	}
 	var toks []token
 	for i := range vls {
-		if !p.peekn(i+1).matches(vls[i]) {
+		if !p.peekn(i + 1).matches(vls[i]) {
 			return nil, false
 		}
 		toks = append(toks, p.peekn(i+1))

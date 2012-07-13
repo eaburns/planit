@@ -6,20 +6,20 @@ import (
 )
 
 type Domain struct {
-	Identifier
-	Requirements []Identifier
+	Name
+	Requirements []Name
 	Types        []Type
-	Constants    []TypedIdentifier
+	Constants    []TypedEntry
 	Predicates   []Predicate
 	Functions    []Function
 	Actions      []Action
 }
 
 type Problem struct {
-	Identifier
-	Domain       Identifier
-	Requirements []Identifier
-	Objects      []TypedIdentifier
+	Name
+	Domain       Name
+	Requirements []Name
+	Objects      []TypedEntry
 	Init         []Formula
 	Goal         Formula
 	Metric       Metric
@@ -32,17 +32,17 @@ const (
 	MetricMinCost
 )
 
-type Identifier struct {
+type Name struct {
 	Str string
 	Location
 }
 
-func (n Identifier) String() string {
+func (n Name) String() string {
 	return n.Str
 }
 
 type Type struct {
-	TypedIdentifier
+	TypedEntry
 
 	// Supers is all of the predecessor types,
 	// including this current type.
@@ -50,32 +50,32 @@ type Type struct {
 
 	// Objects is a pointer to the definition
 	// of each object of this type.
-	Objects []*TypedIdentifier
+	Objects []*TypedEntry
 }
 
 type Action struct {
-	Identifier
-	Parameters   []TypedIdentifier
+	Name
+	Parameters   []TypedEntry
 	Precondition Formula
 	Effect       Formula
 }
 
-type TypedIdentifier struct {
-	Identifier
+type TypedEntry struct {
+	Name
 	Num   int
 	Types []TypeName
 }
 
 type TypeName struct {
-	Identifier
+	Name
 
 	Definition *Type
 }
 
 type Predicate struct {
-	Identifier
+	Name
 	Num        int
-	Parameters []TypedIdentifier
+	Parameters []TypedEntry
 
 	// PosEffect and NegEffect are true if the predicate
 	// appears positively or negatively (respectively)
@@ -85,10 +85,10 @@ type Predicate struct {
 }
 
 type Function struct {
-	Identifier
+	Name
 	Num        int
 	Types      []TypeName
-	Parameters []TypedIdentifier
+	Parameters []TypedEntry
 }
 
 type Formula interface {
@@ -121,12 +121,12 @@ type MultiNode struct {
 }
 
 type QuantNode struct {
-	Variables []TypedIdentifier
+	Variables []TypedEntry
 	UnaryNode
 }
 
 type LiteralNode struct {
-	Predicate  Identifier
+	Predicate  Name
 	Negative   bool
 	Definition *Predicate
 	Arguments  []Term
@@ -141,12 +141,12 @@ type LiteralNode struct {
 }
 
 type Term struct {
-	Identifier
+	Name
 	Variable bool
 
 	// Definition points to the variable
 	// or constant definition for this term.
-	Definition *TypedIdentifier
+	Definition *TypedEntry
 }
 
 type AndNode struct{ MultiNode }
@@ -186,7 +186,7 @@ var (
 )
 
 type AssignNode struct {
-	Op   Identifier
+	Op   Name
 	Lval Fhead
 
 	// IsNumber is true if the right-hand-side
@@ -202,7 +202,7 @@ type AssignNode struct {
 }
 
 type Fhead struct {
-	Identifier
+	Name
 	Definition *Function
 	Arguments []Term
 }

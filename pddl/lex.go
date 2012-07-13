@@ -20,9 +20,9 @@ const (
 	tokMinus tokenType = '-'
 	tokEq    tokenType = '='
 	tokErr   tokenType = iota + 255
-	tokId
-	tokQid
-	tokCid
+	tokName
+	tokQname
+	tokCname
 	tokNum
 )
 
@@ -33,9 +33,9 @@ var (
 		tokClose: "')'",
 		tokMinus: "'-'",
 		tokEq:    "'='",
-		tokId:    "identifier",
-		tokQid:   "?identifier",
-		tokCid:   ":identifier",
+		tokName:    "identifier",
+		tokQname:   "?identifier",
+		tokCname:   ":identifier",
 		tokNum:   "number",
 	}
 
@@ -65,6 +65,30 @@ func (t token) String() string {
 		return fmt.Sprintf("%v [%10q...]", t.typ, t.text)
 	}
 	return fmt.Sprintf("%v [%q]", t.typ, t.text)
+}
+
+// matches returns true if the token matches
+// some type of pattern.  The pattern can be
+// one of three types:
+//
+// A tokenType matches the token if they have
+// the same type.
+//
+// A string matches the token if they have the
+// same text.
+//
+// A fmt.Stringer matches the token if the String()
+// method has the same as the token text.
+func (t token) matches(vl interface{}) bool {
+	switch v := vl.(type) {
+	case tokenType:
+		return t.typ == v
+	case string:
+		return t.text == v
+	case fmt.Stringer:
+		return t.text == v.String()
+	}
+	panic(fmt.Sprintf("unexpected type in token.match: %T", vl))
 }
 
 // A lexer holds information and performs lexical
@@ -178,11 +202,11 @@ func (l *lexer) token() token {
 			l.lexComment()
 			continue
 		case r == '_' || unicode.IsLetter(r):
-			return l.lexIdent(tokId)
+			return l.lexIdent(tokName)
 		case r == '?':
-			return l.lexIdent(tokQid)
+			return l.lexIdent(tokQname)
 		case r == ':':
-			return l.lexIdent(tokCid)
+			return l.lexIdent(tokCname)
 		case unicode.IsDigit(r):
 			return l.lexNum()
 		default:

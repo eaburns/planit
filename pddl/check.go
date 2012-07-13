@@ -34,7 +34,7 @@ type (
 	defs struct {
 		reqs   map[string]bool
 		types  map[string]*Type
-		consts map[string]*TypedIdentifier
+		consts map[string]*TypedEntry
 		preds  map[string]*Predicate
 		funcs  map[string]*Function
 		vars   *varDefs
@@ -44,7 +44,7 @@ type (
 	varDefs struct {
 		up         *varDefs
 		name       string
-		definition *TypedIdentifier
+		definition *TypedEntry
 	}
 )
 
@@ -62,7 +62,7 @@ func Check(d *Domain, p *Problem) (err error) {
 	}
 	if p.Domain.Str != d.Str {
 		return fmt.Errorf("problem %s expects domain %s, but got %s",
-			p.Identifier, p.Domain, d.Identifier)
+			p.Name, p.Domain, d.Name)
 	}
 	if err = checkReqsDef(defs, p.Requirements); err != nil {
 		return
@@ -86,7 +86,7 @@ func checkDomain(d *Domain) (defs, error) {
 	defs := defs{
 		reqs:   make(map[string]bool),
 		types:  make(map[string]*Type),
-		consts: make(map[string]*TypedIdentifier),
+		consts: make(map[string]*TypedEntry),
 		preds:  make(map[string]*Predicate),
 		funcs:  make(map[string]*Function),
 	}
@@ -106,7 +106,7 @@ func checkDomain(d *Domain) (defs, error) {
 		return defs, err
 	}
 	for _, act := range d.Actions {
-		if err := checkTypedIdentifiers(defs, act.Parameters); err != nil {
+		if err := checkTypedEntries(defs, act.Parameters); err != nil {
 			return defs, err
 		}
 		for i := range act.Parameters {
@@ -131,7 +131,7 @@ func checkDomain(d *Domain) (defs, error) {
 
 // push returns a new varDefs with the given
 // definitions defined.
-func (v *varDefs) push(d *TypedIdentifier) *varDefs {
+func (v *varDefs) push(d *TypedEntry) *varDefs {
 	return &varDefs{
 		up:         v,
 		name:       d.Str,
@@ -139,7 +139,7 @@ func (v *varDefs) push(d *TypedIdentifier) *varDefs {
 	}
 }
 
-func checkReqsDef(defs defs, rs []Identifier) error {
+func checkReqsDef(defs defs, rs []Name) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
 			return makeError(r, "%s is not a supported requirement", r)
@@ -178,8 +178,8 @@ func checkTypesDef(defs defs, d *Domain) error {
 	// Ensure that object is defined
 	if !objectDefined(d.Types) {
 		d.Types = append(d.Types, Type{
-			TypedIdentifier: TypedIdentifier{
-				Identifier: Identifier{Str: objectTypeName},
+			TypedEntry: TypedEntry{
+				Name: Name{Str: objectTypeName},
 				Num:        len(d.Types),
 			},
 		})
@@ -251,7 +251,7 @@ func superTypes(defs defs, t *Type) (supers []*Type) {
 // checkConstsDef checks a list of constant or
 // object definitions and maps names to their
 // definitions.
-func checkConstsDef(defs defs, objs []TypedIdentifier) error {
+func checkConstsDef(defs defs, objs []TypedEntry) error {
 	for i, obj := range objs {
 		if defs.consts[obj.Str] != nil {
 			return makeError(obj, "%s is defined multiple times", obj)
@@ -259,7 +259,7 @@ func checkConstsDef(defs defs, objs []TypedIdentifier) error {
 		objs[i].Num = len(defs.consts)
 		defs.consts[obj.Str] = &objs[i]
 	}
-	if err := checkTypedIdentifiers(defs, objs); err != nil {
+	if err := checkTypedEntries(defs, objs); err != nil {
 		return err
 	}
 
@@ -279,7 +279,7 @@ func checkConstsDef(defs defs, objs []TypedIdentifier) error {
 // objects of the given type.  If the object has
 // already been added then it is not added
 // again.
-func (t *Type) addObject(obj *TypedIdentifier) {
+func (t *Type) addObject(obj *TypedEntry) {
 	for _, o := range t.Objects {
 		if o == obj {
 			return
@@ -295,11 +295,11 @@ func (t *Type) addObject(obj *TypedIdentifier) {
 func checkPredsDef(defs defs, d *Domain) error {
 	if defs.reqs[":equality"] && !equalDefined(d.Predicates) {
 		d.Predicates = append(d.Predicates, Predicate{
-			Identifier: Identifier{Str: "="},
+			Name: Name{Str: "="},
 			Num:        len(defs.preds),
-			Parameters: []TypedIdentifier{
-				{Identifier: Identifier{Str: "?x"}},
-				{Identifier: Identifier{Str: "?y"}},
+			Parameters: []TypedEntry{
+				{Name: Name{Str: "?x"}},
+				{Name: Name{Str: "?y"}},
 			},
 		})
 	}
@@ -307,7 +307,7 @@ func checkPredsDef(defs defs, d *Domain) error {
 		if defs.preds[p.Str] != nil {
 			return makeError(p, "%s is defined multiple times", p)
 		}
-		if err := checkTypedIdentifiers(defs, p.Parameters); err != nil {
+		if err := checkTypedEntries(defs, p.Parameters); err != nil {
 			return err
 		}
 		defs.preds[p.Str] = &d.Predicates[i]
@@ -337,7 +337,7 @@ func checkFuncsDef(defs defs, fs []Function) error {
 		if defs.funcs[f.Str] != nil {
 			return makeError(f, "%s is defined multiple times", f)
 		}
-		if err := checkTypedIdentifiers(defs, f.Parameters); err != nil {
+		if err := checkTypedEntries(defs, f.Parameters); err != nil {
 			return err
 		}
 		defs.funcs[f.Str] = &fs[i]
@@ -346,19 +346,19 @@ func checkFuncsDef(defs defs, fs []Function) error {
 	return nil
 }
 
-// checkTypedIdentifiers ensures that the types
+// checkTypedEntries ensures that the types
 // of a list of typed indentifiers are valid.  If they
 // are valid then they are linked to their type
 // definitions.  All identifiers that have no declared
 // type are linked to the object type.
-func checkTypedIdentifiers(defs defs, lst []TypedIdentifier) error {
+func checkTypedEntries(defs defs, lst []TypedEntry) error {
 	for i := range lst {
 		if err := checkTypeNames(defs, lst[i].Types); err != nil {
 			return err
 		}
 		if len(lst[i].Types) == 0 {
 			lst[i].Types = []TypeName{{
-				Identifier: Identifier{Str: objectTypeName},
+				Name: Name{Str: objectTypeName},
 				Definition: defs.types[objectTypeName],
 			}}
 		}
@@ -405,7 +405,7 @@ func (m *MultiNode) check(defs defs) error {
 }
 
 func (q *QuantNode) check(defs defs) error {
-	if err := checkTypedIdentifiers(defs, q.Variables); err != nil {
+	if err := checkTypedEntries(defs, q.Variables); err != nil {
 		return err
 	}
 	for i := range q.Variables {
@@ -494,7 +494,7 @@ func (lit *LiteralNode) check(defs defs) error {
 
 // checkInst checks the arguments match the parameters
 // of a predicate or function instantiation.
-func checkInst(defs defs, name Identifier, args []Term, parms []TypedIdentifier) error {
+func checkInst(defs defs, name Name, args []Term, parms []TypedEntry) error {
 	if len(args) != len(parms) {
 		var argStr = "arguments"
 		if len(parms) == 1 {
@@ -525,7 +525,7 @@ func checkInst(defs defs, name Identifier, args []Term, parms []TypedIdentifier)
 
 // find returns the definition of the variable
 // or nil if it was undefined.
-func (v *varDefs) find(n string) *TypedIdentifier {
+func (v *varDefs) find(n string) *TypedEntry {
 	if v == nil {
 		return nil
 	}
@@ -569,7 +569,7 @@ func (a *AssignNode) check(defs defs) error {
 		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of an assignments")
 	}
 	if !a.IsNumber {
-		if a.Fhead.Identifier.Str == "total-cost" {
+		if a.Fhead.Name.Str == "total-cost" {
 			return makeError(a.Fhead, ":action-costs does not allow total-cost as the right-hand-side of an assignment")
 		}
 		if err := a.Fhead.check(defs); err != nil {
@@ -583,7 +583,7 @@ func (h *Fhead) check(defs defs) error {
 	if h.Definition = defs.funcs[h.Str]; h.Definition == nil {
 		return makeError(h, "undefined function: %s", h)
 	}
-	return checkInst(defs, h.Identifier, h.Arguments, h.Definition.Parameters)
+	return checkInst(defs, h.Name, h.Arguments, h.Definition.Parameters)
 }
 
 // badReq returns a requirement error for the case

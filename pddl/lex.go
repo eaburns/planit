@@ -197,16 +197,14 @@ func (l *lexer) token() token {
 			return l.makeToken(eof)
 		case unicode.IsSpace(r):
 			l.junk()
-			continue
 		case r == ';':
 			l.lexComment()
-			continue
-		case r == '_' || unicode.IsLetter(r):
-			return l.lexIdent(tokName)
 		case r == '?':
-			return l.lexIdent(tokQname)
+			return l.lexName(tokQname)
 		case r == ':':
-			return l.lexIdent(tokCname)
+			return l.lexName(tokCname)
+		case unicode.IsLetter(r):
+			return l.lexName(tokName)
 		case unicode.IsDigit(r):
 			return l.lexNum()
 		default:
@@ -216,9 +214,15 @@ func (l *lexer) token() token {
 	panic("Unreachable")
 }
 
-func (l *lexer) lexIdent(t tokenType) token {
+// According to the PDDL 1.2 paper:
+//	Names of domains, like other occurrences
+//	of syntactic category <name>, are strings of
+//	characters beginning with a letter and containing
+//	letters, digits, hyphens (``-"),and underscores
+//	(``_"). Case is not significant.
+func (l *lexer) lexName(t tokenType) token {
 	r := l.next()
-	for !unicode.IsSpace(r) && r != ')' {
+	for unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
 		r = l.next()
 	}
 	l.backup()

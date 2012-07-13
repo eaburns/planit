@@ -319,17 +319,14 @@ type checkDomainTest struct {
 }
 
 func (c checkDomainTest) run(t *testing.T) {
-	d, p, err := Parse("", strings.NewReader(c.pddl))
-	if p != nil {
-		t.Fatalf("%s\nis a problem, not a domain", c.pddl)
-	}
+	dom, err := Parse("", strings.NewReader(c.pddl))
 	if err != nil {
 		t.Fatalf("%s\nparse error: %s", c.pddl, err)
 	}
-	switch err := Check(d, nil); {
+	switch err := Check(dom.(*Domain), nil); {
 	case err == nil && c.errorRegexp == "":
 		if c.test != nil {
-			c.test(c.pddl, d, t)
+			c.test(c.pddl, dom.(*Domain), t)
 		}
 	case err == nil && c.errorRegexp != "":
 		t.Errorf("%s\nexpected error matching '%s'", c.pddl, c.errorRegexp)

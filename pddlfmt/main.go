@@ -7,19 +7,25 @@ import (
 )
 
 func main() {
+	log.SetFlags(0)
 	for _, path := range os.Args[1:] {
 		file, err := os.Open(path)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		switch d, p, err := pddl.Parse(path, file); {
-		case err != nil:
+		ast, err := pddl.Parse(path, file)
+		if err != nil {
 			log.Println(err)
-		case d != nil:
-			pddl.PrintDomain(os.Stdout, d)
-		case p != nil:
-			pddl.PrintProblem(os.Stdout, p)
+			continue
+		}
+		switch r := ast.(type) {
+		case *pddl.Domain:
+			pddl.PrintDomain(os.Stdout, r)
+		case *pddl.Problem:
+			pddl.PrintProblem(os.Stdout, r)
+		default:
+			panic("impossible")
 		}
 		file.Close()
 	}

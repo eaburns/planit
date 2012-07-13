@@ -15,23 +15,26 @@ import (
 )
 
 func main() {
+	log.SetFlags(0)
 	for _, path := range os.Args[1:] {
 		file, err := os.Open(path)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		switch d, p, err := pddl.Parse(path, file); {
-		case err != nil:
+		ast, err := pddl.Parse(path, file)
+		if err != nil {
 			log.Println(err)
-		case p != nil:
+		}
+		switch d := ast.(type) {
+		case *pddl.Problem:
 			log.Println(path, "is a problem file, skipping")
-		case d != nil:
+		case *pddl.Domain:
 			if err := pddl.Check(d, nil); err != nil {
 				log.Println(err)
 				continue
 			}
-			fmt.Println(d.Identifier)
+			fmt.Println(d)
 			w := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
 			fmt.Fprintln(w, "predicate\tpos. effect\tneg. effect\tstatus\n")
 			for _, pred := range d.Predicates {
@@ -43,7 +46,7 @@ func main() {
 				} else if pred.NegEffect {
 					status = "pos. inertia"
 				}
-				fmt.Fprintf(w, "%s\t%t\t%t\t%s\n", pred.Identifier,
+				fmt.Fprintf(w, "%s\t%t\t%t\t%s\n", pred,
 					pred.PosEffect, pred.NegEffect, status)
 			}
 			w.Flush()

@@ -1,51 +1,58 @@
 package main
 
 import (
-	"errors"
-	"fmt"
+	"log"
 	"os"
 	"planit/pddl"
 )
 
 func main() {
+	log.SetFlags(0)
 	var dom *pddl.Domain
 	var prob *pddl.Problem
 
-	dom, prob, err := parseFile(os.Args[1])
+	ast, err := parseFile(os.Args[1])
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+	switch r := ast.(type) {
+	case *pddl.Domain:
+		dom = r
+	case *pddl.Problem:
+		prob = r
+	default:
+		panic("Impossible")
 	}
 
 	if len(os.Args) > 2 {
-		switch d, p, err := parseFile(os.Args[2]); {
-		case err != nil:
-			errorExit(err)
-		case d != nil:
-			if dom != nil {
-				errorExit(errors.New("two domains specified"))
+		ast, err := parseFile(os.Args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		switch r := ast.(type) {
+		case *pddl.Domain:
+			if prob == nil {
+				panic("two domains specified")
 			}
-			dom = d
-		case p != nil:
-			if prob != nil {
-				errorExit(errors.New("two problems specified"))
+			dom = r
+		case *pddl.Problem:
+			if dom == nil {
+				panic("no domain specified")
 			}
-			prob = p
+			prob = r
+		default:
+			panic("Impossible")
 		}
 	}
 	if err := pddl.Check(dom, prob); err != nil {
-		errorExit(err)
+		log.Fatal(err)
 	}
 }
 
-func errorExit(e error) {
-	fmt.Println(e.Error())
-	os.Exit(1)
-}
-
-func parseFile(path string) (*pddl.Domain, *pddl.Problem, error) {
+func parseFile(path string) (interface{}, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer file.Close()
 	return pddl.Parse(path, file)

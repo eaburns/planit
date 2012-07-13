@@ -5,15 +5,15 @@ import (
 )
 
 // Parse returns either a domain, a problem or a parse error.
-func Parse(file string, r io.Reader) (dom *Domain, prob *Problem, err error) {
+func Parse(file string, r io.Reader) (ast interface{}, err error) {
 	var p *parser
 	if p, err = newParser(file, r); err != nil {
 		return
 	}
 	if p.peekn(4).text == "domain" {
-		dom, err = parseDomain(p)
+		ast, err = parseDomain(p)
 	} else {
-		prob, err = parseProblem(p)
+		ast, err = parseProblem(p)
 	}
 	return
 }

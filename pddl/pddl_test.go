@@ -8,16 +8,13 @@ import (
 )
 
 func TestPrintDomain(t *testing.T) {
-	ast, _, err := Parse("", strings.NewReader(dom))
+	dom, err := Parse("", strings.NewReader(dom))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ast == nil {
-		t.Fatal("not a domain")
-	}
 	buf := bytes.NewBuffer([]byte{})
-	PrintDomain(buf, ast)
-	if _, _, err := Parse("", strings.NewReader(buf.String())); err != nil {
+	PrintDomain(buf, dom.(*Domain))
+	if _, err := Parse("", strings.NewReader(buf.String())); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -33,16 +30,12 @@ type test struct {
 // expression.
 func checkPddlDomain(tests []test, t *testing.T) {
 	for _, test := range tests {
-		d, _, err := Parse("", strings.NewReader(test.pddl))
+		dom, err := Parse("", strings.NewReader(test.pddl))
 		if err != nil {
 			t.Errorf("%s\n%s", test.pddl, err)
 			continue
 		}
-		if d == nil {
-			t.Error("not a domain")
-			continue
-		}
-		err = Check(d, nil)
+		err = Check(dom.(*Domain), nil)
 		if test.errMsg == "" {
 			if err != nil {
 				t.Errorf("%s\nunexpected error message: %s",
@@ -178,36 +171,27 @@ func TestCheckProposition(t *testing.T) {
 }
 
 func TestPrintProblem(t *testing.T) {
-	_, ast, err := Parse("", strings.NewReader(prob))
+	pro, err := Parse("", strings.NewReader(prob))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ast == nil {
-		t.Fatal("not a problem")
-	}
 	buf := bytes.NewBuffer([]byte{})
-	PrintProblem(buf, ast)
-	if _, _, err := Parse("", strings.NewReader(buf.String())); err != nil {
+	PrintProblem(buf, pro.(*Problem))
+	if _, err := Parse("", strings.NewReader(buf.String())); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCheck(t *testing.T) {
-	d, _, err := Parse("<domain>", strings.NewReader(dom))
+	dom, err := Parse("<domain>", strings.NewReader(dom))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d == nil {
-		t.Fatal("not a domain")
-	}
-	_, p, err := Parse("<problem>", strings.NewReader(prob))
+	pro, err := Parse("<problem>", strings.NewReader(prob))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p == nil {
-		t.Fatal("not a problem")
-	}
-	if err := Check(d, p); err != nil {
+	if err := Check(dom.(*Domain), pro.(*Problem)); err != nil {
 		t.Error(err)
 	}
 }

@@ -1,0 +1,4 @@
+syntax: glob
+pddlchk/pddlchk
+inertia/inertia
+pddlfmt/pddlfmt

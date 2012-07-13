@@ -1,16 +1,16 @@
 package pddl
 
 import (
-	"testing"
-	"strings"
 	"regexp"
+	"strings"
+	"testing"
 )
 
 var reqsDefTests = []checkDomainTest{
-	{ `(define (domain d) (:requirements :strips))`, "", nil },
-	{ `(define (domain d) (:requirements :foo))`, "not supported", nil },
-	{ `(define (domain d) (:requirements :strips :strips))`, "multiple", nil },
-	{ `(define (domain d) (:requirements :strips :adl :strips))`, "multiple", nil },
+	{`(define (domain d) (:requirements :strips))`, "", nil},
+	{`(define (domain d) (:requirements :foo))`, "not supported", nil},
+	{`(define (domain d) (:requirements :strips :strips))`, "multiple", nil},
+	{`(define (domain d) (:requirements :strips :adl :strips))`, "multiple", nil},
 }
 
 func TestCheckReqsDef(t *testing.T) {
@@ -21,179 +21,179 @@ func TestCheckReqsDef(t *testing.T) {
 
 var requirementsTests = []checkDomainTest{
 	// typing
-	{ `(define (domain d) (:types t))`, ":typing", nil },
-	{ `(define (domain d) (:requirements :typing) (:types t))`, "", nil },
-	{ `(define (domain d) (:requirements :adl) (:types t))`, "", nil },
+	{`(define (domain d) (:types t))`, ":typing", nil},
+	{`(define (domain d) (:requirements :typing) (:types t))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t))`, "", nil},
 
 	// negative-preconditions
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:predicates (p))
 		(:action a :parameters () :precondition (not (p))))`,
-		":negative-preconditions", nil },
-	{ `(define (domain d)
+		":negative-preconditions", nil},
+	{`(define (domain d)
 		(:requirements :negative-preconditions)
 		(:predicates (p))
 		(:action a :parameters () :precondition (not (p))))`,
-		"", nil },
+		"", nil},
 
 	// disjunctive-preconditions
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:predicates (p))
 		(:action a :parameters () :precondition (or (p) (p))))`,
-		":disjunctive-preconditions", nil },
-	{ `(define (domain d)
+		":disjunctive-preconditions", nil},
+	{`(define (domain d)
 		(:predicates (p))
 		(:action a :parameters () :precondition (imply (p) (p))))`,
-		":disjunctive-preconditions", nil },
-	{ `(define (domain d)
+		":disjunctive-preconditions", nil},
+	{`(define (domain d)
 		(:predicates (p))
 		(:action a :parameters () :precondition (not (and (p) (p)))))`,
-		":disjunctive-preconditions", nil },
-	{ `(define (domain d)
+		":disjunctive-preconditions", nil},
+	{`(define (domain d)
 		(:requirements :disjunctive-preconditions)
 		(:predicates (p))
 		(:action a :parameters () :precondition (or (p) (p))))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :disjunctive-preconditions)
 		(:predicates (p))
 		(:action a :parameters () :precondition (imply (p) (p))))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :disjunctive-preconditions)
 		(:predicates (p))
 		(:action a :parameters () :precondition (not (and (p) (p)))))`,
-		"", nil },
+		"", nil},
 
 	// equality
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:constants c)
 		(:action a :parameters () :precondition (=  c c)))`,
-		"undefined", nil },
-	{ `(define (domain d)
+		"undefined", nil},
+	{`(define (domain d)
 		(:requirements :equality)
 		(:constants c)
 		(:action a :parameters () :precondition (=  c c)))`,
-		"", nil },
+		"", nil},
 
 	// universal-preconditions
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:predicates (p ?x))
 		(:action a :parameters () :precondition (forall (?x) (p ?x))))`,
-		":universal-preconditions", nil },
-	{ `(define (domain d)
+		":universal-preconditions", nil},
+	{`(define (domain d)
 		(:requirements :universal-preconditions)
 		(:predicates (p ?x))
 		(:action a :parameters () :precondition (forall (?x) (p ?x))))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :quantified-preconditions)
 		(:predicates (p ?x))
 		(:action a :parameters () :precondition (forall (?x) (p ?x))))`,
-		"", nil },
+		"", nil},
 
 	// existential-preconditions
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:predicates (p ?x))
 		(:action a :parameters () :precondition (exists (?x) (p ?x))))`,
-		":existential-preconditions", nil },
-	{ `(define (domain d)
+		":existential-preconditions", nil},
+	{`(define (domain d)
 		(:requirements :existential-preconditions)
 		(:predicates (p ?x))
 		(:action a :parameters () :precondition (exists (?x) (p ?x))))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :quantified-preconditions)
 		(:predicates (p ?x))
 		(:action a :parameters () :precondition (exists (?x) (p ?x))))`,
-		"", nil },
+		"", nil},
 
 	// conditional-effects
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:predicates (p ?x))
 		(:action a :parameters () :effect (forall (?x) (p ?x))))`,
-		":conditional-effects", nil },
-	{ `(define (domain d)
+		":conditional-effects", nil},
+	{`(define (domain d)
 		(:predicates (p) (q))
 		(:action a :parameters () :effect (when (p) (q))))`,
-		":conditional-effects", nil },
-	{ `(define (domain d)
+		":conditional-effects", nil},
+	{`(define (domain d)
 		(:requirements :conditional-effects)
 		(:predicates (p ?x))
 		(:action a :parameters () :effect (forall (?x) (p ?x))))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :conditional-effects)
 		(:predicates (p) (q))
 		(:action a :parameters () :effect (when (p) (q))))`,
-		"", nil },
+		"", nil},
 
 	// :action-costs
-	{ `(define (domain d)
+	{`(define (domain d)
 		(:functions (total-cost)))`,
-		":action-costs", nil },
-	{ `(define (domain d)
+		":action-costs", nil},
+	{`(define (domain d)
 		(:predicates (p) (q))
 		(:action a :parameters () :effect (increase total-cost 1)))`,
-		":action-costs", nil },
-	{ `(define (domain d)
+		":action-costs", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost ?x))
 		(:action a :parameters (?x) :effect (increase (total-cost ?x) 1)))`,
-		"0-ary total-cost", nil },
-	{ `(define (domain d)
+		"0-ary total-cost", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (foo-bar))
 		(:action a :parameters (?x) :effect (increase foo-bar 1)))`,
-		"0-ary total-cost", nil },
-	{ `(define (domain d)
+		"0-ary total-cost", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost))
 		(:action a :parameters (?x) :effect (increase total-cost -1)))`,
-		"negative", nil },
-	{ `(define (domain d)
+		"negative", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost))
 		(:action a :parameters (?x) :effect (increase total-cost -5)))`,
-		"negative", nil },
-	{ `(define (domain d)
+		"negative", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost))
 		(:action a :parameters (?x) :effect (increase total-cost --1)))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost))
 		(:action a :parameters (?x) :effect (increase total-cost (total-cost))))`,
-		"total-cost", nil },
-	{ `(define (domain d)
+		"total-cost", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:functions (total-cost)))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:predicates (p) (q))
 		(:functions (total-cost))
 		(:action a :parameters () :effect (increase total-cost 1)))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:predicates (p) (q))
 		(:functions (total-cost))
 		(:action a :parameters () :effect (increase total-cost 500)))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:predicates (p) (q))
 		(:functions (total-cost) (f))
 		(:action a :parameters () :effect (increase total-cost (f))))`,
-		"", nil },
-	{ `(define (domain d)
+		"", nil},
+	{`(define (domain d)
 		(:requirements :action-costs)
 		(:predicates (p) (q))
 		(:functions (total-cost) (f ?x))
 		(:action a :parameters (?x) :effect (increase total-cost (f ?x))))`,
-		"", nil },
+		"", nil},
 }
 
 func TestRequirements(t *testing.T) {
@@ -204,44 +204,44 @@ func TestRequirements(t *testing.T) {
 
 var typesDefTests = []checkDomainTest{
 	// undefined type
-	{ `(define (domain d) (:requirements :typing) (:types t - s))`, "undefined", nil },
+	{`(define (domain d) (:requirements :typing) (:types t - s))`, "undefined", nil},
 
 	// object is not undefined
-	{ `(define (domain d) (:requirements :typing) (:types t - object))`, "", nil },
+	{`(define (domain d) (:requirements :typing) (:types t - object))`, "", nil},
 
 	// multiple type definitions
-	{ `(define (domain d) (:requirements :typing) (:types t t))`, "multiple", nil },
-	{ `(define (domain d) (:requirements :typing) (:types t s t))`, "multiple", nil },
+	{`(define (domain d) (:requirements :typing) (:types t t))`, "multiple", nil},
+	{`(define (domain d) (:requirements :typing) (:types t s t))`, "multiple", nil},
 
 	// Everything's OK
-	{ `(define (domain d) (:requirements :typing) (:types t))`, "", nil },
-	{ `(define (domain d) (:requirements :typing) (:types t s))`, "", nil },
-	{ `(define (domain d) (:requirements :typing) (:types t s - object))`, "", nil },
-	{ `(define (domain d) (:requirements :typing) (:types t - s s - object))`, "", nil },
+	{`(define (domain d) (:requirements :typing) (:types t))`, "", nil},
+	{`(define (domain d) (:requirements :typing) (:types t s))`, "", nil},
+	{`(define (domain d) (:requirements :typing) (:types t s - object))`, "", nil},
+	{`(define (domain d) (:requirements :typing) (:types t - s s - object))`, "", nil},
 
 	// OK, but make sure we only have the types we expect.
-	{ `(define (domain d) (:requirements :typing) (:types object))`, "",
-		checkTypes([]string{"object"}) },
-	{ `(define (domain d) (:requirements :typing))`, "",
-		checkTypes([]string{"object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types t))`, "",
-		checkTypes([]string{"object", "t"}) },
+	{`(define (domain d) (:requirements :typing) (:types object))`, "",
+		checkTypes([]string{"object"})},
+	{`(define (domain d) (:requirements :typing))`, "",
+		checkTypes([]string{"object"})},
+	{`(define (domain d) (:requirements :typing) (:types t))`, "",
+		checkTypes([]string{"object", "t"})},
 
 	// OK, but make sure we only have the super typse we expect.
-	{ `(define (domain d))`, "",
-		checkSupers("object", []string{"object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types object))`, "",
-		checkSupers("object", []string{"object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types t))`, "",
-		checkSupers("t", []string{"t", "object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types t - s s))`, "",
-		checkSupers("t", []string{"t", "s", "object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types t - s s - t))`, "",
-		checkSupers("t", []string{"t", "s", "object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types t - s s - u u))`, "",
-		checkSupers("t", []string{"t", "s", "u", "object"}) },
-	{ `(define (domain d) (:requirements :typing) (:types t - s s - u u))`, "",
-		checkSupers("s", []string{"s", "u", "object"}) },
+	{`(define (domain d))`, "",
+		checkSupers("object", []string{"object"})},
+	{`(define (domain d) (:requirements :typing) (:types object))`, "",
+		checkSupers("object", []string{"object"})},
+	{`(define (domain d) (:requirements :typing) (:types t))`, "",
+		checkSupers("t", []string{"t", "object"})},
+	{`(define (domain d) (:requirements :typing) (:types t - s s))`, "",
+		checkSupers("t", []string{"t", "s", "object"})},
+	{`(define (domain d) (:requirements :typing) (:types t - s s - t))`, "",
+		checkSupers("t", []string{"t", "s", "object"})},
+	{`(define (domain d) (:requirements :typing) (:types t - s s - u u))`, "",
+		checkSupers("t", []string{"t", "s", "u", "object"})},
+	{`(define (domain d) (:requirements :typing) (:types t - s s - u u))`, "",
+		checkSupers("s", []string{"s", "u", "object"})},
 }
 
 // checkTypes returns a function that scans through
@@ -313,9 +313,9 @@ func TestCheckTypesDef(t *testing.T) {
 }
 
 type checkDomainTest struct {
-	pddl string
+	pddl        string
 	errorRegexp string
-	test func(string, *Domain, *testing.T)
+	test        func(string, *Domain, *testing.T)
 }
 
 func (c checkDomainTest) run(t *testing.T) {

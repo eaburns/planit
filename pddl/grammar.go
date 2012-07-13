@@ -1,8 +1,8 @@
 package pddl
 
 import (
-	"log"
 	"io"
+	"log"
 )
 
 // Parse returns either a domain, a problem or a parse error.
@@ -331,7 +331,7 @@ func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
 	lit.Node = Node{p.Loc()}
 	var id Name
 	if p.accept(tokEq) {
-		id = Name{ "=", lit.Node.Loc() }
+		id = Name{"=", lit.Node.Loc()}
 	} else if id, err = parseName(p, tokName); err != nil {
 		return
 	}

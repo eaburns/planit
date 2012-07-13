@@ -25,13 +25,13 @@ func main() {
 	}
 
 	if len(os.Args) > 2 {
-		ast, err := parseFile(os.Args[1])
+		ast, err := parseFile(os.Args[2])
 		if err != nil {
 			log.Fatal(err)
 		}
 		switch r := ast.(type) {
 		case *pddl.Domain:
-			if prob == nil {
+			if dom != nil {
 				panic("two domains specified")
 			}
 			dom = r

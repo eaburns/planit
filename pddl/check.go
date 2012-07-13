@@ -565,22 +565,31 @@ func (a *AssignNode) check(defs defs) error {
 	if err := a.Lval.check(defs); err != nil {
 		return err
 	}
-	if a.Lval.Definition.Str != totalCostName || len(a.Lval.Definition.Parameters) > 0 {
-		return makeError(a.Lval, ":action-costs only allows the 0-ary total-cost function as the target of an assignments")
-	}
+
 	if a.IsNumber {
 		if negative(a.Number) {
-			return makeError(a, ":action-costs disallows negative numbers as the right-hand-side of an assignment")
+			return makeError(a, "assigned value must not be negative with :action-costs")
 		}
 	} else {
-		if a.Fhead.Str == "total-cost" {
-			return makeError(a.Fhead, ":action-costs does not allow total-cost as the right-hand-side of an assignment")
-		}
 		if err := a.Fhead.check(defs); err != nil {
 			return err
 		}
 	}
+
+	if !a.IsInit {
+		if !a.Lval.Definition.isTotalCost() {
+			return makeError(a.Lval, "assignment target must be a 0-ary total-cost function with :action-costs")
+		}
+		if !a.IsNumber && a.Fhead.Definition.isTotalCost() {
+			return makeError(a.Fhead, "assigned value must not be total-cost with :action-costs")
+		}
+	}
+
 	return nil
+}
+
+func (f *Function) isTotalCost() bool {
+	return f.Str == totalCostName && len(f.Parameters) == 0
 }
 
 // negative returns true if the string is a negative number.

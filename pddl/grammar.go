@@ -1,6 +1,7 @@
 package pddl
 
 import (
+	"log"
 	"io"
 )
 
@@ -160,7 +161,10 @@ func parseFuncsDef(p *parser) (funs []Function, err error) {
 func parseTypedListString(p *parser, typ tokenType) (lst []TypedEntry, err error) {
 	for {
 		ids := parseNames(p, typ)
-		if len(ids) == 0 {
+		if len(ids) == 0 && p.peek().typ == tokMinus {
+			log.Println("Parser hack: allowing an empty name list in front of a type in a typed list")
+			log.Println("This seems to be required for IPC 2008 woodworking-strips/p11-domain.pddl")
+		} else if len(ids) == 0 {
 			break
 		}
 		var t []TypeName
@@ -674,6 +678,7 @@ func parseInitEl(p *parser) (form Formula, err error) {
 		}
 		asn.IsNumber = true
 		asn.Number = t[0].text
+		asn.IsInit = true
 		form = asn
 		err = p.expect(")")
 		return

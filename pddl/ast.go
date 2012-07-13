@@ -199,6 +199,10 @@ type AssignNode struct {
 	Fhead    Fhead
 
 	Node
+
+	// IsInit is true if the assignment is appearing
+	// in the :init section of a problem.
+	IsInit bool
 }
 
 type Fhead struct {

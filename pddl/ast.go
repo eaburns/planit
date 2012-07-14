@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// A Domain represents a PDDL domain definition.
 type Domain struct {
 	Name
 	Requirements []Name
@@ -15,6 +16,8 @@ type Domain struct {
 	Actions      []Action
 }
 
+// A Problem represents a PDDL planning
+// problem definition
 type Problem struct {
 	Name
 	Domain       Name
@@ -25,13 +28,22 @@ type Problem struct {
 	Metric       Metric
 }
 
+// A Metric represents planning metric that
+// must be optimized.
 type Metric int
 
 const (
+	// MetricMakespan asks the planner to
+	// optimize the number of actions in
+	// the plan.
 	MetricMakespan Metric = iota
+
+	// MetricMinCost asks the planner to
+	// minimize the total-cost function.
 	MetricMinCost
 )
 
+// A Name represents the name of an entity.
 type Name struct {
 	Str string
 	Location
@@ -41,6 +53,7 @@ func (n Name) String() string {
 	return n.Str
 }
 
+// A Type represents a type definition.
 type Type struct {
 	TypedEntry
 
@@ -53,28 +66,61 @@ type Type struct {
 	Objects []*TypedEntry
 }
 
-type Action struct {
-	Name
-	Parameters   []TypedEntry
-	Precondition Formula
-	Effect       Formula
-}
-
+// A TypedEntry is the entry of a typed list.
 type TypedEntry struct {
+	// Name is the name of the entry.
 	Name
-	Num   int
+
+	// Num is a number assigned to this
+	// entry.  The number is unique within
+	// the class of the entry: constants,
+	// variables, function, etc.
+	Num int
+
+	// Types is the disjunctive set of types
+	// for this entry.
 	Types []TypeName
 }
 
+// A TypeName represents a name that is
+// referring to a type.
 type TypeName struct {
+	// Name is the name of the type.
 	Name
 
+	// Definition is a pointer to the definition
+	// of the type to which this name refers.
 	Definition *Type
 }
 
-type Predicate struct {
+// An Action represents an action definition.
+type Action struct {
+	// Name is the name of the action.
 	Name
-	Num        int
+
+	// Parameters is a typed list of the parameter
+	// names for the action.
+	Parameters []TypedEntry
+
+	// Precondition is the action precondition
+	// formula.
+	Precondition Formula
+
+	// Effect is the action effect formula.
+	Effect Formula
+}
+
+// A Predicates represents a predicate definition.
+type Predicate struct {
+	// Name is the name of the predicate.
+	Name
+
+	// Num is a unique number assigned
+	// the predicate.
+	Num int
+
+	// Parameters is a typed list of the predicate
+	// parameters.
 	Parameters []TypedEntry
 
 	// PosEffect and NegEffect are true if the predicate
@@ -84,13 +130,26 @@ type Predicate struct {
 	PosEffect, NegEffect bool
 }
 
+// A Functions represents a function definition.
 type Function struct {
+	// Name is the name of the function.
 	Name
-	Num        int
-	Types      []TypeName
+
+	// Num is a unique number assigned to the
+	// function.
+	Num int
+
+	// Types is a disjunctive list of the types
+	// for the evaluation of this function.
+	Types []TypeName
+
+	// Parameters is a typed list of the function
+	// parameters.
 	Parameters []TypedEntry
 }
 
+// A Formula represents either a PDDL goal
+// description (GD), or an expression.
 type Formula interface {
 	// print prints the formula as valid PDDL
 	// to an io.Writed, prefixed with a string
@@ -103,34 +162,50 @@ type Formula interface {
 	check(defs) error
 }
 
+// A Node is a node in the formula tree.
 type Node struct{ Location }
 
+// A UnaryNode is a node with only a
+// single successor.
 type UnaryNode struct {
 	Node
 	Formula Formula
 }
 
+// A BinaryNode is a node with two successors.
 type BinaryNode struct {
 	Node
 	Left, Right Formula
 }
 
+// A MultiNode is a node with a slice of successors.
 type MultiNode struct {
 	Node
 	Formula []Formula
 }
 
+// A QuantNode is a node with a single successor
+// that also declares a typed list of variables.
 type QuantNode struct {
 	Variables []TypedEntry
 	UnaryNode
 }
 
+// A LiteralNode represents the instantiation of
+// a predicate.
 type LiteralNode struct {
-	Predicate  Name
-	Negative   bool
-	Definition *Predicate
-	Arguments  []Term
 	Node
+
+	// Predicate is the name of the predicate.
+	Predicate Name
+
+	// Negative is true if this literal is negative,
+	// or it is false if the predicate is positive.
+	Negative bool
+
+	// Arguments are the terms that are passed
+	// as the arguments to this instantiation.
+	Arguments []Term
 
 	// IsEffect is true if the literal is appearing
 	// in an unconditional effect or as a
@@ -138,10 +213,20 @@ type LiteralNode struct {
 	// This is used to determine inertia for
 	// the literal's predicate.
 	IsEffect bool
+
+	// Definition is a pointer to the definition
+	// of the predicate to which this literal refers.
+	Definition *Predicate
 }
 
+// A Term represents either a constant or a variable.
 type Term struct {
+	// Name is the name of the term.
 	Name
+
+	// Variable is true if this term is referring
+	// to a variable and it is false if this term
+	// is referring to a constant.
 	Variable bool
 
 	// Definition points to the variable
@@ -149,14 +234,23 @@ type Term struct {
 	Definition *TypedEntry
 }
 
+// An AndNode represents a conjunction of its
+// successors.
 type AndNode struct{ MultiNode }
 
+// An OrNode represents a disjunction of its
+// successors.
 type OrNode struct{ MultiNode }
 
+// A NotNode represents the negation of its
+// successor.
 type NotNode struct{ UnaryNode }
 
+// An ImplyNode represents an antecedent and
+// its consequent.
 type ImplyNode struct{ BinaryNode }
 
+// A ForallNode represents a universal quantifier.
 type ForallNode struct {
 	QuantNode
 
@@ -169,10 +263,17 @@ type ForallNode struct {
 	IsEffect bool
 }
 
+// An ExistsNode represents an existential quantifier.
 type ExistsNode struct{ QuantNode }
 
+// A WhenNode represents a conditional effect.
 type WhenNode struct {
+	// Condition is the condition of the
+	// conditional effect.
 	Condition Formula
+
+	// The Formula of the UnaryNode is the
+	// consequent of the conditional effect.
 	UnaryNode
 }
 
@@ -185,8 +286,16 @@ var (
 	}
 )
 
+// An AssignNode represents the assingment of a
+// value to a function.
 type AssignNode struct {
-	Op   Name
+	Node
+
+	// Op is the assignment operation.
+	Op Name
+
+	// Lval is the function to which a value is
+	// being assigned.
 	Lval Fhead
 
 	// IsNumber is true if the right-hand-side
@@ -195,20 +304,34 @@ type AssignNode struct {
 	// If IsNumber is false, then the opposite
 	// is the case.
 	IsNumber bool
-	Number   string
-	Fhead    Fhead
 
-	Node
+	// Number is valid if IsNumber is true, in
+	// which case it is a string representing
+	// the number being assigned.
+	Number string
+
+	// Fhead is valid if IsNumber is false, in
+	// which case it is the function instantiation
+	// being assigned.
+	Fhead Fhead
 
 	// IsInit is true if the assignment is appearing
 	// in the :init section of a problem.
 	IsInit bool
 }
 
+// Fhead represents a function instantiation.
 type Fhead struct {
+	// Name is the name of the function.
 	Name
+
+	// Arguments is the slice of terms used as
+	// the arguments to the function's parameters.
+	Arguments []Term
+
+	// Definition is a pointer to the definition
+	// of the function to which this Fhead refers.
 	Definition *Function
-	Arguments  []Term
 }
 
 // Locer wraps the Loc method.
@@ -218,7 +341,9 @@ type Locer interface {
 
 // A Location is a location in a PDDL input file.
 type Location struct {
+	// File is the file name.
 	File string
+	// Line is the line number.
 	Line int
 }
 
@@ -236,7 +361,11 @@ func (l Location) String() string {
 // An Error holds information about errors
 // assocated with locations in a PDDL file.
 type Error struct {
+	// Location is the location of the
+	// cause of the error.
 	Location
+
+	// msg is the error's message.
 	msg string
 }
 

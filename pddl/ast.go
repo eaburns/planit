@@ -7,25 +7,53 @@ import (
 
 // A Domain represents a PDDL domain definition.
 type Domain struct {
+	// Name is the name of the domain.
 	Name
+
+	// Requirements is the requirement definitions.
 	Requirements []Name
-	Types        []Type
-	Constants    []TypedEntry
-	Predicates   []Predicate
-	Functions    []Function
-	Actions      []Action
+
+	// Types is the type definitions.
+	Types []Type
+
+	// Constants is the constant definitions.
+	Constants []TypedEntry
+
+	// Predicates is the predicate definitions.
+	Predicates []Predicate
+
+	// Functions is the function definitions.
+	Functions []Function
+
+	// Actions is the action definitions.
+	Actions []Action
 }
 
 // A Problem represents a PDDL planning
 // problem definition
 type Problem struct {
+	// Name is the problem name.
 	Name
-	Domain       Name
+
+	// Domain is the name of the domain for
+	// which this is a problem.
+	Domain Name
+
+	// Requirements is the requirement definitions.
 	Requirements []Name
-	Objects      []TypedEntry
-	Init         []Formula
-	Goal         Formula
-	Metric       Metric
+
+	// Objects is the object definitions.
+	Objects []TypedEntry
+
+	// Init is a conjunction of initial conditions
+	// for the problem.
+	Init []Formula
+
+	// Goal is the problem goal formula.
+	Goal Formula
+
+	// Metric is the metric that must be optimized.
+	Metric Metric
 }
 
 // A Metric represents planning metric that

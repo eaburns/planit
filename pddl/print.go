@@ -104,18 +104,18 @@ func printFuncsDef(w io.Writer, fs []Function) {
 
 func printAction(w io.Writer, act Action) {
 	fmt.Fprintf(w, "%s(:action %s\n", indent(1), act.Name)
-	fmt.Fprintf(w, "%s:parameters (", indent(3))
+	fmt.Fprintf(w, "%s:parameters (", indent(2))
 	printTypedNames(w, "", act.Parameters)
 	fmt.Fprint(w, ")")
 	if act.Precondition != nil {
 		fmt.Fprint(w, "\n")
-		fmt.Fprintf(w, "%s:precondition\n", indent(3))
-		act.Precondition.print(w, indent(4))
+		fmt.Fprintf(w, "%s:precondition\n", indent(2))
+		act.Precondition.print(w, indent(3))
 	}
 	if act.Effect != nil {
 		fmt.Fprint(w, "\n")
-		fmt.Fprintf(w, "%s:effect\n", indent(3))
-		act.Effect.print(w, indent(4))
+		fmt.Fprintf(w, "%s:effect\n", indent(2))
+		act.Effect.print(w, indent(3))
 	}
 	fmt.Fprintln(w, ")")
 }
@@ -218,8 +218,8 @@ func typeString(t []TypeName) (str string) {
 
 func (lit *LiteralNode) print(w io.Writer, prefix string) {
 	if lit.Negative {
-		fmt.Fprintln(w, "(not")
-		prefix += indent(1)
+		fmt.Fprintf(w, "%s(not ", prefix)
+		prefix = ""
 	}
 	fmt.Fprintf(w, "%s(", prefix)
 	fmt.Fprint(w, lit.Predicate)

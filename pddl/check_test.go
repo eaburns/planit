@@ -319,7 +319,12 @@ var constsDefTests = []checkDomainTest {
 	{`(define (domain d) (:constants))`, "", nil},
 	{`(define (domain d) (:constants a b c))`, "", nil},
 	{`(define (domain d) (:constants a b c a))`, "multiple", nil},
+	{`(define (domain d) (:requirements :typing) (:constants a - t))`, "undefined", nil},
 	{`(define (domain d) (:constants a b))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
+			checkConstsTypes("a", []string{"object"}),
+			checkConstsTypes("b", []string{"object"}))},
+	{`(define (domain d) (:requirements :typing) (:constants a b - object))`, "",
 		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
 			checkConstsTypes("a", []string{"object"}),
 			checkConstsTypes("b", []string{"object"}))},
@@ -361,40 +366,41 @@ func checkTypeConsts(tName string, consts []string) func(string, *Domain, *testi
 	return func(pddl string, d *Domain, t *testing.T) {
 		typ := findType(tName, d.Types)
 		if typ == nil {
-			t.Fatalf("type %s: not found", tName)
+			t.Fatalf("%s\ntype %s: not found", pddl, tName)
 		}
 		for _, con := range consts {
 			found := false
 			for _, obj := range typ.Objects {
 				if con == obj.Str {
 					if found {
-						t.Errorf("type %s: has constant %s multiple times", typ, obj)
+						t.Errorf("%s\ntype %s: has constant %s multiple times",
+							pddl, typ, obj)
 					}
 					found = true
 				}
 			}
 			if !found {
-				t.Errorf("type %s: no object %s", tName, con)
+				t.Errorf("%s\ntype %s: no object %s", pddl, tName, con)
 			}
 		}
 	}
 }
 
 // checkConstsTypes returns a function
-// that checks the types assigned to each
-// of the constants in a consts definition.
+// that checks the types assigned to the
+// given constant in a consts definition.
 func checkConstsTypes(eName string, types []string) func(string, *Domain, *testing.T) {
 	return func(pddl string, d *Domain, t *testing.T) {
-		checkEntryTypes(eName, types, d.Constants, t)
+		checkEntryTypes(pddl, eName, types, d.Constants, t)
 	}
 }
 
 // checkEntryTypes checks that the given
 // typed entry has all of the given types.
-func checkEntryTypes(eName string, types []string, lst []TypedEntry, t *testing.T) {
+func checkEntryTypes(pddl, eName string, types []string, lst []TypedEntry, t *testing.T) {
 	ent := findTypedEntry(eName, lst)
 	if ent == nil {
-		t.Fatalf("typed entry %s: not found", eName)
+		t.Fatalf("%s\ntyped entry %s: not found", pddl, eName)
 	}
 	if len(ent.Types) != len(types) {
 		t.Fatalf("typed entry %s: expected %d types, got %d",
@@ -405,15 +411,15 @@ func checkEntryTypes(eName string, types []string, lst []TypedEntry, t *testing.
 		for _, tp := range ent.Types {
 			if tp.Str == typ {
 				if tp.Definition.Str != typ {
-					t.Errorf("typed entry %s: type %s linked to wrong definition: %s",
-						eName, typ, tp.Definition.Str)
+					t.Errorf("%s\ntyped entry %s: type %s linked to wrong definition: %s",
+						pddl, eName, typ, tp.Definition.Str)
 				}
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("typed entry %s: missing type %s", eName, typ)
+			t.Errorf("%s\ntyped entry %s: missing type %s", pddl, eName, typ)
 		}
 	}
 }
@@ -444,6 +450,52 @@ func domainChecks(fs ...func(string, *Domain, *testing.T)) func(string, *Domain,
 
 func TestCheckConstsDef(t *testing.T) {
 	for _, test := range constsDefTests {
+		test.run(t)
+	}
+}
+
+var predsDefTests = []checkDomainTest {
+	{`(define (domain d) (:predicates (p)))`, "", nil},
+	{`(define (domain d) (:predicates (p) (q)))`, "", nil},
+	{`(define (domain d) (:predicates (p ?a ?b)))`, "",
+		domainChecks(checkParamTypes("p", "?a", []string{"object"}),
+		checkParamTypes("p", "?b", []string{"object"}))},
+	{`(define (domain d) (:predicates (p ?a ?a)))`, "multiple", nil},
+	{`(define (domain d) (:requirements :typing) (:types t) (:predicates (p ?a - t)))`, "",
+		checkParamTypes("p", "?a", []string{"t"})},
+	{`(define (domain d) (:requirements :typing) (:types s t) (:predicates (p ?a - (either s t))))`, "",
+		checkParamTypes("p", "?a", []string{"t", "s"})},
+	{`(define (domain d) (:requirements :typing) (:types t) (:predicates (p ?a - t ?b)))`, "",
+		domainChecks(checkParamTypes("p", "?a", []string{"t"}),
+			checkParamTypes("p", "?b", []string{"object"}))},
+}
+
+// checkPredParamTypes returns a function
+// that checks the types assigned to given
+// predicate's parameter.
+func checkParamTypes(pred string, parm string, types []string) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		p := findPred(pred, d.Predicates)
+		if p == nil {
+			t.Fatalf("%s\npredicate %s: not found", pddl, pred)
+		}
+		checkEntryTypes(pddl, parm, types, p.Parameters, t)
+	}
+}
+
+// findPred returns a pointer to the predicate with
+// the matching name, if one exists.
+func findPred(pred string, preds []Predicate) *Predicate {
+	for i := range preds {
+		if preds[i].Str == pred {
+			return &preds[i]
+		}
+	}
+	return nil
+}
+
+func TestCheckPredsDef(t *testing.T) {
+	for _, test := range predsDefTests {
 		test.run(t)
 	}
 }

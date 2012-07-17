@@ -179,7 +179,7 @@ func parseTypedListString(p *parser, typ tokenType) (lst []TypedEntry, err error
 }
 
 func parseType(p *parser) (typ []TypeName, err error) {
-	if !p.accept(tokMinus) {
+	if !p.accept("-") {
 		return
 	}
 	if p.accept("(") {
@@ -226,7 +226,7 @@ func parseFunctionTypedList(p *parser) (funs []Function, err error) {
 }
 
 func parseFunctionType(p *parser) (typ []TypeName, err error) {
-	if !p.accept(tokMinus) {
+	if !p.accept("-") {
 		return
 	}
 	var t []token
@@ -330,7 +330,7 @@ func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
 	}
 	lit.Node = Node{p.Loc()}
 	var id Name
-	if p.accept(tokEq) {
+	if p.accept("=") {
 		id = Name{"=", lit.Node.Loc()}
 	} else if id, err = parseName(p, tokName); err != nil {
 		return

@@ -67,22 +67,31 @@ func (p *parser) acceptTokens(vls ...interface{}) ([]token, bool) {
 	if len(vls) > cap(p.peeks) {
 		panic("too many peeks in accept")
 	}
-	var toks []token
+	toks := make([]token, len(vls))
 	for i := range vls {
 		if !p.peekn(i + 1).matches(vls[i]) {
 			return nil, false
 		}
-		toks = append(toks, p.peekn(i+1))
+		toks[i] = p.peekn(i+1)
 	}
 	p.junk(len(vls))
 	return toks, true
 }
 
 // accept is just like acceptTokens except that it
-// only returns the boolean value.
-func (p *parser) accept(vls ...interface{}) bool {
-	_, ok := p.acceptTokens(vls...)
-	return ok
+// only allows strings for arguments and it only
+// returns the boolean value.
+func (p *parser) accept(vls ...string) bool {
+	if len(vls) > cap(p.peeks) {
+		panic("too many peeks in accept")
+	}
+	for i := range vls {
+		if p.peekn(i + 1).text != vls[i] {
+			return false
+		}
+	}
+	p.junk(len(vls))
+	return true
 }
 
 // expectTokens expects the next tokens to match
@@ -94,20 +103,26 @@ func (p *parser) accept(vls ...interface{}) bool {
 // A tokenType matches a token on its type, and a
 // string matches on its text.
 func (p *parser) expectTokens(vls ...interface{}) ([]token, error) {
-	var toks []token
+	toks := make([]token, len(vls))
 	for i := range vls {
-		t := p.peek()
-		if !p.peek().matches(vls[i]) {
+		t := p.next()
+		if !t.matches(vls[i]) {
 			return nil, makeError(p, "expected %s, got %s", vls[i], t)
 		}
-		toks = append(toks, p.next())
+		toks[i] = t
 	}
 	return toks, nil
 }
 
 // except is just like expectTokens except that it
-// only returns the error value.
-func (p *parser) expect(vls ...interface{}) error {
-	_, err := p.expectTokens(vls...)
-	return err
+// only accepts strings and it only returns the error
+// value.
+func (p *parser) expect(vls ...string) error {
+	for i := range vls {
+		t := p.next()
+		if t.text != vls[i] {
+			return makeError(p, "expected %s, got %s", vls[i], t)
+		}
+	}
+	return nil
 }

@@ -105,28 +105,42 @@ func checkDomain(d *Domain) (defs, error) {
 	if err := checkFuncsDef(defs, d.Functions); err != nil {
 		return defs, err
 	}
-	for _, act := range d.Actions {
-		if err := checkTypedEntries(defs, act.Parameters); err != nil {
+	for i := range d.Actions {
+		if err := checkActionDef(defs, &d.Actions[i]); err != nil {
 			return defs, err
-		}
-		for i := range act.Parameters {
-			defs.vars = defs.vars.push(&act.Parameters[i])
-		}
-		if act.Precondition != nil {
-			if err := act.Precondition.check(defs); err != nil {
-				return defs, err
-			}
-		}
-		if act.Effect != nil {
-			if err := act.Effect.check(defs); err != nil {
-				return defs, err
-			}
-		}
-		for _ = range act.Parameters {
-			defs.vars.pop()
 		}
 	}
 	return defs, nil
+}
+
+func checkActionDef(defs defs, act *Action) error {
+	if err := checkTypedEntries(defs, act.Parameters); err != nil {
+		return err
+	}
+	counts := make(map[string]int, len(act.Parameters))
+	for _, parm := range act.Parameters {
+		if counts[parm.Str] > 0 {
+			return makeError(parm, "%s is defined multiple times", parm)
+		}
+		counts[parm.Str]++
+	}
+	for i := range act.Parameters {
+		defs.vars = defs.vars.push(&act.Parameters[i])
+	}
+	if act.Precondition != nil {
+		if err := act.Precondition.check(defs); err != nil {
+			return err
+		}
+	}
+	if act.Effect != nil {
+		if err := act.Effect.check(defs); err != nil {
+			return err
+		}
+	}
+	for _ = range act.Parameters {
+		defs.vars.pop()
+	}
+	return nil
 }
 
 // push returns a new varDefs with the given

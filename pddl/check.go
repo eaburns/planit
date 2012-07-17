@@ -310,6 +310,13 @@ func checkPredsDef(defs defs, d *Domain) error {
 		if err := checkTypedEntries(defs, p.Parameters); err != nil {
 			return err
 		}
+		counts := make(map[string]int, len(p.Parameters))
+		for _, parm := range p.Parameters {
+			if counts[parm.Str] > 0 {
+				return makeError(parm, "%s is defined multiple times", parm)
+			}
+			counts[parm.Str]++
+		}
 		defs.preds[p.Str] = &d.Predicates[i]
 		d.Predicates[i].Num = i
 	}
@@ -339,6 +346,13 @@ func checkFuncsDef(defs defs, fs []Function) error {
 		}
 		if err := checkTypedEntries(defs, f.Parameters); err != nil {
 			return err
+		}
+		counts := make(map[string]int, len(f.Parameters))
+		for _, parm := range f.Parameters {
+			if counts[parm.Str] > 0 {
+				return makeError(parm, "%s is defined multiple times", parm)
+			}
+			counts[parm.Str]++
 		}
 		defs.funcs[f.Str] = &fs[i]
 		fs[i].Num = i

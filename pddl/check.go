@@ -113,44 +113,6 @@ func checkDomain(d *Domain) (defs, error) {
 	return defs, nil
 }
 
-func checkActionDef(defs defs, act *Action) error {
-	if err := checkTypedEntries(defs, act.Parameters); err != nil {
-		return err
-	}
-	counts := make(map[string]int, len(act.Parameters))
-	for i, parm := range act.Parameters {
-		if counts[parm.Str] > 0 {
-			return makeError(parm, "%s is defined multiple times", parm)
-		}
-		counts[parm.Str]++
-		defs.vars = defs.vars.push(&act.Parameters[i])
-	}
-	if act.Precondition != nil {
-		if err := act.Precondition.check(defs); err != nil {
-			return err
-		}
-	}
-	if act.Effect != nil {
-		if err := act.Effect.check(defs); err != nil {
-			return err
-		}
-	}
-	for _ = range act.Parameters {
-		defs.vars.pop()
-	}
-	return nil
-}
-
-// push returns a new varDefs with the given
-// definitions defined.
-func (v *varDefs) push(d *TypedEntry) *varDefs {
-	return &varDefs{
-		up:         v,
-		name:       d.Str,
-		definition: d,
-	}
-}
-
 func checkReqsDef(defs defs, rs []Name) error {
 	for _, r := range rs {
 		if !supportedReqs[r.Str] {
@@ -370,6 +332,44 @@ func checkFuncsDef(defs defs, fs []Function) error {
 		fs[i].Num = i
 	}
 	return nil
+}
+
+func checkActionDef(defs defs, act *Action) error {
+	if err := checkTypedEntries(defs, act.Parameters); err != nil {
+		return err
+	}
+	counts := make(map[string]int, len(act.Parameters))
+	for i, parm := range act.Parameters {
+		if counts[parm.Str] > 0 {
+			return makeError(parm, "%s is defined multiple times", parm)
+		}
+		counts[parm.Str]++
+		defs.vars = defs.vars.push(&act.Parameters[i])
+	}
+	if act.Precondition != nil {
+		if err := act.Precondition.check(defs); err != nil {
+			return err
+		}
+	}
+	if act.Effect != nil {
+		if err := act.Effect.check(defs); err != nil {
+			return err
+		}
+	}
+	for _ = range act.Parameters {
+		defs.vars.pop()
+	}
+	return nil
+}
+
+// push returns a new varDefs with the given
+// definitions defined.
+func (v *varDefs) push(d *TypedEntry) *varDefs {
+	return &varDefs{
+		up:         v,
+		name:       d.Str,
+		definition: d,
+	}
 }
 
 // checkTypedEntries ensures that the types

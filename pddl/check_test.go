@@ -458,22 +458,22 @@ var predsDefTests = []checkDomainTest {
 	{`(define (domain d) (:predicates (p)))`, "", nil},
 	{`(define (domain d) (:predicates (p) (q)))`, "", nil},
 	{`(define (domain d) (:predicates (p ?a ?b)))`, "",
-		domainChecks(checkParamTypes("p", "?a", []string{"object"}),
-		checkParamTypes("p", "?b", []string{"object"}))},
+		domainChecks(checkPredParamTypes("p", "?a", []string{"object"}),
+			checkPredParamTypes("p", "?b", []string{"object"}))},
 	{`(define (domain d) (:predicates (p ?a ?a)))`, "multiple", nil},
 	{`(define (domain d) (:requirements :typing) (:types t) (:predicates (p ?a - t)))`, "",
-		checkParamTypes("p", "?a", []string{"t"})},
+		checkPredParamTypes("p", "?a", []string{"t"})},
 	{`(define (domain d) (:requirements :typing) (:types s t) (:predicates (p ?a - (either s t))))`, "",
-		checkParamTypes("p", "?a", []string{"t", "s"})},
+		checkPredParamTypes("p", "?a", []string{"t", "s"})},
 	{`(define (domain d) (:requirements :typing) (:types t) (:predicates (p ?a - t ?b)))`, "",
-		domainChecks(checkParamTypes("p", "?a", []string{"t"}),
-			checkParamTypes("p", "?b", []string{"object"}))},
+		domainChecks(checkPredParamTypes("p", "?a", []string{"t"}),
+			checkPredParamTypes("p", "?b", []string{"object"}))},
 }
 
 // checkPredParamTypes returns a function
 // that checks the types assigned to given
 // predicate's parameter.
-func checkParamTypes(pred string, parm string, types []string) func(string, *Domain, *testing.T) {
+func checkPredParamTypes(pred string, parm string, types []string) func(string, *Domain, *testing.T) {
 	return func(pddl string, d *Domain, t *testing.T) {
 		p := findPred(pred, d.Predicates)
 		if p == nil {
@@ -496,6 +496,52 @@ func findPred(pred string, preds []Predicate) *Predicate {
 
 func TestCheckPredsDef(t *testing.T) {
 	for _, test := range predsDefTests {
+		test.run(t)
+	}
+}
+
+var funcsDefTests = []checkDomainTest {
+	{`(define (domain d) (:requirements :action-costs) (:functions (f)))`, "", nil},
+	{`(define (domain d) (:requirements :action-costs) (:functions (f) (g)))`, "", nil},
+	{`(define (domain d) (:requirements :action-costs) (:functions (f ?a ?b)))`, "",
+		domainChecks(checkFuncParamTypes("f", "?a", []string{"object"}),
+			checkFuncParamTypes("f", "?b", []string{"object"}))},
+	{`(define (domain d) (:requirements :action-costs) (:functions (f ?a ?a)))`, "multiple", nil},
+	{`(define (domain d) (:requirements :typing :action-costs) (:types t) (:functions (f ?a - t)))`, "",
+		checkFuncParamTypes("f", "?a", []string{"t"})},
+	{`(define (domain d) (:requirements :typing :action-costs) (:types s t) (:functions (f ?a - (either s t))))`, "",
+		checkFuncParamTypes("f", "?a", []string{"t", "s"})},
+	{`(define (domain d) (:requirements :typing :action-costs) (:types t) (:functions (f ?a - t ?b)))`, "",
+		domainChecks(checkFuncParamTypes("f", "?a", []string{"t"}),
+			checkFuncParamTypes("f", "?b", []string{"object"}))},
+}
+
+// checkFuncParamTypes returns a function
+// that checks the types assigned to given
+// functions's parameter.
+func checkFuncParamTypes(fun string, parm string, types []string) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		f := findFunc(fun, d.Functions)
+		if f == nil {
+			t.Fatalf("%s\nfunction %s: not found", pddl, fun)
+		}
+		checkEntryTypes(pddl, parm, types, f.Parameters, t)
+	}
+}
+
+// findFunc returns a pointer to the function
+// with the matching name, if one exists.
+func findFunc(fun string, funcs []Function) *Function {
+	for i := range funcs {
+		if funcs[i].Str == fun {
+			return &funcs[i]
+		}
+	}
+	return nil
+}
+
+func TestCheckFuncsDef(t *testing.T) {
+	for _, test := range funcsDefTests {
 		test.run(t)
 	}
 }

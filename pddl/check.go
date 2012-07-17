@@ -436,6 +436,13 @@ func (q *QuantNode) check(defs defs) error {
 	if err := checkTypedEntries(defs, q.Variables); err != nil {
 		return err
 	}
+	counts := make(map[string]int, len(q.Variables))
+	for _, v := range q.Variables {
+		if counts[v.Str] > 0 {
+			return makeError(v, "%s is defined multiple times", v)
+		}
+		counts[v.Str]++
+	}
 	for i := range q.Variables {
 		defs.vars = defs.vars.push(&q.Variables[i])
 	}

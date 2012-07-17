@@ -1,17 +1,47 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"planit/pddl"
+	"runtime/pprof"
+)
+
+var (
+	cpuProfile = flag.String("cpuprof", "", "write CPU profile to this file")
+	memProfile = flag.String("memprof", "", "write memory profile to this file")
 )
 
 func main() {
+	flag.Parse()
 	log.SetFlags(0)
 	var dom *pddl.Domain
 	var prob *pddl.Problem
 
-	ast, err := parseFile(os.Args[1])
+	if len(flag.Args()) == 0 {
+		return
+	}
+
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	if *memProfile != "" {
+		f, err := os.Create(*memProfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+		return
+	}
+
+	ast, err := parseFile(flag.Arg(0))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,20 +54,20 @@ func main() {
 		panic("Impossible")
 	}
 
-	if len(os.Args) > 2 {
-		ast, err := parseFile(os.Args[2])
+	if len(flag.Args()) > 1 {
+		ast, err := parseFile(flag.Arg(1))
 		if err != nil {
 			log.Fatal(err)
 		}
 		switch r := ast.(type) {
 		case *pddl.Domain:
 			if dom != nil {
-				panic("two domains specified")
+				log.Fatal("two domains specified")
 			}
 			dom = r
 		case *pddl.Problem:
 			if dom == nil {
-				panic("no domain specified")
+				log.Fatal("no domain specified")
 			}
 			prob = r
 		default:

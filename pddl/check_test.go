@@ -606,6 +606,170 @@ func TestCheckActionsDef(t *testing.T) {
 	}
 }
 
+var quantNodeTests = []checkDomainTest {
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (forall () (and))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (forall (?a) (and))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (forall (?a ?b) (and))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (forall (?a ?a) (and))))`, "multiple", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (forall (?a - t) (and))))`, "undefined", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:action a :parameters ()
+		:precondition (forall (?a - (either s t)) (and))))`, "undefined", nil},
+
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (exists () (and))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (exists (?a) (and))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (exists (?a ?b) (and))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (exists (?a ?a) (and))))`, "multiple", nil},
+	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
+		:precondition (exists (?a - t) (and))))`, "undefined", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:action a :parameters ()
+		:precondition (exists (?a - (either s t)) (and))))`, "undefined", nil},
+}
+
+func TestCheckQuantNode(t *testing.T) {
+	for _, test := range quantNodeTests {
+		test.run(t)
+	}
+}
+
+var literalNodeTests = []checkDomainTest {
+	{`(define (domain d) (:requirements :adl) (:predicates (p))
+		(:action a :parameters () :precondition (p)))`, "", nil},
+
+	{`(define (domain d) (:requirements :adl)
+		(:action a :parameters () :precondition (p)))`, "undefined", nil},
+
+	// OK untyped parameter
+	{`(define (domain d) (:requirements :adl) (:constants c) (:predicates (p ?a))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:predicates (p ?a))
+		(:action a :parameters (?a) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:predicates (p ?a))
+		(:action a :parameters () :precondition (forall (?a) (p ?a))))`, "", nil},
+
+	// OK with a typed parameter
+	{`(define (domain d) (:requirements :adl) (:types t) (:constants c - t) (:predicates (p ?a - t))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:predicates (p ?a - t))
+		(:action a :parameters (?a - t) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:predicates (p ?a - t))
+		(:action a :parameters () :precondition (forall (?a - t) (p ?a))))`, "", nil},
+
+	// Incompatible parameter types: wants t, gets object
+	{`(define (domain d) (:requirements :adl) (:types t) (:constants c) (:predicates (p ?a - t))
+		(:action a :parameters () :precondition (p c)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:predicates (p ?a - t))
+		(:action a :parameters (?a) :precondition (p ?a)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:predicates (p ?a - t))
+		(:action a :parameters () :precondition (forall (?a) (p ?a))))`, "incompatible", nil},
+
+	// OK parameter types: wants object, gets t
+	{`(define (domain d) (:requirements :adl) (:types t) (:constants c - t) (:predicates (p ?a - object))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:predicates (p ?a - object))
+		(:action a :parameters (?a - t) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t) (:predicates (p ?a - object))
+		(:action a :parameters () :precondition (forall (?a - t) (p ?a))))`, "", nil},
+
+	// OK parameter types: wants s, gets t - s
+	{`(define (domain d) (:requirements :adl) (:types t - s s) (:constants c - t) (:predicates (p ?a - s))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t - s s) (:predicates (p ?a - s))
+		(:action a :parameters (?a - t) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t - s s) (:predicates (p ?a - s))
+		(:action a :parameters () :precondition (forall (?a - t) (p ?a))))`, "", nil},
+
+	// OK parameter types: wants u, gets t - s - u
+	{`(define (domain d) (:requirements :adl) (:types t - s s - u u) (:constants c - t) (:predicates (p ?a - u))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t - s s - u u) (:predicates (p ?a - u))
+		(:action a :parameters (?a - t) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types t - s s - u u) (:predicates (p ?a - u))
+		(:action a :parameters () :precondition (forall (?a - t) (p ?a))))`, "", nil},
+
+	// OK parameter types: wants (either s t), gets s or t
+	{`(define (domain d) (:requirements :adl) (:types s t) (:constants c - t)
+		(:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - (either s t)))
+		(:action a :parameters (?a - t) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (forall (?a - t) (p ?a))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:constants c - s)
+		(:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - (either s t)))
+		(:action a :parameters (?a - s) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (forall (?a - s) (p ?a))))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:constants c - (either s t))
+		(:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - (either s t)))
+		(:action a :parameters (?a - (either s t)) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (forall (?a - (either s t)) (p ?a))))`, "", nil},
+
+	// Incompatible parameter types: wants (either s t) gets u
+	{`(define (domain d) (:requirements :adl) (:types s t u) (:constants c - u)
+		(:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (p c)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t u) (:predicates (p ?a - (either s t)))
+		(:action a :parameters (?a - u) :precondition (p ?a)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t u) (:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (forall (?a - u) (p ?a))))`, "incompatible", nil},
+
+	// OK parameter types: wants (either u t) gets s - u
+	{`(define (domain d) (:requirements :adl) (:types s - u t u) (:constants c - s)
+		(:predicates (p ?a - (either u t)))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s - u t u) (:predicates (p ?a - (either u t)))
+		(:action a :parameters (?a - s) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s - u t u) (:predicates (p ?a - (either u t)))
+		(:action a :parameters () :precondition (forall (?a - s) (p ?a))))`, "", nil},
+
+	// Incompatible parameter types: wants (either s t) gets (either t u)
+	{`(define (domain d) (:requirements :adl) (:types s t u) (:constants c - (either t u))
+		(:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (p c)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t u) (:predicates (p ?a - (either s t)))
+		(:action a :parameters (?a - (either t u)) :precondition (p ?a)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t u) (:predicates (p ?a - (either s t)))
+		(:action a :parameters () :precondition (forall (?a - (either t u)) (p ?a))))`, "incompatible", nil},
+
+	// OK parameter types: wants (either u t) gets (either t s - u)
+	{`(define (domain d) (:requirements :adl) (:types s - u t u) (:constants c - (either t s))
+		(:predicates (p ?a - (either u t)))
+		(:action a :parameters () :precondition (p c)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s - u t u) (:predicates (p ?a - (either u t)))
+		(:action a :parameters (?a - (either t s)) :precondition (p ?a)))`, "", nil},
+	{`(define (domain d) (:requirements :adl) (:types s - u t u) (:predicates (p ?a - (either u t)))
+		(:action a :parameters () :precondition (forall (?a - (either t s)) (p ?a))))`, "", nil},
+
+	// Incompatible parameter types: wants t gets (either s t)
+	{`(define (domain d) (:requirements :adl) (:types s t) (:constants c - (either s t))
+		(:predicates (p ?a - t))
+		(:action a :parameters () :precondition (p c)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - t))
+		(:action a :parameters (?a - (either s t)) :precondition (p ?a)))`, "incompatible", nil},
+	{`(define (domain d) (:requirements :adl) (:types s t) (:predicates (p ?a - t))
+		(:action a :parameters () :precondition (forall (?a - (either s t)) (p ?a))))`, "incompatible", nil},
+}
+
+func TestCheckLiteralNode(t *testing.T) {
+	for _, test := range literalNodeTests {
+		test.run(t)
+	}
+}
+
 type checkDomainTest struct {
 	pddl        string
 	errorRegexp string

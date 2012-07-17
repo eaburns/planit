@@ -468,6 +468,9 @@ var predsDefTests = []checkDomainTest {
 	{`(define (domain d) (:requirements :typing) (:types t) (:predicates (p ?a - t ?b)))`, "",
 		domainChecks(checkPredParamTypes("p", "?a", []string{"t"}),
 			checkPredParamTypes("p", "?b", []string{"object"}))},
+
+	// undefined paramater types
+	{`(define (domain d) (:requirements :typing) (:predicates (p ?a - t)))`, "undefined", nil},
 }
 
 // checkPredParamTypes returns a function
@@ -507,6 +510,8 @@ var funcsDefTests = []checkDomainTest {
 		domainChecks(checkFuncParamTypes("f", "?a", []string{"object"}),
 			checkFuncParamTypes("f", "?b", []string{"object"}))},
 	{`(define (domain d) (:requirements :action-costs) (:functions (f ?a ?a)))`, "multiple", nil},
+
+	// ensure parameter types
 	{`(define (domain d) (:requirements :typing :action-costs) (:types t) (:functions (f ?a - t)))`, "",
 		checkFuncParamTypes("f", "?a", []string{"t"})},
 	{`(define (domain d) (:requirements :typing :action-costs) (:types s t) (:functions (f ?a - (either s t))))`, "",
@@ -514,6 +519,9 @@ var funcsDefTests = []checkDomainTest {
 	{`(define (domain d) (:requirements :typing :action-costs) (:types t) (:functions (f ?a - t ?b)))`, "",
 		domainChecks(checkFuncParamTypes("f", "?a", []string{"t"}),
 			checkFuncParamTypes("f", "?b", []string{"object"}))},
+
+	// undefined paramater types
+	{`(define (domain d) (:requirements :typing :action-costs) (:functions (f ?a - t)))`, "undefined", nil},
 }
 
 // checkFuncParamTypes returns a function
@@ -542,6 +550,58 @@ func findFunc(fun string, funcs []Function) *Function {
 
 func TestCheckFuncsDef(t *testing.T) {
 	for _, test := range funcsDefTests {
+		test.run(t)
+	}
+}
+
+var actionsDefTests = []checkDomainTest {
+	{`(define (domain d) (:action a :parameters ()))`, "", nil},
+	{`(define (domain d) (:action a :parameters (?a)))`, "",
+		checkActionParamTypes("a", "?a", []string{"object"})},
+
+	{`(define (domain d) (:action a :parameters (?a ?b)))`, "",
+		domainChecks(checkActionParamTypes("a", "?a", []string{"object"}),
+			checkActionParamTypes("a", "?b", []string{"object"}))},
+
+	{`(define (domain d) (:action a :parameters (?a ?a)))`, "multiple", nil},
+
+	{`(define (domain d) (:requirements :typing) (:types t) (:action a :parameters (?a - t ?b)))`, "",
+		domainChecks(checkActionParamTypes("a", "?a", []string{"t"}),
+			checkActionParamTypes("a", "?b", []string{"object"}))},
+
+	{`(define (domain d) (:requirements :typing) (:types t s) (:action a :parameters (?a - (either s t))))`, "",
+		checkActionParamTypes("a", "?a", []string{"t", "s"})},
+
+	// undefined action parameter type
+	{`(define (domain d) (:requirements :typing) (:action a :parameters (?a - t)))`, "undefined", nil},
+}
+
+// checkActionParamTypes returns a function
+// that checks the types assigned to given
+// action's parameter.
+func checkActionParamTypes(act string, parm string, types []string) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		a := findAction(act, d.Actions)
+		if a == nil {
+			t.Fatalf("%s\naction %s: not found", pddl, act)
+		}
+		checkEntryTypes(pddl, parm, types, a.Parameters, t)
+	}
+}
+
+// findAction returns a pointer to the action
+// with the matching name, if one exists.
+func findAction(act string, acts []Action) *Action {
+	for i := range acts {
+		if acts[i].Str == act {
+			return &acts[i]
+		}
+	}
+	return nil
+}
+
+func TestCheckActionsDef(t *testing.T) {
+	for _, test := range actionsDefTests {
 		test.run(t)
 	}
 }

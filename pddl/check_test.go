@@ -7,6 +7,7 @@ import (
 )
 
 var reqsDefTests = []checkDomainTest{
+	{`(define (domain d) (:requirements))`, "", nil},
 	{`(define (domain d) (:requirements :strips))`, "", nil},
 	{`(define (domain d) (:requirements :foo))`, "not supported", nil},
 	{`(define (domain d) (:requirements :strips :strips))`, "multiple", nil},
@@ -203,6 +204,8 @@ func TestRequirements(t *testing.T) {
 }
 
 var typesDefTests = []checkDomainTest{
+	{`(define (domain d) (:types))`, "", nil},
+
 	// undefined type
 	{`(define (domain d) (:requirements :typing) (:types t - s))`, "undefined", nil},
 
@@ -308,6 +311,139 @@ func findTypePtr(name string, ts []*Type) *Type {
 
 func TestCheckTypesDef(t *testing.T) {
 	for _, test := range typesDefTests {
+		test.run(t)
+	}
+}
+
+var constsDefTests = []checkDomainTest {
+	{`(define (domain d) (:constants))`, "", nil},
+	{`(define (domain d) (:constants a b c))`, "", nil},
+	{`(define (domain d) (:constants a b c a))`, "multiple", nil},
+	{`(define (domain d) (:constants a b))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
+			checkConstsTypes("a", []string{"object"}),
+			checkConstsTypes("b", []string{"object"}))},
+	{`(define (domain d) (:requirements :typing) (:types t) (:constants a - t))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a"}),
+			checkTypeConsts("t", []string{"a"}),
+			checkConstsTypes("a", []string{"t"}))},
+	{`(define (domain d) (:requirements :typing) (:types t - s s) (:constants a - t))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a"}),
+			checkTypeConsts("t", []string{"a"}),
+			checkTypeConsts("s", []string{"a"}),
+			checkConstsTypes("a", []string{"t"}))},
+	{`(define (domain d) (:requirements :typing) (:types s t) (:constants a - (either s t)))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a"}),
+			checkTypeConsts("t", []string{"a"}),
+			checkTypeConsts("s", []string{"a"}),
+			checkConstsTypes("a", []string{"t", "s"}))},
+	{`(define (domain d) (:requirements :typing) (:types t - s s) (:constants a - (either s t)))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a"}),
+			checkTypeConsts("t", []string{"a"}),
+			checkTypeConsts("s", []string{"a"}),
+			checkConstsTypes("a", []string{"t", "s"}))},
+	{`(define (domain d) (:requirements :typing) (:types t) (:constants a b - t))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
+			checkTypeConsts("t", []string{"a", "b"}),
+			checkConstsTypes("a", []string{"t"}),
+			checkConstsTypes("b", []string{"t"}))},
+	{`(define (domain d) (:requirements :typing) (:types t) (:constants a - t b))`, "",
+		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
+			checkTypeConsts("t", []string{"a"}),
+			checkConstsTypes("a", []string{"t"}),
+			checkConstsTypes("b", []string{"object"}))},
+}
+
+// checkTypeConsts returns a function that
+// checks that the given type has all of the
+// assigned constants.
+func checkTypeConsts(tName string, consts []string) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		typ := findType(tName, d.Types)
+		if typ == nil {
+			t.Fatalf("type %s: not found", tName)
+		}
+		for _, con := range consts {
+			found := false
+			for _, obj := range typ.Objects {
+				if con == obj.Str {
+					if found {
+						t.Errorf("type %s: has constant %s multiple times", typ, obj)
+					}
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("type %s: no object %s", tName, con)
+			}
+		}
+	}
+}
+
+// checkConstsTypes returns a function
+// that checks the types assigned to each
+// of the constants in a consts definition.
+func checkConstsTypes(eName string, types []string) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		checkEntryTypes(eName, types, d.Constants, t)
+	}
+}
+
+// checkEntryTypes checks that the given
+// typed entry has all of the given types.
+func checkEntryTypes(eName string, types []string, lst []TypedEntry, t *testing.T) {
+	ent := findTypedEntry(eName, lst)
+	if ent == nil {
+		t.Fatalf("typed entry %s: not found", eName)
+	}
+	if len(ent.Types) != len(types) {
+		t.Fatalf("typed entry %s: expected %d types, got %d",
+			eName, len(types), len(ent.Types))
+	}
+	for _, typ := range types {
+		found := false
+		for _, tp := range ent.Types {
+			if tp.Str == typ {
+				if tp.Definition.Str != typ {
+					t.Errorf("typed entry %s: type %s linked to wrong definition: %s",
+						eName, typ, tp.Definition.Str)
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("typed entry %s: missing type %s", eName, typ)
+		}
+	}
+}
+
+// findTypedEntry returns a pointer to
+// the typed entry with the given name,
+// or nil if there is no entry with the
+// given name.
+func findTypedEntry(eName string, lst []TypedEntry) *TypedEntry {
+	for i := range lst {
+		if lst[i].Str == eName {
+			return &lst[i]
+		}
+	}
+	return nil
+}
+
+// domainChecks returns a domain checking function
+// that sequences two domain checking
+// functions.
+func domainChecks(fs ...func(string, *Domain, *testing.T)) func(string, *Domain, *testing.T) {
+	return func(pddl string, d *Domain, t *testing.T) {
+		for _, f := range fs {
+			f(pddl, d, t)
+		}
+	}
+}
+
+func TestCheckConstsDef(t *testing.T) {
+	for _, test := range constsDefTests {
 		test.run(t)
 	}
 }

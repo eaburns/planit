@@ -118,13 +118,11 @@ func checkActionDef(defs defs, act *Action) error {
 		return err
 	}
 	counts := make(map[string]int, len(act.Parameters))
-	for _, parm := range act.Parameters {
+	for i, parm := range act.Parameters {
 		if counts[parm.Str] > 0 {
 			return makeError(parm, "%s is defined multiple times", parm)
 		}
 		counts[parm.Str]++
-	}
-	for i := range act.Parameters {
 		defs.vars = defs.vars.push(&act.Parameters[i])
 	}
 	if act.Precondition != nil {
@@ -437,13 +435,11 @@ func (q *QuantNode) check(defs defs) error {
 		return err
 	}
 	counts := make(map[string]int, len(q.Variables))
-	for _, v := range q.Variables {
+	for i, v := range q.Variables {
 		if counts[v.Str] > 0 {
 			return makeError(v, "%s is defined multiple times", v)
 		}
 		counts[v.Str]++
-	}
-	for i := range q.Variables {
 		defs.vars = defs.vars.push(&q.Variables[i])
 	}
 	err := q.Formula.check(defs)

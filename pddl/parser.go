@@ -58,60 +58,53 @@ func (p *parser) junk(n int) {
 	}
 }
 
-// acceptTokens consumes and returns a slice of
-// tokens and true if the next tokens in the stream
-// match the pattern elements (see token.match).
-// Otherwise, nothing is consumed and false is
-// returned.
-func (p *parser) acceptTokens(vls ...interface{}) ([]token, bool) {
-	if len(vls) > cap(p.peeks) {
-		panic("too many peeks in accept")
+// acceptToken returns a token and true
+// if the next token has the given type,
+// otherwise it returns false.
+func (p *parser) acceptToken(typ tokenType) (token, bool) {
+	if p.peek().typ != typ {
+		return token{}, false
 	}
-	toks := make([]token, len(vls))
-	for i := range vls {
-		if !p.peekn(i + 1).matches(vls[i]) {
-			return nil, false
-		}
-		toks[i] = p.peekn(i+1)
-	}
-	p.junk(len(vls))
-	return toks, true
+	return p.next(), true
 }
 
-// accept is just like acceptTokens except that it
-// only allows strings for arguments and it only
-// returns the boolean value.
-func (p *parser) accept(vls ...string) bool {
-	if len(vls) > cap(p.peeks) {
+// accept returns true if each upcoming token,
+// matches the text of the corresponding
+// parameter, in sequence.  Otherwise, accept
+// returns false.
+func (p *parser) accept(texts ...string) bool {
+	if len(texts) > cap(p.peeks) {
 		panic("too many peeks in accept")
 	}
-	for i := range vls {
-		if p.peekn(i + 1).text != vls[i] {
+	for i := range texts {
+		if p.peekn(i + 1).text != texts[i] {
 			return false
 		}
 	}
-	p.junk(len(vls))
+	p.junk(len(texts))
 	return true
 }
 
-// expectTokens expects the next tokens to match
-// the arguments.  If the tokens match then
-// they are returned and the error is nil, otherwise
+// expectType returns the next token and no error
+// if the next token has the specified type, otherwise
 // an error is returned.
-//
-// The arguments can be either tokenTypes or strings.
-// A tokenType matches a token on its type, and a
-// string matches on its text.
-func (p *parser) expectTokens(vls ...interface{}) ([]token, error) {
-	toks := make([]token, len(vls))
-	for i := range vls {
-		t := p.next()
-		if !t.matches(vls[i]) {
-			return nil, makeError(p, "expected %s, got %s", vls[i], t)
-		}
-		toks[i] = t
+func (p *parser) expectType(typ tokenType) (token, error) {
+	t := p.next()
+	if t.typ != typ {
+		return token{}, makeError(p, "expected %s, got %s", typ, t.typ)
 	}
-	return toks, nil
+	return t, nil
+}
+
+// expectText returns the next token and no error
+// if the next token has the specified text, otherwise
+// an error is returned.
+func (p *parser) expectText(text string) (token, error) {
+	t := p.next()
+	if t.text != text {
+		return token{}, makeError(p, "expected %s, got %s", text, t.text)
+	}
+	return t, nil
 }
 
 // except is just like expectTokens except that it

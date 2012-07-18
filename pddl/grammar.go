@@ -229,12 +229,12 @@ func parseFunctionType(p *parser) (typ []TypeName, err error) {
 	if !p.accept("-") {
 		return
 	}
-	var t []token
+	var t token
 	l := p.Loc()
-	if t, err = p.expectTokens("number"); err != nil {
+	if t, err = p.expectText("number"); err != nil {
 		return
 	}
-	return []TypeName{{Name: Name{t[0].text, l}}}, nil
+	return []TypeName{{Name: Name{t.text, l}}}, nil
 }
 
 func parseActionDef(p *parser) (act Action, err error) {
@@ -349,12 +349,12 @@ func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
 func parseTerms(p *parser) (lst []Term) {
 	for {
 		l := p.Loc()
-		if t, ok := p.acceptTokens(tokName); ok {
-			lst = append(lst, Term{Name: Name{t[0].text, l}})
+		if t, ok := p.acceptToken(tokName); ok {
+			lst = append(lst, Term{Name: Name{t.text, l}})
 			continue
 		}
-		if t, ok := p.acceptTokens(tokQname); ok {
-			lst = append(lst, Term{Name: Name{t[0].text, l}, Variable: true})
+		if t, ok := p.acceptToken(tokQname); ok {
+			lst = append(lst, Term{Name: Name{t.text, l}, Variable: true})
 			continue
 		}
 		break
@@ -557,9 +557,9 @@ func parseAssign(p *parser) (a *AssignNode, err error) {
 	// 	(<function-symbol> <term>*)
 	// i.e., an f-head
 
-	if n, ok := p.acceptTokens(tokNum); ok {
+	if n, ok := p.acceptToken(tokNum); ok {
 		a.IsNumber = true
-		a.Number = n[0].text
+		a.Number = n.text
 	} else {
 		if a.Fhead, err = parseFhead(p); err != nil {
 			return
@@ -672,12 +672,12 @@ func parseInitEl(p *parser) (form Formula, err error) {
 		if asn.Lval, err = parseFhead(p); err != nil {
 			return
 		}
-		var t []token
-		if t, err = p.expectTokens(tokNum); err != nil {
+		var t token
+		if t, err = p.expectType(tokNum); err != nil {
 			return
 		}
 		asn.IsNumber = true
-		asn.Number = t[0].text
+		asn.Number = t.text
 		asn.IsInit = true
 		form = asn
 		err = p.expect(")")
@@ -716,18 +716,18 @@ func parseNamesPlus(p *parser, typ tokenType) (ids []Name, err error) {
 }
 
 func parseNames(p *parser, typ tokenType) (ids []Name) {
-	for t, ok := p.acceptTokens(typ); ok; t, ok = p.acceptTokens(typ) {
+	for t, ok := p.acceptToken(typ); ok; t, ok = p.acceptToken(typ) {
 		l := p.Loc()
-		ids = append(ids, Name{t[0].text, l})
+		ids = append(ids, Name{t.text, l})
 	}
 	return
 }
 
 func parseName(p *parser, typ tokenType) (Name, error) {
 	l := p.Loc()
-	id, err := p.expectTokens(typ)
+	id, err := p.expectType(typ)
 	if err != nil {
 		return Name{}, err
 	}
-	return Name{id[0].text, l}, nil
+	return Name{id.text, l}, nil
 }

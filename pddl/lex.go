@@ -67,30 +67,6 @@ func (t token) String() string {
 	return fmt.Sprintf("%v [%q]", t.typ, t.text)
 }
 
-// matches returns true if the token matches
-// some type of pattern.  The pattern can be
-// one of three types:
-//
-// A tokenType matches the token if they have
-// the same type.
-//
-// A string matches the token if they have the
-// same text.
-//
-// A fmt.Stringer matches the token if the String()
-// method has the same as the token text.
-func (t token) matches(vl interface{}) bool {
-	switch v := vl.(type) {
-	case tokenType:
-		return t.typ == v
-	case string:
-		return t.text == v
-	case fmt.Stringer:
-		return t.text == v.String()
-	}
-	panic(fmt.Sprintf("unexpected type in token.match: %T", vl))
-}
-
 // A lexer holds information and performs lexical
 // analysis of a PDDL input.
 type lexer struct {

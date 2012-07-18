@@ -315,7 +315,7 @@ func TestCheckTypesDef(t *testing.T) {
 	}
 }
 
-var constsDefTests = []checkDomainTest {
+var constsDefTests = []checkDomainTest{
 	{`(define (domain d) (:constants))`, "", nil},
 	{`(define (domain d) (:constants a b c))`, "", nil},
 	{`(define (domain d) (:constants a b c a))`, "multiple", nil},
@@ -454,7 +454,7 @@ func TestCheckConstsDef(t *testing.T) {
 	}
 }
 
-var predsDefTests = []checkDomainTest {
+var predsDefTests = []checkDomainTest{
 	{`(define (domain d) (:predicates (p)))`, "", nil},
 	{`(define (domain d) (:predicates (p) (q)))`, "", nil},
 	{`(define (domain d) (:predicates (p ?a ?b)))`, "",
@@ -503,7 +503,7 @@ func TestCheckPredsDef(t *testing.T) {
 	}
 }
 
-var funcsDefTests = []checkDomainTest {
+var funcsDefTests = []checkDomainTest{
 	{`(define (domain d) (:requirements :action-costs) (:functions (f)))`, "", nil},
 	{`(define (domain d) (:requirements :action-costs) (:functions (f) (g)))`, "", nil},
 	{`(define (domain d) (:requirements :action-costs) (:functions (f ?a ?b)))`, "",
@@ -554,7 +554,7 @@ func TestCheckFuncsDef(t *testing.T) {
 	}
 }
 
-var actionsDefTests = []checkDomainTest {
+var actionsDefTests = []checkDomainTest{
 	{`(define (domain d) (:action a :parameters ()))`, "", nil},
 	{`(define (domain d) (:action a :parameters (?a)))`, "",
 		checkActionParamTypes("a", "?a", []string{"object"})},
@@ -606,7 +606,7 @@ func TestCheckActionsDef(t *testing.T) {
 	}
 }
 
-var quantNodeTests = []checkDomainTest {
+var quantNodeTests = []checkDomainTest{
 	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
 		:precondition (forall () (and))))`, "", nil},
 	{`(define (domain d) (:requirements :adl) (:action a :parameters ()
@@ -640,7 +640,7 @@ func TestCheckQuantNode(t *testing.T) {
 	}
 }
 
-var literalNodeTests = []checkDomainTest {
+var literalNodeTests = []checkDomainTest{
 	{`(define (domain d) (:requirements :adl) (:predicates (p))
 		(:action a :parameters () :precondition (p)))`, "", nil},
 

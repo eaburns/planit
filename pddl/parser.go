@@ -77,7 +77,7 @@ func (p *parser) accept(texts ...string) bool {
 		panic("too many peeks in accept")
 	}
 	for i := range texts {
-		if p.peekn(i + 1).text != texts[i] {
+		if p.peekn(i+1).text != texts[i] {
 			return false
 		}
 	}

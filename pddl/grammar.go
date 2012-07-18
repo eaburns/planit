@@ -33,13 +33,13 @@ func Parse(file string, r io.Reader) (ast interface{}, err error) {
 
 func parseDomain(p *parser) *Domain {
 	return &Domain{
-		Name: parseDomainName(p),
+		Name:         parseDomainName(p),
 		Requirements: parseReqsDef(p),
-		Types: parseTypesDef(p),
-		Constants: parseConstsDef(p),
-		Predicates: parsePredsDef(p),
-		Functions: parseFuncsDef(p),
-		Actions: parseActionsDef(p),
+		Types:        parseTypesDef(p),
+		Constants:    parseConstsDef(p),
+		Predicates:   parsePredsDef(p),
+		Functions:    parseFuncsDef(p),
+		Actions:      parseActionsDef(p),
 	}
 }
 
@@ -93,7 +93,7 @@ func parseAtomicFormSkele(p *parser) Predicate {
 	p.expect("(")
 	defer p.expect(")")
 	return Predicate{
-		Name: parseName(p, tokName),
+		Name:       parseName(p, tokName),
 		Parameters: parseTypedListString(p, tokQname),
 	}
 }
@@ -102,7 +102,7 @@ func parseAtomicFuncSkele(p *parser) Function {
 	p.expect("(")
 	defer p.expect(")")
 	return Function{
-		Name: parseName(p, tokName),
+		Name:       parseName(p, tokName),
 		Parameters: parseTypedListString(p, tokQname),
 	}
 }
@@ -179,7 +179,7 @@ func parseFunctionType(p *parser) (typ []TypeName) {
 	return []TypeName{TypeName{
 		Name: Name{
 			Location: p.Loc(),
-			Str: p.expectText("number").text,
+			Str:      p.expectText("number").text,
 		},
 	}}
 }
@@ -284,7 +284,7 @@ func parseTerms(p *parser) (lst []Term) {
 func parseAndGd(p *parser, nested func(*parser) Formula) Formula {
 	defer p.expect(")")
 	return &AndNode{MultiNode{
-		Node: Node{ p.Loc() },
+		Node:    Node{p.Loc()},
 		Formula: parseFormulaStar(p, nested),
 	}}
 }
@@ -299,7 +299,7 @@ func parseFormulaStar(p *parser, nested func(*parser) Formula) (fs []Formula) {
 func parseOrGd(p *parser, nested func(*parser) Formula) Formula {
 	defer p.expect(")")
 	return &OrNode{MultiNode{
-		Node: Node{ p.Loc() },
+		Node:    Node{p.Loc()},
 		Formula: parseFormulaStar(p, nested),
 	}}
 }
@@ -307,7 +307,7 @@ func parseOrGd(p *parser, nested func(*parser) Formula) Formula {
 func parseNotGd(p *parser) Formula {
 	defer p.expect(")")
 	return &NotNode{UnaryNode{
-		Node: Node{p.Loc()},
+		Node:    Node{p.Loc()},
 		Formula: parseGd(p),
 	}}
 }
@@ -315,8 +315,8 @@ func parseNotGd(p *parser) Formula {
 func parseImplyGd(p *parser) Formula {
 	defer p.expect(")")
 	return &ImplyNode{BinaryNode{
-		Node: Node{p.Loc()},
-		Left: parseGd(p),
+		Node:  Node{p.Loc()},
+		Left:  parseGd(p),
 		Right: parseGd(p),
 	}}
 }
@@ -328,7 +328,7 @@ func parseForallGd(p *parser, nested func(*parser) Formula) Formula {
 	return &ForallNode{
 		QuantNode: QuantNode{
 			Variables: parseQuantVariables(p),
-			UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+			UnaryNode: UnaryNode{Node{loc}, nested(p)},
 		},
 		IsEffect: false,
 	}
@@ -345,7 +345,7 @@ func parseExistsGd(p *parser, nested func(*parser) Formula) Formula {
 	loc := p.Loc()
 	return &ExistsNode{QuantNode{
 		Variables: parseQuantVariables(p),
-		UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+		UnaryNode: UnaryNode{Node{loc}, nested(p)},
 	}}
 }
 
@@ -359,7 +359,7 @@ func parseEffect(p *parser) Formula {
 func parseAndEffect(p *parser, nested func(*parser) Formula) Formula {
 	defer p.expect(")")
 	return &AndNode{MultiNode{
-		Node: Node{ p.Loc() },
+		Node:    Node{p.Loc()},
 		Formula: parseFormulaStar(p, nested),
 	}}
 }
@@ -380,7 +380,7 @@ func parseForallEffect(p *parser, nested func(*parser) Formula) Formula {
 	return &ForallNode{
 		QuantNode: QuantNode{
 			Variables: parseQuantVariables(p),
-			UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+			UnaryNode: UnaryNode{Node{loc}, nested(p)},
 		},
 		IsEffect: true,
 	}
@@ -391,7 +391,7 @@ func parseWhen(p *parser, nested func(*parser) Formula) Formula {
 	loc := p.Loc()
 	return &WhenNode{
 		Condition: parseGd(p),
-		UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+		UnaryNode: UnaryNode{Node{loc}, nested(p)},
 	}
 }
 
@@ -444,14 +444,14 @@ func parseFhead(p *parser) (head Fhead) {
 }
 
 func parseProblem(p *parser) *Problem {
-	return &Problem {
-		Name: parseProbName(p),
-		Domain: parseProbDomain(p),
+	return &Problem{
+		Name:         parseProbName(p),
+		Domain:       parseProbDomain(p),
 		Requirements: parseReqsDef(p),
-		Objects: parseObjsDecl(p),
-		Init: parseInit(p),
-		Goal: parseGoal(p),
-		Metric: parseMetric(p),
+		Objects:      parseObjsDecl(p),
+		Init:         parseInit(p),
+		Goal:         parseGoal(p),
+		Metric:       parseMetric(p),
 	}
 }
 
@@ -489,12 +489,12 @@ func parseInitEl(p *parser) Formula {
 	if p.accept("(", "=") {
 		defer p.expect(")")
 		return &AssignNode{
-			Node: Node{loc},
-			Op: Name{"=", p.Loc()},
-			Lval: parseFhead(p),
+			Node:     Node{loc},
+			Op:       Name{"=", p.Loc()},
+			Lval:     parseFhead(p),
 			IsNumber: true,
-			Number: p.expectType(tokNum).text,
-			IsInit: true,
+			Number:   p.expectType(tokNum).text,
+			IsInit:   true,
 		}
 	}
 	return parseLiteral(p, false)
@@ -529,6 +529,6 @@ func parseNames(p *parser, typ tokenType) (ids []Name) {
 func parseName(p *parser, typ tokenType) Name {
 	return Name{
 		Location: p.Loc(),
-		Str: p.expectType(typ).text,
+		Str:      p.expectType(typ).text,
 	}
 }

@@ -184,10 +184,9 @@ type Formula interface {
 	// for indentation purposes.
 	print(io.Writer, string)
 
-	// check returns an error if there is a semantic
-	// error in the formula, otherwise it returns
-	// nil.
-	check(defs) error
+	// check panicks an error if there is a
+	// semantic error in the formula.
+	check(defs)
 }
 
 // A Node is a node in the formula tree.
@@ -401,9 +400,9 @@ func (e Error) Error() string {
 	return e.Location.String() + ": " + e.msg
 }
 
-// makeError returns an error at a location
+// errorf panicks with an error at a location
 // in a PDDL file with the message set  by a
 // format string.
-func makeError(l Locer, f string, vls ...interface{}) Error {
-	return Error{l.Loc(), fmt.Sprintf(f, vls...)}
+func errorf(l Locer, f string, vls ...interface{}) Error {
+	panic(Error{l.Loc(), fmt.Sprintf(f, vls...)})
 }

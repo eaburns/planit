@@ -91,7 +91,7 @@ func (p *parser) accept(texts ...string) bool {
 func (p *parser) expectType(typ tokenType) token {
 	t := p.next()
 	if t.typ != typ {
-		panic(makeError(p, "expected %s, got %s", typ, t.typ))
+		errorf(p, "expected %s, got %s", typ, t.typ)
 	}
 	return t
 }
@@ -102,7 +102,7 @@ func (p *parser) expectType(typ tokenType) token {
 func (p *parser) expectText(text string) token {
 	t := p.next()
 	if t.text != text {
-		panic(makeError(p, "expected %s, got %s", text, t.text))
+		errorf(p, "expected %s, got %s", text, t.text)
 	}
 	return t
 }
@@ -121,7 +121,7 @@ func (p *parser) expect(vls ...string) {
 	for i := range vls {
 		t := p.next()
 		if t.text != vls[i] {
-			panic(makeError(p, "expected %s, got %s", vls[i], t))
+			errorf(p, "expected %s, got %s", vls[i], t)
 		}
 	}
 }

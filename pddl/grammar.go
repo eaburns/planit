@@ -84,6 +84,7 @@ func parsePredsDef(p *parser) []Predicate {
 		for p.peek().typ == tokOpen {
 			preds = append(preds, parseAtomicFormSkele(p))
 		}
+		return preds
 	}
 	return nil
 }

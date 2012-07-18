@@ -2,50 +2,17 @@ package pddl
 
 import (
 	"fmt"
+	"strings"
 )
 
 const (
+	// objectTypeName is the name of the default
+	// object type.
 	objectTypeName = "object"
+
+	// totalCostName is the name of the total-cost
+	// function.
 	totalCostName  = "total-cost"
-)
-
-var (
-	// supportedReqs is a list of the requirement
-	// flags that are supported by planit.
-	supportedReqs = map[string]bool{
-		":adl":                       true,
-		":strips":                    true,
-		":typing":                    true,
-		":negative-preconditions":    true,
-		":disjunctive-preconditions": true,
-		":equality":                  true,
-		":quantified-preconditions":  true,
-		":universal-preconditions":   true,
-		":existential-preconditions": true,
-		":conditional-effects":       true,
-
-		// http://ipc.informatik.uni-freiburg.de/PddlActionCosts
-		":action-costs": true,
-	}
-)
-
-type (
-	// defs aggregates all of the different definition classes.
-	defs struct {
-		reqs   map[string]bool
-		types  map[string]*Type
-		consts map[string]*TypedEntry
-		preds  map[string]*Predicate
-		funcs  map[string]*Function
-		vars   *varDefs
-	}
-
-	// varDefs is a linked list of variable definitions.
-	varDefs struct {
-		up         *varDefs
-		name       string
-		definition *TypedEntry
-	}
 )
 
 // Check returns the first semantic error that
@@ -84,6 +51,27 @@ func Check(d *Domain, p *Problem) (err error) {
 	return
 }
 
+type (
+	// defs contains a map from names to their
+	// corresponding definitions.
+	defs struct {
+		reqs   map[string]bool
+		types  map[string]*Type
+		consts map[string]*TypedEntry
+		preds  map[string]*Predicate
+		funcs  map[string]*Function
+		vars   *varDefs
+	}
+
+	// varDefs implements a stack of variable
+	// definitions.
+	varDefs struct {
+		up         *varDefs
+		name       string
+		definition *TypedEntry
+	}
+)
+
 func checkDomain(d *Domain) defs {
 	defs := defs{
 		reqs:   make(map[string]bool),
@@ -103,15 +91,35 @@ func checkDomain(d *Domain) defs {
 	return defs
 }
 
+var (
+	// supportedReqs maps the supported
+	// requirement names to true, and
+	// everything else to false.
+	supportedReqs = map[string]bool{
+		":adl":                       true,
+		":strips":                    true,
+		":typing":                    true,
+		":negative-preconditions":    true,
+		":disjunctive-preconditions": true,
+		":equality":                  true,
+		":quantified-preconditions":  true,
+		":universal-preconditions":   true,
+		":existential-preconditions": true,
+		":conditional-effects":       true,
+		":action-costs": true,
+	}
+)
+
 func checkReqsDef(defs defs, rs []Name) {
 	for _, r := range rs {
-		if !supportedReqs[r.Str] {
+		req := strings.ToLower(r.Str)
+		if !supportedReqs[req] {
 			errorf(r, "requirement %s is not supported", r)
 		}
-		if defs.reqs[r.Str] {
+		if defs.reqs[req] {
 			errorf(r, "%s is defined multiple times", r)
 		}
-		defs.reqs[r.Str] = true
+		defs.reqs[req] = true
 	}
 	if defs.reqs[":adl"] {
 		defs.reqs[":strips"] = true

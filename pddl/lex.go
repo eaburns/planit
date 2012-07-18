@@ -33,9 +33,9 @@ var (
 		tokClose: "')'",
 		tokMinus: "'-'",
 		tokEq:    "'='",
-		tokName:  "identifier",
-		tokQname: "?identifier",
-		tokCname: ":identifier",
+		tokName:  "name",
+		tokQname: "?name",
+		tokCname: ":name",
 		tokNum:   "number",
 	}
 

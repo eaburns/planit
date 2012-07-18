@@ -8,7 +8,7 @@ import (
 // A parser parses PDDL.
 type parser struct {
 	lex    *lexer
-	peeks  [4]token
+	peeks  [2]token
 	npeeks int
 }
 
@@ -88,34 +88,40 @@ func (p *parser) accept(texts ...string) bool {
 // expectType returns the next token and no error
 // if the next token has the specified type, otherwise
 // an error is returned.
-func (p *parser) expectType(typ tokenType) (token, error) {
+func (p *parser) expectType(typ tokenType) token {
 	t := p.next()
 	if t.typ != typ {
-		return token{}, makeError(p, "expected %s, got %s", typ, t.typ)
+		panic(makeError(p, "expected %s, got %s", typ, t.typ))
 	}
-	return t, nil
+	return t
 }
 
 // expectText returns the next token and no error
 // if the next token has the specified text, otherwise
 // an error is returned.
-func (p *parser) expectText(text string) (token, error) {
+func (p *parser) expectText(text string) token {
 	t := p.next()
 	if t.text != text {
-		return token{}, makeError(p, "expected %s, got %s", text, t.text)
+		panic(makeError(p, "expected %s, got %s", text, t.text))
 	}
-	return t, nil
+	return t
 }
 
-// except is just like expectTokens except that it
-// only accepts strings and it only returns the error
-// value.
-func (p *parser) expect(vls ...string) error {
+// except is just like expectTokens except
+// that it only accepts strings and it only
+// returns the error value.
+//
+// If expect is called while panciking then
+// it is effectively a no-op.  This means that
+// you can freely defer a call to expect.
+func (p *parser) expect(vls ...string) {
+	if r := recover(); r != nil {
+		panic(r)
+	}
 	for i := range vls {
 		t := p.next()
 		if t.text != vls[i] {
-			return makeError(p, "expected %s, got %s", vls[i], t)
+			panic(makeError(p, "expected %s, got %s", vls[i], t))
 		}
 	}
-	return nil
 }

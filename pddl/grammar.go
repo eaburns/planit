@@ -7,158 +7,121 @@ import (
 
 // Parse returns either a domain, a problem or a parse error.
 func Parse(file string, r io.Reader) (ast interface{}, err error) {
-	var p *parser
-	if p, err = newParser(file, r); err != nil {
-		return
-	}
-	if p.peekn(4).text == "domain" {
-		ast, err = parseDomain(p)
-	} else {
-		ast, err = parseProblem(p)
-	}
-	return
-}
-
-func parseDomain(p *parser) (d *Domain, err error) {
-	if err = p.expect("(", "define"); err != nil {
-		return
-	}
-	d = new(Domain)
-	if d.Name, err = parseDomainName(p); err != nil {
-		return
-	}
-	if d.Requirements, err = parseReqsDef(p); err != nil {
-		return
-	}
-	if d.Types, err = parseTypesDef(p); err != nil {
-		return
-	}
-	if d.Constants, err = parseConstsDef(p); err != nil {
-		return
-	}
-	if d.Predicates, err = parsePredsDef(p); err != nil {
-		return
-	}
-	if d.Functions, err = parseFuncsDef(p); err != nil {
-		return
-	}
-	for p.peek().typ == tokOpen {
-		var act Action
-		if act, err = parseActionDef(p); err != nil {
+	defer func() {
+		r := recover()
+		if r == nil {
 			return
 		}
-		d.Actions = append(d.Actions, act)
-	}
-	err = p.expect(")")
-	return
-}
-
-func parseDomainName(p *parser) (id Name, err error) {
-	if err = p.expect("(", "domain"); err != nil {
+		if e, ok := r.(Error); ok {
+			err = e
+		} else {
+			panic(r)
+		}
+	}()
+	p, err := newParser(file, r)
+	if err != nil {
 		return
 	}
-	if id, err = parseName(p, tokName); err != nil {
-		return
+	p.expect("(", "define")
+	defer p.expect(")")
+
+	if p.peekn(2).text == "domain" {
+		return parseDomain(p), nil
 	}
-	err = p.expect(")")
-	return
+	return parseProblem(p), nil
 }
 
-func parseReqsDef(p *parser) (reqs []Name, err error) {
+func parseDomain(p *parser) *Domain {
+	return &Domain{
+		Name: parseDomainName(p),
+		Requirements: parseReqsDef(p),
+		Types: parseTypesDef(p),
+		Constants: parseConstsDef(p),
+		Predicates: parsePredsDef(p),
+		Functions: parseFuncsDef(p),
+		Actions: parseActionsDef(p),
+	}
+}
+
+func parseDomainName(p *parser) Name {
+	p.expect("(", "domain")
+	defer p.expect(")")
+	return parseName(p, tokName)
+}
+
+func parseReqsDef(p *parser) (reqs []Name) {
 	if p.accept("(", ":requirements") {
+		defer p.expect(")")
 		for p.peek().typ == tokCname {
-			var id Name
-			if id, err = parseName(p, tokCname); err != nil {
-				return
-			}
-			reqs = append(reqs, id)
+			reqs = append(reqs, parseName(p, tokCname))
 		}
-		err = p.expect(")")
 	}
 	return
 }
 
-func parseTypesDef(p *parser) (types []Type, err error) {
+func parseTypesDef(p *parser) (types []Type) {
 	if p.accept("(", ":types") {
-		var tlist []TypedEntry
-		if tlist, err = parseTypedListString(p, tokName); err != nil {
-			return
-		}
-		for _, t := range tlist {
+		defer p.expect(")")
+		for _, t := range parseTypedListString(p, tokName) {
 			types = append(types, Type{TypedEntry: t})
 		}
-		err = p.expect(")")
 	}
 	return
 }
 
-func parseConstsDef(p *parser) (consts []TypedEntry, err error) {
+func parseConstsDef(p *parser) []TypedEntry {
 	if p.accept("(", ":constants") {
-		if consts, err = parseTypedListString(p, tokName); err != nil {
-			return
-		}
-		err = p.expect(")")
+		defer p.expect(")")
+		return parseTypedListString(p, tokName)
 	}
-	return
+	return nil
 }
 
-func parsePredsDef(p *parser) (preds []Predicate, err error) {
+func parsePredsDef(p *parser) []Predicate {
 	if p.accept("(", ":predicates") {
-		var pred Predicate
-		if pred, err = parseAtomicFormSkele(p); err != nil {
-			return
-		}
-		preds = append(preds, pred)
+		defer p.expect(")")
+		preds := []Predicate{parseAtomicFormSkele(p)}
 		for p.peek().typ == tokOpen {
-			if pred, err = parseAtomicFormSkele(p); err != nil {
-				return
-			}
-			preds = append(preds, pred)
+			preds = append(preds, parseAtomicFormSkele(p))
 		}
-		err = p.expect(")")
 	}
-	return preds, err
+	return nil
 }
 
-func parseAtomicFormSkele(p *parser) (pred Predicate, err error) {
-	if err = p.expect("("); err != nil {
-		return
+func parseAtomicFormSkele(p *parser) Predicate {
+	p.expect("(")
+	defer p.expect(")")
+	return Predicate{
+		Name: parseName(p, tokName),
+		Parameters: parseTypedListString(p, tokQname),
 	}
-	if pred.Name, err = parseName(p, tokName); err != nil {
-		return
-	}
-	if pred.Parameters, err = parseTypedListString(p, tokQname); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
 }
 
-func parseAtomicFuncSkele(p *parser) (fun Function, err error) {
-	if err = p.expect("("); err != nil {
-		return
+func parseAtomicFuncSkele(p *parser) Function {
+	p.expect("(")
+	defer p.expect(")")
+	return Function{
+		Name: parseName(p, tokName),
+		Parameters: parseTypedListString(p, tokQname),
 	}
-	if fun.Name, err = parseName(p, tokName); err != nil {
-		return
-	}
-	if fun.Parameters, err = parseTypedListString(p, tokQname); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
 }
 
-func parseFuncsDef(p *parser) (funs []Function, err error) {
+func parseFuncsDef(p *parser) []Function {
 	if p.accept("(", ":functions") {
-		if funs, err = parseFunctionTypedList(p); err != nil {
-			return
-		}
-		err = p.expect(")")
+		defer p.expect(")")
+		return parseFunctionTypedList(p)
+	}
+	return nil
+}
+
+func parseActionsDef(p *parser) (acts []Action) {
+	for p.peek().typ == tokOpen {
+		acts = append(acts, parseActionDef(p))
 	}
 	return
 }
 
-func parseTypedListString(p *parser, typ tokenType) (lst []TypedEntry, err error) {
+func parseTypedListString(p *parser, typ tokenType) (lst []TypedEntry) {
 	for {
 		ids := parseNames(p, typ)
 		if len(ids) == 0 && p.peek().typ == tokMinus {
@@ -167,10 +130,7 @@ func parseTypedListString(p *parser, typ tokenType) (lst []TypedEntry, err error
 		} else if len(ids) == 0 {
 			break
 		}
-		var t []TypeName
-		if t, err = parseType(p); err != nil {
-			return
-		}
+		t := parseType(p)
 		for _, id := range ids {
 			lst = append(lst, TypedEntry{Name: id, Types: t})
 		}
@@ -178,45 +138,31 @@ func parseTypedListString(p *parser, typ tokenType) (lst []TypedEntry, err error
 	return
 }
 
-func parseType(p *parser) (typ []TypeName, err error) {
+func parseType(p *parser) (typ []TypeName) {
 	if !p.accept("-") {
 		return
 	}
-	if p.accept("(") {
-		if err = p.expect("either"); err != nil {
-			return
-		}
-		var ids []Name
-		if ids, err = parseNamesPlus(p, tokName); err != nil {
-			return
-		}
-		for _, id := range ids {
-			typ = append(typ, TypeName{Name: id})
-		}
-		err = p.expect(")")
-		return
+	if !p.accept("(") {
+		return []TypeName{{Name: parseName(p, tokName)}}
 	}
-	id, err := parseName(p, tokName)
-	return []TypeName{{Name: id}}, err
+	p.expect("either")
+	defer p.expect(")")
+	for _, id := range parseNamesPlus(p, tokName) {
+		typ = append(typ, TypeName{Name: id})
+	}
+	return
 }
 
-func parseFunctionTypedList(p *parser) (funs []Function, err error) {
+func parseFunctionTypedList(p *parser) (funs []Function) {
 	for {
 		var fs []Function
 		for p.peek().typ == tokOpen {
-			var fun Function
-			if fun, err = parseAtomicFuncSkele(p); err != nil {
-				return
-			}
-			fs = append(fs, fun)
+			fs = append(fs, parseAtomicFuncSkele(p))
 		}
 		if len(fs) == 0 {
 			break
 		}
-		var typ []TypeName
-		if typ, err = parseFunctionType(p); err != nil {
-			return
-		}
+		typ := parseFunctionType(p)
 		for i, _ := range fs {
 			fs[i].Types = typ
 		}
@@ -225,125 +171,97 @@ func parseFunctionTypedList(p *parser) (funs []Function, err error) {
 	return
 }
 
-func parseFunctionType(p *parser) (typ []TypeName, err error) {
+func parseFunctionType(p *parser) (typ []TypeName) {
 	if !p.accept("-") {
 		return
 	}
-	var t token
-	l := p.Loc()
-	if t, err = p.expectText("number"); err != nil {
-		return
-	}
-	return []TypeName{{Name: Name{t.text, l}}}, nil
+	return []TypeName{TypeName{
+		Name: Name{
+			Location: p.Loc(),
+			Str: p.expectText("number").text,
+		},
+	}}
 }
 
-func parseActionDef(p *parser) (act Action, err error) {
-	if err = p.expect("(", ":action"); err != nil {
-		return
-	}
-	if act.Name, err = parseName(p, tokName); err != nil {
-		return
-	}
-	if act.Parameters, err = parseActParms(p); err != nil {
-		return
-	}
+func parseActionDef(p *parser) (act Action) {
+	p.expect("(", ":action")
+	defer p.expect(")")
+	act.Name = parseName(p, tokName)
+	act.Parameters = parseActParms(p)
 	if p.accept(":precondition") {
 		if !p.accept("(", ")") {
-			if act.Precondition, err = parsePreGd(p); err != nil {
-				return
-			}
+			act.Precondition = parsePreGd(p)
 		}
 	}
 	if p.accept(":effect") {
 		if !p.accept("(", ")") {
-			if act.Effect, err = parseEffect(p); err != nil {
-				return
-			}
+			act.Effect = parseEffect(p)
 		}
 	}
-	err = p.expect(")")
 	return
 }
 
-func parseActParms(p *parser) (parms []TypedEntry, err error) {
-	if err = p.expect(":parameters", "("); err != nil {
-		return
-	}
-	if parms, err = parseTypedListString(p, tokQname); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
+func parseActParms(p *parser) (parms []TypedEntry) {
+	p.expect(":parameters", "(")
+	defer p.expect(")")
+	return parseTypedListString(p, tokQname)
 }
 
-func parsePreGd(p *parser) (form Formula, err error) {
+func parsePreGd(p *parser) Formula {
 	switch {
 	case p.accept("(", "and"):
-		form, err = parseAndGd(p, parsePreGd)
+		return parseAndGd(p, parsePreGd)
 	case p.accept("(", "forall"):
-		form, err = parseForallGd(p, parsePreGd)
-	default:
-		form, err = parsePrefGd(p)
+		return parseForallGd(p, parsePreGd)
 	}
-	return
+	return parsePrefGd(p)
 }
 
-func parsePrefGd(p *parser) (Formula, error) {
+func parsePrefGd(p *parser) Formula {
 	return parseGd(p)
 }
 
-func parseGd(p *parser) (form Formula, err error) {
+func parseGd(p *parser) Formula {
 	switch {
 	case p.accept("(", "and"):
-		form, err = parseAndGd(p, parseGd)
+		return parseAndGd(p, parseGd)
 	case p.accept("(", "or"):
-		form, err = parseOrGd(p, parseGd)
+		return parseOrGd(p, parseGd)
 	case p.accept("(", "not"):
-		form, err = parseNotGd(p)
-		if err != nil {
-			return
-		}
+		form := parseNotGd(p)
 		if lit, ok := form.(*LiteralNode); ok {
 			lit.Negative = !lit.Negative
-			form = lit
+			return lit
 		}
+		return form
 	case p.accept("(", "imply"):
-		form, err = parseImplyGd(p)
+		return parseImplyGd(p)
 	case p.accept("(", "exists"):
-		form, err = parseExistsGd(p, parseGd)
+		return parseExistsGd(p, parseGd)
 	case p.accept("(", "forall"):
-		form, err = parseForallGd(p, parseGd)
-	default:
-		form, err = parseLiteral(p, false)
+		return parseForallGd(p, parseGd)
 	}
-	return
+	return parseLiteral(p, false)
 }
 
-func parseLiteral(p *parser, eff bool) (lit *LiteralNode, err error) {
-	lit = new(LiteralNode)
-	lit.IsEffect = eff
+func parseLiteral(p *parser, eff bool) *LiteralNode {
+	lit := new(LiteralNode)
 	if p.accept("(", "not") {
 		lit.Negative = true
+		defer p.expect(")")
 	}
-	if err = p.expect("("); err != nil {
-		return
-	}
+	p.expect("(")
+	defer p.expect(")")
+
+	lit.IsEffect = eff
 	lit.Node = Node{p.Loc()}
-	var id Name
 	if p.accept("=") {
-		id = Name{"=", lit.Node.Loc()}
-	} else if id, err = parseName(p, tokName); err != nil {
-		return
+		lit.Predicate = Name{"=", lit.Node.Loc()}
+	} else {
+		lit.Predicate = parseName(p, tokName)
 	}
-	lit.Predicate = id
 	lit.Arguments = parseTerms(p)
-	if err = p.expect(")"); err != nil {
-		return
-	}
-	if lit.Negative {
-		err = p.expect(")")
-	}
-	return
+	return lit
 }
 
 func parseTerms(p *parser) (lst []Term) {
@@ -362,192 +280,133 @@ func parseTerms(p *parser) (lst []Term) {
 	return
 }
 
-type nested func(*parser) (Formula, error)
+func parseAndGd(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+	return &AndNode{MultiNode{
+		Node: Node{ p.Loc() },
+		Formula: parseFormulaStar(p, nested),
+	}}
+}
 
-func parseAndGd(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	var fs []Formula
+func parseFormulaStar(p *parser, nested func(*parser) Formula) (fs []Formula) {
 	for p.peek().typ == tokOpen {
-		var n Formula
-		if n, err = nested(p); err != nil {
-			return
-		}
-		fs = append(fs, n)
+		fs = append(fs, nested(p))
 	}
-	form = &AndNode{MultiNode{nd, fs}}
-	err = p.expect(")")
 	return
 }
 
-func parseOrGd(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	var fs []Formula
-	for p.peek().typ == tokOpen {
-		var n Formula
-		if n, err = nested(p); err != nil {
-			return
-		}
-		fs = append(fs, n)
-	}
-	form = &OrNode{MultiNode{nd, fs}}
-	err = p.expect(")")
-	return
+func parseOrGd(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+	return &OrNode{MultiNode{
+		Node: Node{ p.Loc() },
+		Formula: parseFormulaStar(p, nested),
+	}}
 }
 
-func parseNotGd(p *parser) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	var gd Formula
-	if gd, err = parseGd(p); err != nil {
-		return
-	}
-	form = &NotNode{UnaryNode{nd, gd}}
-	err = p.expect(")")
-	return
+func parseNotGd(p *parser) Formula {
+	defer p.expect(")")
+	return &NotNode{UnaryNode{
+		Node: Node{p.Loc()},
+		Formula: parseGd(p),
+	}}
 }
 
-func parseImplyGd(p *parser) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	var left, right Formula
-	if left, err = parseGd(p); err != nil {
-		return
-	}
-	if right, err = parseGd(p); err != nil {
-		return
-	}
-	form = &ImplyNode{BinaryNode{nd, left, right}}
-	err = p.expect(")")
-	return
+func parseImplyGd(p *parser) Formula {
+	defer p.expect(")")
+	return &ImplyNode{BinaryNode{
+		Node: Node{p.Loc()},
+		Left: parseGd(p),
+		Right: parseGd(p),
+	}}
 }
 
-func parseForallGd(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	if err = p.expect("("); err != nil {
-		return
+func parseForallGd(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+
+	loc := p.Loc()
+	return &ForallNode{
+		QuantNode: QuantNode{
+			Variables: parseQuantVariables(p),
+			UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+		},
+		IsEffect: false,
 	}
-	var vars []TypedEntry
-	if vars, err = parseTypedListString(p, tokQname); err != nil {
-		return
-	}
-	if err = p.expect(")"); err != nil {
-		return
-	}
-	var n Formula
-	if n, err = nested(p); err != nil {
-		return
-	}
-	form = &ForallNode{QuantNode{vars, UnaryNode{nd, n}}, false}
-	err = p.expect(")")
-	return
 }
 
-func parseExistsGd(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	if err = p.expect("("); err != nil {
-		return
-	}
-	var vars []TypedEntry
-	if vars, err = parseTypedListString(p, tokQname); err != nil {
-		return
-	}
-	if err = p.expect(")"); err != nil {
-		return
-	}
-	var n Formula
-	if n, err = nested(p); err != nil {
-		return
-	}
-	form = &ExistsNode{QuantNode{vars, UnaryNode{nd, n}}}
-	err = p.expect(")")
-	return
+func parseQuantVariables(p *parser) []TypedEntry {
+	p.expect("(")
+	defer p.expect(")")
+	return parseTypedListString(p, tokQname)
 }
 
-func parseEffect(p *parser) (Formula, error) {
+func parseExistsGd(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+	loc := p.Loc()
+	return &ExistsNode{QuantNode{
+		Variables: parseQuantVariables(p),
+		UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+	}}
+}
+
+func parseEffect(p *parser) Formula {
 	if p.accept("(", "and") {
 		return parseAndEffect(p, parseCeffect)
 	}
 	return parseCeffect(p)
 }
 
-func parseAndEffect(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	var fs []Formula
-	for p.peek().typ == tokOpen {
-		var f Formula
-		if f, err = nested(p); err != nil {
-			return
-		}
-		fs = append(fs, f)
-	}
-	form = &AndNode{MultiNode{nd, fs}}
-	err = p.expect(")")
-	return
+func parseAndEffect(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+	return &AndNode{MultiNode{
+		Node: Node{ p.Loc() },
+		Formula: parseFormulaStar(p, nested),
+	}}
 }
 
-func parseCeffect(p *parser) (form Formula, err error) {
+func parseCeffect(p *parser) Formula {
 	switch {
 	case p.accept("(", "forall"):
-		form, err = parseForallEffect(p, parseEffect)
+		return parseForallEffect(p, parseEffect)
 	case p.accept("(", "when"):
-		form, err = parseWhen(p, parseCondEffect)
-	default:
-		form, err = parsePeffect(p)
+		return parseWhen(p, parseCondEffect)
 	}
-	return
+	return parsePeffect(p)
 }
 
-func parseForallEffect(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	if err = p.expect("("); err != nil {
-		return
+func parseForallEffect(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+	loc := p.Loc()
+	return &ForallNode{
+		QuantNode: QuantNode{
+			Variables: parseQuantVariables(p),
+			UnaryNode: UnaryNode{Node{ loc }, nested(p)},
+		},
+		IsEffect: true,
 	}
-	var vars []TypedEntry
-	if vars, err = parseTypedListString(p, tokQname); err != nil {
-		return
-	}
-	if err = p.expect(")"); err != nil {
-		return
-	}
-	var n Formula
-	if n, err = nested(p); err != nil {
-		return
-	}
-	form = &ForallNode{QuantNode{vars, UnaryNode{nd, n}}, true}
-	err = p.expect(")")
-	return
 }
 
-func parseWhen(p *parser, nested nested) (form Formula, err error) {
-	nd := Node{p.Loc()}
-	var gd, n Formula
-	if gd, err = parseGd(p); err != nil {
-		return
+func parseWhen(p *parser, nested func(*parser) Formula) Formula {
+	defer p.expect(")")
+	loc := p.Loc()
+	return &WhenNode{
+		Condition: parseGd(p),
+		UnaryNode: UnaryNode{Node{ loc }, nested(p)},
 	}
-	if n, err = nested(p); err != nil {
-		return
-	}
-	form = &WhenNode{gd, UnaryNode{nd, n}}
-	err = p.expect(")")
-	return
 }
 
-func parsePeffect(p *parser) (form Formula, err error) {
+func parsePeffect(p *parser) Formula {
 	if _, ok := AssignOps[p.peekn(2).text]; ok && p.peek().typ == tokOpen {
 		return parseAssign(p)
 	}
 	return parseLiteral(p, true)
 }
 
-func parseAssign(p *parser) (a *AssignNode, err error) {
-	if err = p.expect("("); err != nil {
-		return
-	}
-	a = new(AssignNode)
-	if a.Op, err = parseName(p, tokName); err != nil {
-		return
-	}
-	if a.Lval, err = parseFhead(p); err != nil {
-		return
-	}
+func parseAssign(p *parser) *AssignNode {
+	p.expect("(")
+	defer p.expect(")")
+	a := new(AssignNode)
+	a.Op = parseName(p, tokName)
+	a.Lval = parseFhead(p)
 
 	// f-exp:
 	// We support :action-costs, which means that
@@ -561,158 +420,101 @@ func parseAssign(p *parser) (a *AssignNode, err error) {
 		a.IsNumber = true
 		a.Number = n.text
 	} else {
-		if a.Fhead, err = parseFhead(p); err != nil {
-			return
-		}
+		a.Fhead = parseFhead(p)
 	}
-	err = p.expect(")")
-	return
+	return a
 }
 
-func parseCondEffect(p *parser) (Formula, error) {
+func parseCondEffect(p *parser) Formula {
 	if p.accept("(", "and") {
 		return parseAndEffect(p, parsePeffect)
 	}
 	return parsePeffect(p)
 }
 
-func parseFhead(p *parser) (head Fhead, err error) {
+func parseFhead(p *parser) (head Fhead) {
 	open := p.accept("(")
-	if head.Name, err = parseName(p, tokName); err != nil {
-		return
-	}
+	head.Name = parseName(p, tokName)
 	if open {
 		head.Arguments = parseTerms(p)
-		err = p.expect(")")
+		p.expect(")")
 	}
 	return
 }
 
-func parseProblem(p *parser) (prob *Problem, err error) {
-	if err = p.expect("(", "define"); err != nil {
-		return
+func parseProblem(p *parser) *Problem {
+	return &Problem {
+		Name: parseProbName(p),
+		Domain: parseProbDomain(p),
+		Requirements: parseReqsDef(p),
+		Objects: parseObjsDecl(p),
+		Init: parseInit(p),
+		Goal: parseGoal(p),
+		Metric: parseMetric(p),
 	}
-	prob = new(Problem)
-	if prob.Name, err = parseProbName(p); err != nil {
-		return
-	}
-	if prob.Domain, err = parseProbDomain(p); err != nil {
-		return
-	}
-	if prob.Requirements, err = parseReqsDef(p); err != nil {
-		return
-	}
-	if prob.Objects, err = parseObjsDecl(p); err != nil {
-		return
-	}
-	if prob.Init, err = parseInit(p); err != nil {
-		return
-	}
-	if prob.Goal, err = parseGoal(p); err != nil {
-		return
-	}
-	if prob.Metric, err = parseMetric(p); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
 }
 
-func parseProbName(p *parser) (id Name, err error) {
-	if err = p.expect("(", "problem"); err != nil {
-		return
-	}
-	if id, err = parseName(p, tokName); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
+func parseProbName(p *parser) Name {
+	p.expect("(", "problem")
+	defer p.expect(")")
+	return parseName(p, tokName)
 }
 
-func parseProbDomain(p *parser) (id Name, err error) {
-	if err = p.expect("(", ":domain"); err != nil {
-		return
-	}
-	if id, err = parseName(p, tokName); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
+func parseProbDomain(p *parser) Name {
+	p.expect("(", ":domain")
+	defer p.expect(")")
+	return parseName(p, tokName)
 }
 
-func parseObjsDecl(p *parser) (objs []TypedEntry, err error) {
+func parseObjsDecl(p *parser) []TypedEntry {
 	if p.accept("(", ":objects") {
-		if objs, err = parseTypedListString(p, tokName); err != nil {
-			return
-		}
-		err = p.expect(")")
+		defer p.expect(")")
+		return parseTypedListString(p, tokName)
 	}
-	return
+	return nil
 }
 
-func parseInit(p *parser) (els []Formula, err error) {
-	if err = p.expect("(", ":init"); err != nil {
-		return
-	}
+func parseInit(p *parser) (els []Formula) {
+	p.expect("(", ":init")
+	defer p.expect(")")
 	for p.peek().typ == tokOpen {
-		var el Formula
-		if el, err = parseInitEl(p); err != nil {
-			return
-		}
-		els = append(els, el)
+		els = append(els, parseInitEl(p))
 	}
-	err = p.expect(")")
 	return
 }
 
-func parseInitEl(p *parser) (form Formula, err error) {
+func parseInitEl(p *parser) Formula {
+	loc := p.Loc()
 	if p.accept("(", "=") {
-		nd := Node{p.Loc()}
-		asn := &AssignNode{Op: Name{"=", nd.Loc()}, Node: nd}
-		if asn.Lval, err = parseFhead(p); err != nil {
-			return
+		defer p.expect(")")
+		return &AssignNode{
+			Node: Node{loc},
+			Op: Name{"=", p.Loc()},
+			Lval: parseFhead(p),
+			IsNumber: true,
+			Number: p.expectType(tokNum).text,
+			IsInit: true,
 		}
-		var t token
-		if t, err = p.expectType(tokNum); err != nil {
-			return
-		}
-		asn.IsNumber = true
-		asn.Number = t.text
-		asn.IsInit = true
-		form = asn
-		err = p.expect(")")
-		return
 	}
 	return parseLiteral(p, false)
 }
 
-func parseGoal(p *parser) (form Formula, err error) {
-	if err = p.expect("(", ":goal"); err != nil {
-		return
-	}
-	if form, err = parsePreGd(p); err != nil {
-		return
-	}
-	err = p.expect(")")
-	return
+func parseGoal(p *parser) Formula {
+	p.expect("(", ":goal")
+	defer p.expect(")")
+	return parsePreGd(p)
 }
 
-func parseMetric(p *parser) (m Metric, err error) {
+func parseMetric(p *parser) Metric {
 	if p.accept("(", ":metric") {
-		m = MetricMinCost
-		err = p.expect("minimize", "(", "total-cost", ")", ")")
+		p.expect("minimize", "(", "total-cost", ")", ")")
+		return MetricMinCost
 	}
-	return
+	return MetricMakespan
 }
 
-func parseNamesPlus(p *parser, typ tokenType) (ids []Name, err error) {
-	var id Name
-	if id, err = parseName(p, typ); err != nil {
-		return
-	}
-	ids = []Name{id}
-	ids = append(ids, parseNames(p, typ)...)
-	return
+func parseNamesPlus(p *parser, typ tokenType) []Name {
+	return append([]Name{parseName(p, typ)}, parseNames(p, typ)...)
 }
 
 func parseNames(p *parser, typ tokenType) (ids []Name) {
@@ -723,11 +525,9 @@ func parseNames(p *parser, typ tokenType) (ids []Name) {
 	return
 }
 
-func parseName(p *parser, typ tokenType) (Name, error) {
-	l := p.Loc()
-	id, err := p.expectType(typ)
-	if err != nil {
-		return Name{}, err
+func parseName(p *parser, typ tokenType) Name {
+	return Name{
+		Location: p.Loc(),
+		Str: p.expectType(typ).text,
 	}
-	return Name{id.text, l}, nil
 }

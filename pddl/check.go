@@ -48,10 +48,9 @@ type (
 	}
 )
 
-// Check returns an error if there are any
-// semantic errors in a domain or problem,
-// otherwise all definitions are numbered and
-// indentifiers are linked to their definition.
+// Check returns the first semantic error that
+// is encountered, if there are any, otherwise
+// it returns no error.
 //
 // If the problem is nil then only the domain
 // is checked.  The domain must not be nil.

@@ -226,23 +226,23 @@ func checkConstsDef(defs defs, objs []TypedEntry) {
 		obj := &objs[i]
 		for _, t := range obj.Types {
 			for _, s := range t.Definition.Supers {
-				s.addObject(obj)
+				s.addToDomain(obj)
 			}
 		}
 	}
 }
 
-// addObject adds an object to the list of all
+// addToDomain adds an object to the list of all
 // objects of the given type.  If the object has
 // already been added then it is not added
 // again.
-func (t *Type) addObject(obj *TypedEntry) {
-	for _, o := range t.Objects {
+func (t *Type) addToDomain(obj *TypedEntry) {
+	for _, o := range t.Domain {
 		if o == obj {
 			return
 		}
 	}
-	t.Objects = append(t.Objects, obj)
+	t.Domain = append(t.Domain, obj)
 }
 
 // checkPredsDef checks a list of predicate definitions

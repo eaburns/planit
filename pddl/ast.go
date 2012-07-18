@@ -89,9 +89,9 @@ type Type struct {
 	// including this current type.
 	Supers []*Type
 
-	// Objects is a pointer to the definition
+	// Domain is a pointer to the definition
 	// of each object of this type.
-	Objects []*TypedEntry
+	Domain []*TypedEntry
 }
 
 // A TypedEntry is the entry of a typed list.

@@ -321,48 +321,48 @@ var constsDefTests = []checkDomainTest {
 	{`(define (domain d) (:constants a b c a))`, "multiple", nil},
 	{`(define (domain d) (:requirements :typing) (:constants a - t))`, "undefined", nil},
 	{`(define (domain d) (:constants a b))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
+		domainChecks(checkTypeDomain("object", []string{"a", "b"}),
 			checkConstsTypes("a", []string{"object"}),
 			checkConstsTypes("b", []string{"object"}))},
 	{`(define (domain d) (:requirements :typing) (:constants a b - object))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
+		domainChecks(checkTypeDomain("object", []string{"a", "b"}),
 			checkConstsTypes("a", []string{"object"}),
 			checkConstsTypes("b", []string{"object"}))},
 	{`(define (domain d) (:requirements :typing) (:types t) (:constants a - t))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a"}),
-			checkTypeConsts("t", []string{"a"}),
+		domainChecks(checkTypeDomain("object", []string{"a"}),
+			checkTypeDomain("t", []string{"a"}),
 			checkConstsTypes("a", []string{"t"}))},
 	{`(define (domain d) (:requirements :typing) (:types t - s s) (:constants a - t))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a"}),
-			checkTypeConsts("t", []string{"a"}),
-			checkTypeConsts("s", []string{"a"}),
+		domainChecks(checkTypeDomain("object", []string{"a"}),
+			checkTypeDomain("t", []string{"a"}),
+			checkTypeDomain("s", []string{"a"}),
 			checkConstsTypes("a", []string{"t"}))},
 	{`(define (domain d) (:requirements :typing) (:types s t) (:constants a - (either s t)))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a"}),
-			checkTypeConsts("t", []string{"a"}),
-			checkTypeConsts("s", []string{"a"}),
+		domainChecks(checkTypeDomain("object", []string{"a"}),
+			checkTypeDomain("t", []string{"a"}),
+			checkTypeDomain("s", []string{"a"}),
 			checkConstsTypes("a", []string{"t", "s"}))},
 	{`(define (domain d) (:requirements :typing) (:types t - s s) (:constants a - (either s t)))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a"}),
-			checkTypeConsts("t", []string{"a"}),
-			checkTypeConsts("s", []string{"a"}),
+		domainChecks(checkTypeDomain("object", []string{"a"}),
+			checkTypeDomain("t", []string{"a"}),
+			checkTypeDomain("s", []string{"a"}),
 			checkConstsTypes("a", []string{"t", "s"}))},
 	{`(define (domain d) (:requirements :typing) (:types t) (:constants a b - t))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
-			checkTypeConsts("t", []string{"a", "b"}),
+		domainChecks(checkTypeDomain("object", []string{"a", "b"}),
+			checkTypeDomain("t", []string{"a", "b"}),
 			checkConstsTypes("a", []string{"t"}),
 			checkConstsTypes("b", []string{"t"}))},
 	{`(define (domain d) (:requirements :typing) (:types t) (:constants a - t b))`, "",
-		domainChecks(checkTypeConsts("object", []string{"a", "b"}),
-			checkTypeConsts("t", []string{"a"}),
+		domainChecks(checkTypeDomain("object", []string{"a", "b"}),
+			checkTypeDomain("t", []string{"a"}),
 			checkConstsTypes("a", []string{"t"}),
 			checkConstsTypes("b", []string{"object"}))},
 }
 
-// checkTypeConsts returns a function that
+// checkTypeDomain returns a function that
 // checks that the given type has all of the
 // assigned constants.
-func checkTypeConsts(tName string, consts []string) func(string, *Domain, *testing.T) {
+func checkTypeDomain(tName string, consts []string) func(string, *Domain, *testing.T) {
 	return func(pddl string, d *Domain, t *testing.T) {
 		typ := findType(tName, d.Types)
 		if typ == nil {
@@ -370,7 +370,7 @@ func checkTypeConsts(tName string, consts []string) func(string, *Domain, *testi
 		}
 		for _, con := range consts {
 			found := false
-			for _, obj := range typ.Objects {
+			for _, obj := range typ.Domain {
 				if con == obj.Str {
 					if found {
 						t.Errorf("%s\ntype %s: has constant %s multiple times",

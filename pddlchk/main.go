@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	cpuProfile = flag.String("cpuprof", "", "write CPU profile to this file")
-	memProfile = flag.String("memprof", "", "write memory profile to this file")
-	ignoreReqs = flag.Bool("ignore-missing-reqs", false, "ignore missing requirement errors")
+	cpuProfile      = flag.String("cpuprof", "", "write CPU profile to this file")
+	memProfile      = flag.String("memprof", "", "write memory profile to this file")
+	ignoreReqs      = flag.Bool("ignore-missing-reqs", false, "ignore missing requirement errors")
 	ignoreMultiObjs = flag.Bool("ignore-multiple-objects", false, "ignore multiply defined object errors")
 )
 

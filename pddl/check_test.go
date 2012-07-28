@@ -1,11 +1,11 @@
 package pddl
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
-	"fmt"
-	"os"
 )
 
 var reqsDefTests = []checkDomainTest{

@@ -12,7 +12,7 @@ const (
 
 	// totalCostName is the name of the total-cost
 	// function.
-	totalCostName  = "total-cost"
+	totalCostName = "total-cost"
 )
 
 // Check returns the first semantic error that
@@ -95,7 +95,7 @@ var (
 		":universal-preconditions":   true,
 		":existential-preconditions": true,
 		":conditional-effects":       true,
-		":action-costs": true,
+		":action-costs":              true,
 	}
 )
 
@@ -133,7 +133,7 @@ func checkReqsDef(defs defs, rs []Name, errs *Errors) {
 // it is added.
 func checkTypesDef(defs defs, d *Domain, errs *Errors) {
 	if len(d.Types) > 0 && !defs.reqs[":typing"] {
-		errs.badReq(d.Types[0], ":types",  ":typing")
+		errs.badReq(d.Types[0], ":types", ":typing")
 	}
 	// Ensure that object is defined
 	if !objectDefined(d.Types) {
@@ -637,8 +637,8 @@ func (m MultiplyDefinedError) Error() string {
 
 func (es *Errors) badReq(l Locer, used, reqd string) {
 	*es = append(*es, MissingRequirementError{
-		Location: l.Loc(),
-		Cause: used,
+		Location:    l.Loc(),
+		Cause:       used,
 		Requirement: reqd,
 	})
 }

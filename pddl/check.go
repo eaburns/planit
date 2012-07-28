@@ -624,26 +624,7 @@ func (es *errors) undefined(name Name, kind string) {
 
 // multipleDefs adds a multiply defined error.
 func (es *errors) multipleDefs(name Name, kind string) {
-	*es = append(*es, MultipleDefinitionError{
-		Name: name,
-		Kind: kind,
-	})
-}
-
-// MultipleDefinitionError is an error type used
-// when something is defined multiple times.
-type MultipleDefinitionError struct {
-	// Name is the name of the item that was
-	// multiply defined.
-	Name
-
-	// Kind is the kind of item: object, type, etc.
-	Kind string
-}
-
-func (m MultipleDefinitionError) Error() string {
-	return fmt.Sprintf("%s: %s %s is defined multiple times",
-		m.Loc(), m.Kind, m.Name)
+	es.add(name, "%s %s defined multiple times", kind, name.Str)
 }
 
 // badReq adds a missing requirement error to

@@ -14,7 +14,7 @@ for dir in $dirs/*; do
 		echo -n "$(basename $dir) $(basename $dom) $(basename $prob)… "
 		args=
 		if test "$(basename $dir)" = "pathways"; then
-			args="-ignore-multiple-objects"
+			args="-missing-requirements"
 		fi
 		time -f "%E %M kB" ./pddlchk $args $dom $prob || {
 			echo ./pddlchk $args $dom $prob

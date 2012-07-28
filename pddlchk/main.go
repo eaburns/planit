@@ -9,10 +9,9 @@ import (
 )
 
 var (
-	cpuProfile      = flag.String("cpuprof", "", "write CPU profile to this file")
-	memProfile      = flag.String("memprof", "", "write memory profile to this file")
-	ignoreReqs      = flag.Bool("ignore-missing-reqs", false, "ignore missing requirement errors")
-	ignoreMultiObjs = flag.Bool("ignore-multiple-objects", false, "ignore multiply defined object errors")
+	cpuProfile = flag.String("cpuprof", "", "write CPU profile to this file")
+	memProfile = flag.String("memprof", "", "write memory profile to this file")
+	ignoreReqs = flag.Bool("missing-requirements", false, "allow missing requirement errors")
 )
 
 func main() {
@@ -79,16 +78,11 @@ func main() {
 
 	const maxErrors = 5
 	if errs := pddl.Check(dom, prob); len(errs) > 0 {
-		if *ignoreReqs || *ignoreMultiObjs {
+		if *ignoreReqs {
 			var report []error
 			for _, e := range errs {
 				if _, ok := e.(pddl.MissingRequirementError); ok && *ignoreReqs {
 					continue
-				}
-				if m, ok := e.(pddl.MultipleDefinitionError); ok && *ignoreMultiObjs {
-					if m.Kind == "object" {
-						continue
-					}
 				}
 				report = append(report, e)
 			}

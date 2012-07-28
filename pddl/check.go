@@ -15,9 +15,8 @@ const (
 	totalCostName = "total-cost"
 )
 
-// Check returns the first semantic error that
-// is encountered, if there are any, otherwise
-// it returns no error.
+// Check returns a slice of all semantic errors
+// in the domain.
 //
 // If the problem is nil then only the domain
 // is checked.  The domain must not be nil.

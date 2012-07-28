@@ -27,8 +27,8 @@ func Check(d *Domain, p *Problem) (errs Errors) {
 		return
 	}
 	if p.Domain.Str != d.Str {
-		errs.cat(Errors([]error{fmt.Errorf("problem %s expects domain %s, but got %s",
-			p.Name, p.Domain, d.Name)}))
+		errs.errorf("problem %s expects domain %s, but got %s",
+			p.Name, p.Domain, d.Name)
 	}
 	checkReqsDef(defs, p.Requirements, &errs)
 	checkConstsDef(defs, p.Objects, &errs)
@@ -609,8 +609,8 @@ func (es *Errors) add(l Locer, f string, vs ...interface{}) {
 	*es = append(*es, Error{l.Loc(), fmt.Sprintf(f, vs...)})
 }
 
-func (es *Errors) cat(errs Errors) {
-	*es = append(*es, errs...)
+func (es *Errors) errorf(f string, vs ...interface{}) {
+	*es = append(*es, fmt.Errorf(f, vs...))
 }
 
 func (es *Errors) badReq(l Locer, used, reqd string) {

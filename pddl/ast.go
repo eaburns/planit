@@ -186,7 +186,7 @@ type Formula interface {
 
 	// check panicks an error if there is a
 	// semantic error in the formula.
-	check(defs, *Errors)
+	check(defs, *errors)
 }
 
 // A Node is a node in the formula tree.

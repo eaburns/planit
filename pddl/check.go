@@ -21,10 +21,11 @@ const (
 //
 // If the problem is nil then only the domain
 // is checked.  The domain must not be nil.
-func Check(d *Domain, p *Problem) (errs Errors) {
+func Check(d *Domain, p *Problem) []error {
+	var errs errors
 	defs := checkDomain(d, &errs)
 	if p == nil {
-		return
+		return errs
 	}
 	if p.Domain.Str != d.Str {
 		errs.errorf("problem %s expects domain %s, but got %s",
@@ -37,7 +38,7 @@ func Check(d *Domain, p *Problem) (errs Errors) {
 	}
 	p.Goal.check(defs, &errs)
 	// check the metric
-	return
+	return errs
 }
 
 type (
@@ -61,7 +62,7 @@ type (
 	}
 )
 
-func checkDomain(d *Domain, errs *Errors) defs {
+func checkDomain(d *Domain, errs *errors) defs {
 	defs := defs{
 		reqs:   make(map[string]bool),
 		types:  make(map[string]*Type),
@@ -99,7 +100,7 @@ var (
 	}
 )
 
-func checkReqsDef(defs defs, rs []Name, errs *Errors) {
+func checkReqsDef(defs defs, rs []Name, errs *errors) {
 	for _, r := range rs {
 		req := strings.ToLower(r.Str)
 		if !supportedReqs[req] {
@@ -131,7 +132,7 @@ func checkReqsDef(defs defs, rs []Name, errs *Errors) {
 // builds the list of all super types of each type. 
 // If the implicit object type was not defined then
 // it is added.
-func checkTypesDef(defs defs, d *Domain, errs *Errors) {
+func checkTypesDef(defs defs, d *Domain, errs *errors) {
 	if len(d.Types) > 0 && !defs.reqs[":typing"] {
 		errs.badReq(d.Types[0], ":types", ":typing")
 	}
@@ -211,7 +212,7 @@ func superTypes(defs defs, t *Type) (supers []*Type) {
 // checkConstsDef checks a list of constant or
 // object definitions and maps names to their
 // definitions.
-func checkConstsDef(defs defs, objs []TypedEntry, errs *Errors) {
+func checkConstsDef(defs defs, objs []TypedEntry, errs *errors) {
 	for i, obj := range objs {
 		if defs.consts[strings.ToLower(obj.Str)] != nil {
 			errs.multiDef(obj.Name, "object")
@@ -253,7 +254,7 @@ func (t *Type) addToDomain(obj *TypedEntry) {
 // and maps predicate names to their definitions.
 // If :equality is required and the implicit = predicate
 // was not defined then it is added.
-func checkPredsDef(defs defs, d *Domain, errs *Errors) {
+func checkPredsDef(defs defs, d *Domain, errs *errors) {
 	if defs.reqs[":equality"] && !equalDefined(d.Predicates) {
 		d.Predicates = append(d.Predicates, Predicate{
 			Name: Name{Str: "="},
@@ -295,7 +296,7 @@ func equalDefined(ps []Predicate) bool {
 
 // checkFuncsDef checks a list of function definitions,
 // and maps function names to their definitions.
-func checkFuncsDef(defs defs, fs []Function, errs *Errors) {
+func checkFuncsDef(defs defs, fs []Function, errs *errors) {
 	if len(fs) > 0 && !defs.reqs[":action-costs"] {
 		errs.badReq(fs[0], ":functions", ":action-costs")
 	}
@@ -317,7 +318,7 @@ func checkFuncsDef(defs defs, fs []Function, errs *Errors) {
 	}
 }
 
-func checkActionDef(defs defs, act *Action, errs *Errors) {
+func checkActionDef(defs defs, act *Action, errs *errors) {
 	checkTypedEntries(defs, act.Parameters, errs)
 	counts := make(map[string]int, len(act.Parameters))
 	for i, parm := range act.Parameters {
@@ -353,7 +354,7 @@ func (v *varDefs) push(d *TypedEntry) *varDefs {
 // are valid then they are linked to their type
 // definitions.  All identifiers that have no declared
 // type are linked to the object type.
-func checkTypedEntries(defs defs, lst []TypedEntry, errs *Errors) {
+func checkTypedEntries(defs defs, lst []TypedEntry, errs *errors) {
 	for i := range lst {
 		checkTypeNames(defs, lst[i].Types, errs)
 		if len(lst[i].Types) == 0 {
@@ -368,7 +369,7 @@ func checkTypedEntries(defs defs, lst []TypedEntry, errs *Errors) {
 // checkTypeNames checks that all of the type
 // names are defined.  Each defined type name
 // is linked to its type definition.
-func checkTypeNames(defs defs, ts []TypeName, errs *Errors) {
+func checkTypeNames(defs defs, ts []TypeName, errs *errors) {
 	if len(ts) > 0 && !defs.reqs[":typing"] {
 		errs.badReq(ts[0], "types", ":typing")
 	}
@@ -382,22 +383,22 @@ func checkTypeNames(defs defs, ts []TypeName, errs *Errors) {
 	}
 }
 
-func (u *UnaryNode) check(defs defs, errs *Errors) {
+func (u *UnaryNode) check(defs defs, errs *errors) {
 	u.Formula.check(defs, errs)
 }
 
-func (b *BinaryNode) check(defs defs, errs *Errors) {
+func (b *BinaryNode) check(defs defs, errs *errors) {
 	b.Left.check(defs, errs)
 	b.Right.check(defs, errs)
 }
 
-func (m *MultiNode) check(defs defs, errs *Errors) {
+func (m *MultiNode) check(defs defs, errs *errors) {
 	for i := range m.Formula {
 		m.Formula[i].check(defs, errs)
 	}
 }
 
-func (q *QuantNode) check(defs defs, errs *Errors) {
+func (q *QuantNode) check(defs defs, errs *errors) {
 	checkTypedEntries(defs, q.Variables, errs)
 	counts := make(map[string]int, len(q.Variables))
 	for i, v := range q.Variables {
@@ -419,14 +420,14 @@ func (v *varDefs) pop() *varDefs {
 	return v.up
 }
 
-func (n *OrNode) check(defs defs, errs *Errors) {
+func (n *OrNode) check(defs defs, errs *errors) {
 	if !defs.reqs[":disjunctive-preconditions"] {
 		errs.badReq(n, "or", ":disjunctive-preconditions")
 	}
 	n.MultiNode.check(defs, errs)
 }
 
-func (n *NotNode) check(defs defs, errs *Errors) {
+func (n *NotNode) check(defs defs, errs *errors) {
 	switch _, ok := n.Formula.(*LiteralNode); {
 	case ok && !defs.reqs[":negative-preconditions"]:
 		errs.badReq(n, "negative literal", ":negative-preconditions")
@@ -436,14 +437,14 @@ func (n *NotNode) check(defs defs, errs *Errors) {
 	n.UnaryNode.check(defs, errs)
 }
 
-func (i *ImplyNode) check(defs defs, errs *Errors) {
+func (i *ImplyNode) check(defs defs, errs *errors) {
 	if !defs.reqs[":disjunctive-preconditions"] {
 		errs.badReq(i, "imply", ":disjunctive-preconditions")
 	}
 	i.BinaryNode.check(defs, errs)
 }
 
-func (f *ForallNode) check(defs defs, errs *Errors) {
+func (f *ForallNode) check(defs defs, errs *errors) {
 	switch {
 	case !f.IsEffect && !defs.reqs[":universal-preconditions"]:
 		errs.badReq(f, "forall", ":universal-preconditions")
@@ -453,14 +454,14 @@ func (f *ForallNode) check(defs defs, errs *Errors) {
 	f.QuantNode.check(defs, errs)
 }
 
-func (e *ExistsNode) check(defs defs, errs *Errors) {
+func (e *ExistsNode) check(defs defs, errs *errors) {
 	if !defs.reqs[":existential-preconditions"] {
 		errs.badReq(e, "exists", ":existential-preconditions")
 	}
 	e.QuantNode.check(defs, errs)
 }
 
-func (w *WhenNode) check(defs defs, errs *Errors) {
+func (w *WhenNode) check(defs defs, errs *errors) {
 	if !defs.reqs[":conditional-effects"] {
 		errs.badReq(w, "when", ":conditional-effects")
 	}
@@ -468,7 +469,7 @@ func (w *WhenNode) check(defs defs, errs *Errors) {
 	w.UnaryNode.check(defs, errs)
 }
 
-func (lit *LiteralNode) check(defs defs, errs *Errors) {
+func (lit *LiteralNode) check(defs defs, errs *errors) {
 	if lit.Definition = defs.preds[strings.ToLower(lit.Predicate.Str)]; lit.Definition == nil {
 		errs.undefined(lit.Predicate, "predicate")
 		return
@@ -485,7 +486,7 @@ func (lit *LiteralNode) check(defs defs, errs *Errors) {
 
 // checkInst checks the arguments match the parameters
 // of a predicate or function instantiation.
-func checkInst(defs defs, n Name, args []Term, parms []TypedEntry, errs *Errors) {
+func checkInst(defs defs, n Name, args []Term, parms []TypedEntry, errs *errors) {
 	if len(args) != len(parms) {
 		var argStr = "arguments"
 		if len(parms) == 1 {
@@ -557,7 +558,7 @@ func compatTypes(left, right []TypeName) bool {
 	return true
 }
 
-func (a *AssignNode) check(defs defs, errs *Errors) {
+func (a *AssignNode) check(defs defs, errs *errors) {
 	if !defs.reqs[":action-costs"] {
 		errs.badReq(a, a.Op.Str, ":action-costs")
 	}
@@ -596,7 +597,7 @@ func negative(n string) bool {
 	return neg
 }
 
-func (h *Fhead) check(defs defs, errs *Errors) {
+func (h *Fhead) check(defs defs, errs *errors) {
 	if h.Definition = defs.funcs[strings.ToLower(h.Str)]; h.Definition == nil {
 		errs.undefined(h.Name, " function")
 		return
@@ -604,26 +605,26 @@ func (h *Fhead) check(defs defs, errs *Errors) {
 	checkInst(defs, h.Name, h.Arguments, h.Definition.Parameters, errs)
 }
 
-// Errors wraps a slice of errors.
-type Errors []error
+// errors wraps a slice of errors.
+type errors []error
 
 // add adds an Error to the slice.
-func (es *Errors) add(l Locer, f string, vs ...interface{}) {
+func (es *errors) add(l Locer, f string, vs ...interface{}) {
 	*es = append(*es, Error{l.Loc(), fmt.Sprintf(f, vs...)})
 }
 
 // errorf adds an error. 
-func (es *Errors) errorf(f string, vs ...interface{}) {
+func (es *errors) errorf(f string, vs ...interface{}) {
 	*es = append(*es, fmt.Errorf(f, vs...))
 }
 
 // undefined adds an undefined error.
-func (es *Errors) undefined(name Name, kind string) {
+func (es *errors) undefined(name Name, kind string) {
 	es.add(name, "undefined %s %s", kind, name.Str)
 }
 
 // multiDef adds a multiply defined error.
-func (es *Errors) multiDef(name Name, kind string) {
+func (es *errors) multiDef(name Name, kind string) {
 	*es = append(*es, MultiplyDefinedError{
 		Name: name,
 		Kind: kind,
@@ -648,7 +649,7 @@ func (m MultiplyDefinedError) Error() string {
 
 // badReq adds a missing requirement error to
 // the slice.
-func (es *Errors) badReq(l Locer, used, reqd string) {
+func (es *errors) badReq(l Locer, used, reqd string) {
 	*es = append(*es, MissingRequirementError{
 		Location:    l.Loc(),
 		Cause:       used,

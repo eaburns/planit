@@ -11,6 +11,7 @@ import (
 var (
 	cpuProfile = flag.String("cpuprof", "", "write CPU profile to this file")
 	memProfile = flag.String("memprof", "", "write memory profile to this file")
+	ignoreReqs = flag.Bool("ignore-missing-reqs", false, "ignore missing requirement errors")
 )
 
 func main() {
@@ -77,13 +78,29 @@ func main() {
 
 	const maxErrors = 5
 	if errs := pddl.Check(dom, prob); len(errs) > 0 {
+		if *ignoreReqs {
+			var report []error
+			for _, e := range errs {
+				if _, ok := e.(pddl.MissingRequirementError); ok {
+					continue
+				}
+				report = append(report, e)
+			}
+			errs = report
+		}
 		for i := 0; i < maxErrors && i < len(errs); i++ {
 			log.Printf(errs[i].Error())
 		}
 		if len(errs) > maxErrors {
 			log.Print("too many errors, truncating list")
 		}
-		log.Fatalf("%d errors\n", len(errs))
+		if len(errs) > 0 {
+			errors := "errors"
+			if len(errs) == 1 {
+				errors = "error"
+			}
+			log.Fatalf("%d %s\n", len(errs), errors)
+		}
 	}
 }
 

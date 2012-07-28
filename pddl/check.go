@@ -614,7 +614,7 @@ func (es *Errors) cat(errs Errors) {
 }
 
 func (es *Errors) badReq(l Locer, used, reqd string) {
-	*es = append(*es, RequirementError{
+	*es = append(*es, MissingRequirementError{
 		Location: l.Loc(),
 		Cause: used,
 		Requirement: reqd,
@@ -629,11 +629,11 @@ func (es *Errors) undefined(name Name, kind string) {
 	es.add(name, "undefined %s %s", kind, name.Str)
 }
 
-type RequirementError struct {
+type MissingRequirementError struct {
 	Location
 	Cause, Requirement string
 }
 
-func (r RequirementError) Error() string {
+func (r MissingRequirementError) Error() string {
 	return r.Loc().String() + " " + r.Cause + " requires " + r.Requirement
 }

@@ -104,6 +104,7 @@ func checkReqsDef(defs defs, rs []Name, errs *Errors) {
 		req := strings.ToLower(r.Str)
 		if !supportedReqs[req] {
 			errs.add(r, "requirement %s is not supported", r)
+			continue
 		}
 		if defs.reqs[req] {
 			errs.multiDef(r, "requirement")

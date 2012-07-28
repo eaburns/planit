@@ -604,20 +604,25 @@ func (h *Fhead) check(defs defs, errs *Errors) {
 	checkInst(defs, h.Name, h.Arguments, h.Definition.Parameters, errs)
 }
 
+// Errors wraps a slice of errors.
 type Errors []error
 
+// add adds an Error to the slice.
 func (es *Errors) add(l Locer, f string, vs ...interface{}) {
 	*es = append(*es, Error{l.Loc(), fmt.Sprintf(f, vs...)})
 }
 
+// errorf adds an error. 
 func (es *Errors) errorf(f string, vs ...interface{}) {
 	*es = append(*es, fmt.Errorf(f, vs...))
 }
 
+// undefined adds an undefined error.
 func (es *Errors) undefined(name Name, kind string) {
 	es.add(name, "undefined %s %s", kind, name.Str)
 }
 
+// multiDef adds a multiply defined error.
 func (es *Errors) multiDef(name Name, kind string) {
 	*es = append(*es, MultiplyDefinedError{
 		Name: name,
@@ -625,8 +630,14 @@ func (es *Errors) multiDef(name Name, kind string) {
 	})
 }
 
+// MultiplyDefinedError is an error type used
+// when something is defined multiple times.
 type MultiplyDefinedError struct {
+	// Name is the name of the item that was
+	// multiply defined.
 	Name
+
+	// Kind is the kind of item: object, type, etc.
 	Kind string
 }
 
@@ -635,6 +646,8 @@ func (m MultiplyDefinedError) Error() string {
 		m.Loc(), m.Kind, m.Name)
 }
 
+// badReq adds a missing requirement error to
+// the slice.
 func (es *Errors) badReq(l Locer, used, reqd string) {
 	*es = append(*es, MissingRequirementError{
 		Location:    l.Loc(),
@@ -643,9 +656,19 @@ func (es *Errors) badReq(l Locer, used, reqd string) {
 	})
 }
 
+// MissingRequirementError is used when a requirement
+// is missing.
 type MissingRequirementError struct {
+	// Location is the location in the PDDL file
+	// from which the requirement is missing.
 	Location
-	Cause, Requirement string
+
+	// Cause is a word describing the cause
+	// of the requirement.
+	Cause string
+
+	// Requirement is the name of the requirement.
+	Requirement string
 }
 
 func (r MissingRequirementError) Error() string {

@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"fmt"
+	"os"
 )
 
 var reqsDefTests = []checkDomainTest{
@@ -781,18 +783,28 @@ func (c checkDomainTest) run(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s\nparse error: %s", c.pddl, err)
 	}
-	switch err := Check(dom.(*Domain), nil); {
-	case err == nil && c.errorRegexp == "":
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			return
+		}
+		fmt.Fprintf(os.Stderr, "panic checking\n%s\n", c.pddl)
+		panic(r)
+	}()
+
+	switch errs := Check(dom.(*Domain), nil); {
+	case len(errs) == 0 && c.errorRegexp == "":
 		if c.test != nil {
 			c.test(c.pddl, dom.(*Domain), t)
 		}
-	case err == nil && c.errorRegexp != "":
+	case len(errs) == 0 && c.errorRegexp != "":
 		t.Errorf("%s\nexpected error matching '%s'", c.pddl, c.errorRegexp)
-	case err != nil && c.errorRegexp == "":
+	case len(errs) > 0 && c.errorRegexp == "":
 		t.Errorf("%s\nunexpected error '%s'", c.pddl, err)
-	case err != nil && c.errorRegexp != "":
+	case len(errs) > 0 && c.errorRegexp != "":
 		re := regexp.MustCompile(c.errorRegexp)
-		if !re.Match([]byte(err.Error())) {
+		if !re.Match([]byte(errs[0].Error())) {
 			t.Errorf("%s\nexpected error matching '%s', got '%s'",
 				c.pddl, c.errorRegexp, err.Error())
 		}

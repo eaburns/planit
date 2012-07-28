@@ -186,7 +186,7 @@ type Formula interface {
 
 	// check panicks an error if there is a
 	// semantic error in the formula.
-	check(defs)
+	check(defs, *Errors)
 }
 
 // A Node is a node in the formula tree.
@@ -388,8 +388,7 @@ func (l Location) String() string {
 // An Error holds information about errors
 // assocated with locations in a PDDL file.
 type Error struct {
-	// Location is the location of the
-	// cause of the error.
+	// Location is the location of the cause of the error.
 	Location
 
 	// msg is the error's message.

@@ -74,8 +74,16 @@ func main() {
 			panic("Impossible")
 		}
 	}
-	if err := pddl.Check(dom, prob); err != nil {
-		log.Fatal(err)
+
+	const maxErrors = 5
+	if errs := pddl.Check(dom, prob); len(errs) > 0 {
+		for i := 0; i < maxErrors && i < len(errs); i++ {
+			log.Printf(errs[i].Error())
+		}
+		if len(errs) > maxErrors {
+			log.Print("too many errors, truncating list")
+		}
+		log.Fatalf("%d errors\n", len(errs))
 	}
 }
 

@@ -85,7 +85,7 @@ func main() {
 				if _, ok := e.(pddl.MissingRequirementError); ok && *ignoreReqs {
 					continue
 				}
-				if m, ok := e.(pddl.MultiplyDefinedError); ok && *ignoreMultiObjs {
+				if m, ok := e.(pddl.MultipleDefinitionError); ok && *ignoreMultiObjs {
 					if m.Kind == "object" {
 						continue
 					}

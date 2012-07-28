@@ -107,7 +107,7 @@ func checkReqsDef(defs defs, rs []Name, errs *errors) {
 			continue
 		}
 		if defs.reqs[req] {
-			errs.multiDef(r, "requirement")
+			errs.multipleDefs(r, "requirement")
 		}
 		defs.reqs[req] = true
 	}
@@ -151,7 +151,7 @@ func checkTypesDef(defs defs, d *Domain, errs *errors) {
 			continue
 		}
 		if defs.types[strings.ToLower(t.Str)] != nil {
-			errs.multiDef(t.Name, "type")
+			errs.multipleDefs(t.Name, "type")
 			continue
 		}
 		d.Types[i].Num = len(defs.types)
@@ -214,7 +214,7 @@ func superTypes(defs defs, t *Type) (supers []*Type) {
 func checkConstsDef(defs defs, objs []TypedEntry, errs *errors) {
 	for i, obj := range objs {
 		if defs.consts[strings.ToLower(obj.Str)] != nil {
-			errs.multiDef(obj.Name, "object")
+			errs.multipleDefs(obj.Name, "object")
 			continue
 		}
 		objs[i].Num = len(defs.consts)
@@ -266,14 +266,14 @@ func checkPredsDef(defs defs, d *Domain, errs *errors) {
 	}
 	for i, p := range d.Predicates {
 		if defs.preds[strings.ToLower(p.Str)] != nil {
-			errs.multiDef(p.Name, "predicate")
+			errs.multipleDefs(p.Name, "predicate")
 			continue
 		}
 		checkTypedEntries(defs, p.Parameters, errs)
 		counts := make(map[string]int, len(p.Parameters))
 		for _, parm := range p.Parameters {
 			if counts[parm.Str] > 0 {
-				errs.multiDef(parm.Name, "parameter")
+				errs.multipleDefs(parm.Name, "parameter")
 			}
 			counts[parm.Str]++
 		}
@@ -301,14 +301,14 @@ func checkFuncsDef(defs defs, fs []Function, errs *errors) {
 	}
 	for i, f := range fs {
 		if defs.funcs[strings.ToLower(f.Str)] != nil {
-			errs.multiDef(f.Name, "function")
+			errs.multipleDefs(f.Name, "function")
 			continue
 		}
 		checkTypedEntries(defs, f.Parameters, errs)
 		counts := make(map[string]int, len(f.Parameters))
 		for _, parm := range f.Parameters {
 			if counts[parm.Str] > 0 {
-				errs.multiDef(parm.Name, "parameter")
+				errs.multipleDefs(parm.Name, "parameter")
 			}
 			counts[parm.Str]++
 		}
@@ -322,7 +322,7 @@ func checkActionDef(defs defs, act *Action, errs *errors) {
 	counts := make(map[string]int, len(act.Parameters))
 	for i, parm := range act.Parameters {
 		if counts[parm.Str] > 0 {
-			errs.multiDef(parm.Name, "parameter")
+			errs.multipleDefs(parm.Name, "parameter")
 		}
 		counts[parm.Str]++
 		defs.vars = defs.vars.push(&act.Parameters[i])
@@ -402,7 +402,7 @@ func (q *QuantNode) check(defs defs, errs *errors) {
 	counts := make(map[string]int, len(q.Variables))
 	for i, v := range q.Variables {
 		if counts[v.Str] > 0 {
-			errs.multiDef(v.Name, "variable")
+			errs.multipleDefs(v.Name, "variable")
 		}
 		counts[v.Str]++
 		defs.vars = defs.vars.push(&q.Variables[i])
@@ -622,17 +622,17 @@ func (es *errors) undefined(name Name, kind string) {
 	es.add(name, "undefined %s %s", kind, name.Str)
 }
 
-// multiDef adds a multiply defined error.
-func (es *errors) multiDef(name Name, kind string) {
-	*es = append(*es, MultiplyDefinedError{
+// multipleDefs adds a multiply defined error.
+func (es *errors) multipleDefs(name Name, kind string) {
+	*es = append(*es, MultipleDefinitionError{
 		Name: name,
 		Kind: kind,
 	})
 }
 
-// MultiplyDefinedError is an error type used
+// MultipleDefinitionError is an error type used
 // when something is defined multiple times.
-type MultiplyDefinedError struct {
+type MultipleDefinitionError struct {
 	// Name is the name of the item that was
 	// multiply defined.
 	Name
@@ -641,7 +641,7 @@ type MultiplyDefinedError struct {
 	Kind string
 }
 
-func (m MultiplyDefinedError) Error() string {
+func (m MultipleDefinitionError) Error() string {
 	return fmt.Sprintf("%s: %s %s is defined multiple times",
 		m.Loc(), m.Kind, m.Name)
 }

@@ -150,12 +150,12 @@ func checkTypesDef(defs defs, d *Domain, errs *Errors) {
 			errs.add(t, "either super types are not semantically defined")
 			continue
 		}
-		if defs.types[t.Str] != nil {
+		if defs.types[strings.ToLower(t.Str)] != nil {
 			errs.multiDef(t.Name, "type")
 			continue
 		}
 		d.Types[i].Num = len(defs.types)
-		defs.types[t.Str] = &d.Types[i]
+		defs.types[strings.ToLower(t.Str)] = &d.Types[i]
 	}
 
 	// Link parent types to their definitions
@@ -213,12 +213,12 @@ func superTypes(defs defs, t *Type) (supers []*Type) {
 // definitions.
 func checkConstsDef(defs defs, objs []TypedEntry, errs *Errors) {
 	for i, obj := range objs {
-		if defs.consts[obj.Str] != nil {
+		if defs.consts[strings.ToLower(obj.Str)] != nil {
 			errs.multiDef(obj.Name, "object")
 			continue
 		}
 		objs[i].Num = len(defs.consts)
-		defs.consts[obj.Str] = &objs[i]
+		defs.consts[strings.ToLower(obj.Str)] = &objs[i]
 	}
 	checkTypedEntries(defs, objs, errs)
 
@@ -265,7 +265,7 @@ func checkPredsDef(defs defs, d *Domain, errs *Errors) {
 		})
 	}
 	for i, p := range d.Predicates {
-		if defs.preds[p.Str] != nil {
+		if defs.preds[strings.ToLower(p.Str)] != nil {
 			errs.multiDef(p.Name, "predicate")
 			continue
 		}
@@ -278,7 +278,7 @@ func checkPredsDef(defs defs, d *Domain, errs *Errors) {
 			counts[parm.Str]++
 		}
 		d.Predicates[i].Num = len(defs.preds)
-		defs.preds[p.Str] = &d.Predicates[i]
+		defs.preds[strings.ToLower(p.Str)] = &d.Predicates[i]
 	}
 }
 
@@ -300,7 +300,7 @@ func checkFuncsDef(defs defs, fs []Function, errs *Errors) {
 		errs.badReq(fs[0], ":functions", ":action-costs")
 	}
 	for i, f := range fs {
-		if defs.funcs[f.Str] != nil {
+		if defs.funcs[strings.ToLower(f.Str)] != nil {
 			errs.multiDef(f.Name, "function")
 			continue
 		}
@@ -313,7 +313,7 @@ func checkFuncsDef(defs defs, fs []Function, errs *Errors) {
 			counts[parm.Str]++
 		}
 		fs[i].Num = len(defs.funcs)
-		defs.funcs[f.Str] = &fs[i]
+		defs.funcs[strings.ToLower(f.Str)] = &fs[i]
 	}
 }
 
@@ -373,7 +373,7 @@ func checkTypeNames(defs defs, ts []TypeName, errs *Errors) {
 		errs.badReq(ts[0], "types", ":typing")
 	}
 	for j, t := range ts {
-		switch def := defs.types[t.Str]; def {
+		switch def := defs.types[strings.ToLower(t.Str)]; def {
 		case nil:
 			errs.undefined(t.Name, "type")
 		default:
@@ -469,7 +469,7 @@ func (w *WhenNode) check(defs defs, errs *Errors) {
 }
 
 func (lit *LiteralNode) check(defs defs, errs *Errors) {
-	if lit.Definition = defs.preds[lit.Predicate.Str]; lit.Definition == nil {
+	if lit.Definition = defs.preds[strings.ToLower(lit.Predicate.Str)]; lit.Definition == nil {
 		errs.undefined(lit.Predicate, "predicate")
 		return
 	}
@@ -496,7 +496,7 @@ func checkInst(defs defs, n Name, args []Term, parms []TypedEntry, errs *Errors)
 
 	for i := range args {
 		kind := "constant"
-		args[i].Definition = defs.consts[args[i].Str]
+		args[i].Definition = defs.consts[strings.ToLower(args[i].Str)]
 		if args[i].Variable {
 			args[i].Definition = defs.vars.find(args[i].Str)
 			kind = "variable"
@@ -520,7 +520,7 @@ func (v *varDefs) find(n string) *TypedEntry {
 	if v == nil {
 		return nil
 	}
-	if v.name == n {
+	if strings.ToLower(v.name) == strings.ToLower(n) {
 		return v.definition
 	}
 	return v.up.find(n)
@@ -597,7 +597,7 @@ func negative(n string) bool {
 }
 
 func (h *Fhead) check(defs defs, errs *Errors) {
-	if h.Definition = defs.funcs[h.Str]; h.Definition == nil {
+	if h.Definition = defs.funcs[strings.ToLower(h.Str)]; h.Definition == nil {
 		errs.undefined(h.Name, " function")
 		return
 	}
@@ -614,6 +614,27 @@ func (es *Errors) errorf(f string, vs ...interface{}) {
 	*es = append(*es, fmt.Errorf(f, vs...))
 }
 
+func (es *Errors) undefined(name Name, kind string) {
+	es.add(name, "undefined %s %s", kind, name.Str)
+}
+
+func (es *Errors) multiDef(name Name, kind string) {
+	*es = append(*es, MultiplyDefinedError{
+		Name: name,
+		Kind: kind,
+	})
+}
+
+type MultiplyDefinedError struct {
+	Name
+	Kind string
+}
+
+func (m MultiplyDefinedError) Error() string {
+	return fmt.Sprintf("%s: %s %s is defined multiple times",
+		m.Loc(), m.Kind, m.Name)
+}
+
 func (es *Errors) badReq(l Locer, used, reqd string) {
 	*es = append(*es, MissingRequirementError{
 		Location: l.Loc(),
@@ -622,19 +643,11 @@ func (es *Errors) badReq(l Locer, used, reqd string) {
 	})
 }
 
-func (es *Errors) multiDef(name Name, kind string) {
-	es.add(name, "%s %s is defined multiple times", kind, name)
-}
-
-func (es *Errors) undefined(name Name, kind string) {
-	es.add(name, "undefined %s %s", kind, name.Str)
-}
-
 type MissingRequirementError struct {
 	Location
 	Cause, Requirement string
 }
 
 func (r MissingRequirementError) Error() string {
-	return r.Loc().String() + " " + r.Cause + " requires " + r.Requirement
+	return r.Loc().String() + ": " + r.Cause + " requires " + r.Requirement
 }

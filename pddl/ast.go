@@ -138,7 +138,7 @@ type Action struct {
 	Effect Formula
 }
 
-// A Predicates represents a predicate definition.
+// A Predicate represents a predicate definition.
 type Predicate struct {
 	// Name is the name of the predicate.
 	Name
@@ -158,7 +158,7 @@ type Predicate struct {
 	PosEffect, NegEffect bool
 }
 
-// A Functions represents a function definition.
+// A Function represents a function definition.
 type Function struct {
 	// Name is the name of the function.
 	Name
@@ -374,10 +374,12 @@ type Location struct {
 	Line int
 }
 
+// Loc returns the Location, implementing the Locer interface.
 func (l Location) Loc() Location {
 	return l
 }
 
+// String returns a human-readable string representation of the location.
 func (l Location) String() string {
 	if l.Line < 0 {
 		return l.File

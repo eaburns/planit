@@ -128,7 +128,7 @@ func checkReqsDef(defs defs, rs []Name, errs *errors) {
 
 // checkTypesDef checks a list of type definitions
 // and maps type names to their definitions, and
-// builds the list of all super types of each type. 
+// builds the list of all super types of each type.
 // If the implicit object type was not defined then
 // it is added.
 func checkTypesDef(defs defs, d *Domain, errs *errors) {
@@ -612,7 +612,7 @@ func (es *errors) add(l Locer, f string, vs ...interface{}) {
 	*es = append(*es, Error{l.Loc(), fmt.Sprintf(f, vs...)})
 }
 
-// errorf adds an error. 
+// errorf adds an error.
 func (es *errors) errorf(f string, vs ...interface{}) {
 	*es = append(*es, fmt.Errorf(f, vs...))
 }

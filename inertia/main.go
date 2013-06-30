@@ -36,7 +36,7 @@ func main() {
 			}
 			fmt.Println(d)
 			w := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
-			fmt.Fprintln(w, "predicate\tpos. effect\tneg. effect\tstatus\n")
+			fmt.Fprintln(w, "predicate\tpos. effect\tneg. effect\tstatus")
 			for _, pred := range d.Predicates {
 				status := "inertia"
 				if pred.PosEffect && pred.NegEffect {

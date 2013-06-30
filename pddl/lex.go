@@ -191,7 +191,6 @@ func (l *lexer) token() token {
 			return l.errorf("unexpected token in input: %c", r)
 		}
 	}
-	panic("Unreachable")
 }
 
 // According to the PDDL 1.2 paper:

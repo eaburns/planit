@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Parse returns either a domain, a problem or a parse error.
+// Parse returns either a Domain, a Problem or a parse error.
 func Parse(file string, r io.Reader) (ast interface{}, err error) {
 	defer func() {
 		r := recover()

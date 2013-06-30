@@ -15,11 +15,9 @@ const (
 	totalCostName = "total-cost"
 )
 
-// Check returns a slice of all semantic errors
-// in the domain.
+// Check returns a slice of all semantic errors in the domain.
 //
-// If the problem is nil then only the domain
-// is checked.  The domain must not be nil.
+// If the problem is nil then only the domain is checked.  The domain must not be nil.
 func Check(d *Domain, p *Problem) []error {
 	var errs errors
 	defs := checkDomain(d, &errs)
@@ -126,11 +124,9 @@ func checkReqsDef(defs defs, rs []Name, errs *errors) {
 	}
 }
 
-// checkTypesDef checks a list of type definitions
-// and maps type names to their definitions, and
-// builds the list of all super types of each type.
-// If the implicit object type was not defined then
-// it is added.
+// CheckTypesDef checks a list of type definitions, maps type names to their definitions, and
+// builds the list of all super types of each type.  If the implicit object type was not defined
+// then  it is added.
 func checkTypesDef(defs defs, d *Domain, errs *errors) {
 	if len(d.Types) > 0 && !defs.reqs[":typing"] {
 		errs.badReq(d.Types[0], ":types", ":typing")
@@ -172,8 +168,7 @@ func checkTypesDef(defs defs, d *Domain, errs *errors) {
 	}
 }
 
-// objectDefined returns true if the object type
-// is in the list of defined types.
+// ObjectDefined returns true if the object type is in the list of defined types.
 func objectDefined(ts []Type) bool {
 	for _, t := range ts {
 		if t.Str == objectTypeName {
@@ -183,8 +178,7 @@ func objectDefined(ts []Type) bool {
 	return false
 }
 
-// superTypes returns a slice of the parent types
-// of the given type, including the type itself.
+// SuperTypes returns a slice of the parent types of the given type, including the type itself.
 func superTypes(defs defs, t *Type) (supers []*Type) {
 	seen := make([]bool, len(defs.types))
 	stk := []*Type{t}
@@ -208,9 +202,7 @@ func superTypes(defs defs, t *Type) (supers []*Type) {
 	return
 }
 
-// checkConstsDef checks a list of constant or
-// object definitions and maps names to their
-// definitions.
+// CheckConstsDef checks a list of constant or object definitions and maps names to their definitions.
 func checkConstsDef(defs defs, objs []TypedEntry, errs *errors) {
 	for i, obj := range objs {
 		if defs.consts[strings.ToLower(obj.Str)] != nil {
@@ -236,10 +228,8 @@ func checkConstsDef(defs defs, objs []TypedEntry, errs *errors) {
 	}
 }
 
-// addToDomain adds an object to the list of all
-// objects of the given type.  If the object has
-// already been added then it is not added
-// again.
+// AddToDomain adds an object to the list of all objects of the given type.  If the object has
+// already been added then it is not added again.
 func (t *Type) addToDomain(obj *TypedEntry) {
 	for _, o := range t.Domain {
 		if o == obj {
@@ -249,10 +239,8 @@ func (t *Type) addToDomain(obj *TypedEntry) {
 	t.Domain = append(t.Domain, obj)
 }
 
-// checkPredsDef checks a list of predicate definitions
-// and maps predicate names to their definitions.
-// If :equality is required and the implicit = predicate
-// was not defined then it is added.
+// CheckPredsDef checks a list of predicate definitions and maps their names to their definitions.
+// If :equality is required and the implicit = predicate was not defined then it is added.
 func checkPredsDef(defs defs, d *Domain, errs *errors) {
 	if defs.reqs[":equality"] && !equalDefined(d.Predicates) {
 		d.Predicates = append(d.Predicates, Predicate{
@@ -282,8 +270,7 @@ func checkPredsDef(defs defs, d *Domain, errs *errors) {
 	}
 }
 
-// equalDefined returns true if the = predicate
-// is in the list of defined predicates.
+// EqualDefined returns true if the = predicate is in the list of defined predicates.
 func equalDefined(ps []Predicate) bool {
 	for _, p := range ps {
 		if p.Str == "=" {
@@ -293,8 +280,7 @@ func equalDefined(ps []Predicate) bool {
 	return false
 }
 
-// checkFuncsDef checks a list of function definitions,
-// and maps function names to their definitions.
+// CheckFuncsDef checks a list of function definitions and maps their names to their definitions.
 func checkFuncsDef(defs defs, fs []Function, errs *errors) {
 	if len(fs) > 0 && !defs.reqs[":action-costs"] {
 		errs.badReq(fs[0], ":functions", ":action-costs")
@@ -338,8 +324,7 @@ func checkActionDef(defs defs, act *Action, errs *errors) {
 	}
 }
 
-// push returns a new varDefs with the given
-// definitions defined.
+// Push returns a new varDefs with the given definitions defined.
 func (v *varDefs) push(d *TypedEntry) *varDefs {
 	return &varDefs{
 		up:         v,
@@ -348,10 +333,8 @@ func (v *varDefs) push(d *TypedEntry) *varDefs {
 	}
 }
 
-// checkTypedEntries ensures that the types
-// of a list of typed indentifiers are valid.  If they
-// are valid then they are linked to their type
-// definitions.  All identifiers that have no declared
+// CheckTypedEntries ensures that the types of a list of typed indentifiers are valid.  If they
+// are valid then they are linked to their type definitions.  All identifiers that have no declared
 // type are linked to the object type.
 func checkTypedEntries(defs defs, lst []TypedEntry, errs *errors) {
 	for i := range lst {
@@ -365,8 +348,7 @@ func checkTypedEntries(defs defs, lst []TypedEntry, errs *errors) {
 	}
 }
 
-// checkTypeNames checks that all of the type
-// names are defined.  Each defined type name
+// CheckTypeNames checks that all of the type names are defined.  Each defined type name
 // is linked to its type definition.
 func checkTypeNames(defs defs, ts []TypeName, errs *errors) {
 	if len(ts) > 0 && !defs.reqs[":typing"] {
@@ -413,8 +395,7 @@ func (q *QuantNode) check(defs defs, errs *errors) {
 	}
 }
 
-// pop returns a varDefs with the latest definition
-// removed.
+// Pop returns a varDefs with the latest definition removed.
 func (v *varDefs) pop() *varDefs {
 	return v.up
 }
@@ -483,8 +464,7 @@ func (lit *LiteralNode) check(defs defs, errs *errors) {
 	checkInst(defs, lit.Predicate, lit.Arguments, lit.Definition.Parameters, errs)
 }
 
-// checkInst checks the arguments match the parameters
-// of a predicate or function instantiation.
+// CheckInst checks the arguments match the parameters of a predicate or function instantiation.
 func checkInst(defs defs, n Name, args []Term, parms []TypedEntry, errs *errors) {
 	if len(args) != len(parms) {
 		var argStr = "arguments"
@@ -514,8 +494,7 @@ func checkInst(defs defs, n Name, args []Term, parms []TypedEntry, errs *errors)
 	}
 }
 
-// find returns the definition of the variable
-// or nil if it was not defined.
+// Find returns the definition of the variable or nil if it was not defined.
 func (v *varDefs) find(n string) *TypedEntry {
 	if v == nil {
 		return nil
@@ -526,8 +505,7 @@ func (v *varDefs) find(n string) *TypedEntry {
 	return v.up.find(n)
 }
 
-// compatTypes returns true if each type on the right
-// is convertable to each type on the left.
+// GompatTypes returns true if each type on the right is convertable to each type on the left.
 func compatTypes(left, right []TypeName) bool {
 	for _, r := range right {
 		if r.Definition == nil {
@@ -584,7 +562,7 @@ func (f *Function) isTotalCost() bool {
 	return f.Str == totalCostName && len(f.Parameters) == 0
 }
 
-// negative returns true if the string is a negative number.
+// Negative returns true if the string is a negative number.
 func negative(n string) bool {
 	neg := false
 	for _, s := range n {
@@ -604,31 +582,30 @@ func (h *Fhead) check(defs defs, errs *errors) {
 	checkInst(defs, h.Name, h.Arguments, h.Definition.Parameters, errs)
 }
 
-// errors wraps a slice of errors.
+// Errors wraps a slice of errors.
 type errors []error
 
-// add adds an Error to the slice.
+// Add adds an Error to the slice.
 func (es *errors) add(l Locer, f string, vs ...interface{}) {
 	*es = append(*es, Error{l.Loc(), fmt.Sprintf(f, vs...)})
 }
 
-// errorf adds an error.
+// Errorf adds an error.
 func (es *errors) errorf(f string, vs ...interface{}) {
 	*es = append(*es, fmt.Errorf(f, vs...))
 }
 
-// undefined adds an undefined error.
+// Undefined adds an undefined error.
 func (es *errors) undefined(name Name, kind string) {
 	es.add(name, "undefined %s %s", kind, name.Str)
 }
 
-// multipleDefs adds a multiply defined error.
+// MultipleDefs adds a multiply defined error.
 func (es *errors) multipleDefs(name Name, kind string) {
 	es.add(name, "%s %s defined multiple times", kind, name.Str)
 }
 
-// badReq adds a missing requirement error to
-// the slice.
+// BadReq adds a missing requirement error to the slice.
 func (es *errors) badReq(l Locer, used, reqd string) {
 	*es = append(*es, MissingRequirementError{
 		Location:    l.Loc(),
@@ -637,15 +614,12 @@ func (es *errors) badReq(l Locer, used, reqd string) {
 	})
 }
 
-// MissingRequirementError is used when a requirement
-// is missing.
+// MissingRequirementError is used when a requirement is missing.
 type MissingRequirementError struct {
-	// Location is the location in the PDDL file
-	// from which the requirement is missing.
+	// Location is the location in the PDDL file from which the requirement is missing.
 	Location
 
-	// Cause is a word describing the cause
-	// of the requirement.
+	// Cause is a word describing the cause of the requirement.
 	Cause string
 
 	// Requirement is the name of the requirement.

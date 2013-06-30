@@ -5,8 +5,7 @@ import (
 	"io"
 )
 
-// PrintDomain prints the domain in valid
-// PDDL to a writer.
+// PrintDomain prints the domain in valid PDDL to a writer.
 func PrintDomain(w io.Writer, d *Domain) {
 	fmt.Fprintf(w, "(define (domain %s)\n", d.Name)
 	printReqsDef(w, d.Requirements)
@@ -51,9 +50,8 @@ func printTypesDef(w io.Writer, ts []Type) {
 	fmt.Fprintln(w, ")")
 }
 
-// printConstsDef prints a constant definition with
-// the given definition name (should be either
-// :constants or :objects).
+// PrintConstsDef prints a constant definition with the given definition name
+// (should be either :constants or :objects).
 func printConstsDef(w io.Writer, def string, cs []TypedEntry) {
 	if len(cs) == 0 {
 		return
@@ -140,15 +138,13 @@ func PrintProblem(w io.Writer, p *Problem) {
 	fmt.Fprintln(w, ")\n)")
 }
 
-// declGroup is a group of declarators along
-// with their type.
+// DeclGroup is a group of declarators along with their type.
 type declGroup struct {
 	typ  string
 	ents []string
 }
 
-// declGroups implements sort.Interface, sorting
-// the list of typed declarations by their type name.
+// DeclGroups implements sort.Interface, sorting the list of typed declarations by their type name.
 type declGroups []declGroup
 
 func (t declGroups) Len() int {
@@ -163,9 +159,8 @@ func (t declGroups) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// printTypedNames prints a slice of TypedNames.
-// Adjacent items with the same type are all printed
-// in a group.  Each group is preceeded by the prefix.
+// PrintTypedNames prints a slice of TypedNames. Adjacent items with the same type are
+// all printed in a group.  Each group is preceeded by the prefix.
 func printTypedNames(w io.Writer, prefix string, ns []TypedEntry) {
 	if len(ns) == 0 {
 		return
@@ -194,7 +189,7 @@ func printTypedNames(w io.Writer, prefix string, ns []TypedEntry) {
 	}
 }
 
-// typeString returns the string representation of a type.
+// TypeString returns the string representation of a type.
 func typeString(t []TypeName) (str string) {
 	switch len(t) {
 	case 0:
@@ -312,8 +307,7 @@ func (h *Fhead) print(w io.Writer) {
 	fmt.Fprint(w, ")")
 }
 
-// indent returns a string containing a given
-// number of indentations.
+// Indent returns a string containing a given number of indentations.
 func indent(n int) (s string) {
 	for i := 0; i < n; i++ {
 		s += "\t"

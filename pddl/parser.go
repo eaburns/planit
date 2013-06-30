@@ -12,8 +12,7 @@ type parser struct {
 	npeeks int
 }
 
-// newParser returns a new parser that parses
-// from the given io.Reader.
+// NewParser returns a new parser that parses from the given io.Reader.
 func newParser(file string, r io.Reader) (*parser, error) {
 	text, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -22,7 +21,7 @@ func newParser(file string, r io.Reader) (*parser, error) {
 	return &parser{lex: newLexer(file, string(text))}, nil
 }
 
-// next returns the next lexical token from the parser.
+// Next returns the next lexical token from the parser.
 func (p *parser) next() token {
 	if p.npeeks == 0 {
 		return p.lex.token()
@@ -37,7 +36,7 @@ func (p *parser) Loc() Location {
 	return Location{p.lex.name, p.lex.lineno}
 }
 
-// peek at the nth token
+// Peek at the nth token
 func (p *parser) peekn(n int) token {
 	if n > len(p.peeks) {
 		panic("Too much peeking in the parser")
@@ -58,9 +57,6 @@ func (p *parser) junk(n int) {
 	}
 }
 
-// acceptToken returns a token and true
-// if the next token has the given type,
-// otherwise it returns false.
 func (p *parser) acceptToken(typ tokenType) (token, bool) {
 	if p.peek().typ != typ {
 		return token{}, false
@@ -68,10 +64,8 @@ func (p *parser) acceptToken(typ tokenType) (token, bool) {
 	return p.next(), true
 }
 
-// accept returns true if each upcoming token,
-// matches the text of the corresponding
-// parameter, in sequence.  Otherwise, accept
-// returns false.
+// Accept returns true if each upcoming token matches the text of the corresponding
+// parameter, in sequence, otherwise it returns false.
 func (p *parser) accept(texts ...string) bool {
 	if len(texts) > cap(p.peeks) {
 		panic("too many peeks in accept")
@@ -85,9 +79,6 @@ func (p *parser) accept(texts ...string) bool {
 	return true
 }
 
-// expectType returns the next token and no error
-// if the next token has the specified type, otherwise
-// an error is returned.
 func (p *parser) expectType(typ tokenType) token {
 	t := p.next()
 	if t.typ != typ {
@@ -96,9 +87,6 @@ func (p *parser) expectType(typ tokenType) token {
 	return t
 }
 
-// expectText returns the next token and no error
-// if the next token has the specified text, otherwise
-// an error is returned.
 func (p *parser) expectText(text string) token {
 	t := p.next()
 	if t.text != text {
@@ -107,13 +95,7 @@ func (p *parser) expectText(text string) token {
 	return t
 }
 
-// except is just like expectTokens except
-// that it only accepts strings and it only
-// returns the error value.
-//
-// If expect is called while panciking then
-// it is effectively a no-op.  This means that
-// you can freely defer a call to expect.
+// Expect is a no-op if called while panicking, so you can freely defer a call to expect.
 func (p *parser) expect(vls ...string) {
 	if r := recover(); r != nil {
 		panic(r)

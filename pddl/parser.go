@@ -1,3 +1,5 @@
+// © 2013 the PlanIt Authors under the MIT license. See AUTHORS for the list of authors.
+
 package pddl
 
 import (

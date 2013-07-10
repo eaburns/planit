@@ -1,3 +1,5 @@
+// © 2013 the PlanIt Authors under the MIT license. See AUTHORS for the list of authors.
+
 // inertia prints the inertial status of each predicate.
 // The table that is printed, for each domain, mimics
 // that of Figure 5 in:

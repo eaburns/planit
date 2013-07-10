@@ -1,3 +1,5 @@
+# © 2013 the PlanIt Authors under the MIT license. See AUTHORS for the list of authors.
+
 #!/bin/sh
 
 dirs=/home/aifs2/group/data/pddl/ipc2008/seq-sat

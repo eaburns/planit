@@ -1,4 +1,5 @@
 #!/bin/sh
+# © 2013 the PlanIt Authors under the MIT license. See AUTHORS for the list of authors.
 #
 # Verifies that go code passes go fmt, go vet, golint, and go test.
 #
